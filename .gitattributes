@@ -1,0 +1,2 @@
+# PDF fixtures must remain byte-identical on Windows checkouts.
+*.pdf -text -diff -merge -filter
