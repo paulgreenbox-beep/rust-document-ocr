@@ -1,0 +1,97 @@
+[package]
+name = "ocr-pipeline"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+authors = ["Киселюк Павел Геннадьевич"]
+default-run = "ocr-pipeline"
+
+[features]
+default = []
+native = [
+    "dep:pdfium-render",
+    "dep:leptess",
+    "dep:libloading",
+    "raster-input",
+    "webp-input",
+    "heif-input",
+    "djvu-input",
+]
+raster-input = [
+    "image/jpeg",
+    "image/bmp",
+    "image/tiff",
+    "dep:tiff",
+]
+webp-input = ["image/webp"]
+heif-input = ["dep:libheif-rs"]
+djvu-input = ["dep:djvu-rs"]
+pdfium-c-probe = ["dep:libloading"]
+native-diagnostics = ["native"]
+table-grid-review = []
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+regex = "1"
+image = { version = "0.25.10", default-features = false, features = ["png"] }
+imageproc = { version = "0.27.0", default-features = false }
+clap = { version = "4", features = ["derive"] }
+docx-rs = "0.2"
+umya-spreadsheet = "1.2"
+pdfium-render = { version = "0.9.3", optional = true, default-features = false, features = ["pdfium_7881", "image_latest", "thread_safe"] }
+leptess = { version = "0.14", optional = true }
+thiserror = "2"
+libloading = { version = "0.8", optional = true }
+tiff = { version = "0.11.3", optional = true, default-features = false, features = ["deflate", "fax", "jpeg", "lzw", "webp"] }
+libheif-rs = { version = "2.7.0", optional = true, default-features = false, features = ["v1_19"] }
+djvu-rs = { version = "=0.27.0", optional = true, default-features = false, features = ["std"] }
+
+[dev-dependencies]
+tempfile = "3"
+zip = { version = "0.6.6", default-features = false, features = ["deflate"] }
+
+[[bin]]
+name = "ocr_render_debug"
+path = "src/bin/ocr_render_debug.rs"
+required-features = ["native-diagnostics"]
+
+[[bin]]
+name = "pdf_image_only_debug"
+path = "src/bin/pdf_image_only_debug.rs"
+required-features = ["native-diagnostics"]
+
+[[bin]]
+name = "pdf_render_probe"
+path = "src/bin/pdf_render_probe.rs"
+required-features = ["native-diagnostics"]
+
+[[bin]]
+name = "pdf_text_layer_debug"
+path = "src/bin/pdf_text_layer_debug.rs"
+required-features = ["native-diagnostics"]
+
+[[bin]]
+name = "pdf_text_recovery_probe"
+path = "src/bin/pdf_text_recovery_probe.rs"
+required-features = ["native-diagnostics"]
+
+[[bin]]
+name = "pdfium_c_render_probe"
+path = "src/bin/pdfium_c_render_probe.rs"
+required-features = ["pdfium-c-probe"]
+
+[[bin]]
+name = "table_grid_review"
+path = "src/bin/table_grid_review.rs"
+required-features = ["table-grid-review"]
+
+[[example]]
+name = "integrate_ocr"
+path = "examples/integrate_ocr.rs"
+required-features = ["native"]
+
+[[example]]
+name = "generate_djvu_fixture"
+path = "examples/generate_djvu_fixture.rs"
+required-features = ["djvu-input"]

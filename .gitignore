@@ -1,0 +1,63 @@
+# Build products and local toolchains. Cargo.lock is intentionally tracked.
+/target/
+/.tools/
+*.exe
+*.dll
+*.pdb
+*.lib
+*.so
+*.dylib
+
+# External runtimes, language data, model caches and private research.
+/runtime/
+/local-runtime/
+/models/
+/training/
+/testing/
+/benchmark*/
+/research/
+/OCR rust*/
+*.traineddata
+*.safetensors
+*.gguf
+*.onnx
+*.pt
+*.pth
+
+# Credentials and machine-specific configuration.
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.pfx
+*.p12
+/config.local.*
+/credentials*
+
+# Generated private data and verification artifacts.
+/reports/
+/verification/
+/tmp/
+/temp/
+/output/
+*.log
+*.dump
+*.dmp
+*.sqlite*
+*.db
+*.docx
+*.xlsx
+__pycache__/
+*.pyc
+.venv/
+.envs/
+
+# Only explicitly reviewed synthetic document examples belong in Git.
+*.pdf
+!examples/documents/synthetic-text-table.pdf
+!examples/documents/synthetic-raster.pdf
+examples/output/*
+!examples/output/result.v1.json
+!examples/output/raster-result.v1.json
+!examples/output/README.md

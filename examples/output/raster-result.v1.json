@@ -1,0 +1,453 @@
+{
+  "schema_version": 1,
+  "document": {
+    "pages": [
+      {
+        "page_number": 1,
+        "kind": "Mixed",
+        "text": "RUST DOCUMENT OCR - SYNTHETIC SAMPLE\n\nThis document contains original test text and a small ruled table.\n\nIt contains no customer information, personal data, or real invoice.\n\nItem                                              Quantity                                      Unit\nAlpha                                                12                                                      pieces\nBeta                                              7                                                    metres\n\nGeometry and recognized text are separate outputs.\n\nSynthetic examples demonstrate operation, not real-world OCR accuracy.\n",
+        "tables": [
+          {
+            "rows": [
+              [
+                {
+                  "text": "Item",
+                  "row": 0,
+                  "column": 0,
+                  "row_span": 1,
+                  "col_span": 1,
+                  "bbox": {
+                    "x0": 224.5,
+                    "y0": 716.5,
+                    "x1": 974.5,
+                    "y1": 917.125
+                  },
+                  "confidence": 0.93842185
+                },
+                {
+                  "text": "Quantity",
+                  "row": 0,
+                  "column": 1,
+                  "row_span": 1,
+                  "col_span": 1,
+                  "bbox": {
+                    "x0": 974.5,
+                    "y0": 716.5,
+                    "x1": 1724.5,
+                    "y1": 917.125
+                  },
+                  "confidence": 0.96267396
+                },
+                {
+                  "text": "Unit",
+                  "row": 0,
+                  "column": 2,
+                  "row_span": 1,
+                  "col_span": 1,
+                  "bbox": {
+                    "x0": 1724.5,
+                    "y0": 716.5,
+                    "x1": 2324.5,
+                    "y1": 917.125
+                  },
+                  "confidence": 0.96678805
+                }
+              ],
+              [
+                {
+                  "text": "Alpha",
+                  "row": 1,
+                  "column": 0,
+                  "row_span": 1,
+                  "col_span": 1,
+                  "bbox": {
+                    "x0": 224.5,
+                    "y0": 917.125,
+                    "x1": 974.5,
+                    "y1": 1117.125
+                  },
+                  "confidence": 0.96829605
+                },
+                {
+                  "text": "12",
+                  "row": 1,
+                  "column": 1,
+                  "row_span": 1,
+                  "col_span": 1,
+                  "bbox": {
+                    "x0": 974.5,
+                    "y0": 917.125,
+                    "x1": 1724.5,
+                    "y1": 1117.125
+                  },
+                  "confidence": 0.96780133
+                },
+                {
+                  "text": "pieces",
+                  "row": 1,
+                  "column": 2,
+                  "row_span": 1,
+                  "col_span": 1,
+                  "bbox": {
+                    "x0": 1724.5,
+                    "y0": 917.125,
+                    "x1": 2324.5,
+                    "y1": 1117.125
+                  },
+                  "confidence": 0.954801
+                }
+              ],
+              [
+                {
+                  "text": "Beta",
+                  "row": 2,
+                  "column": 0,
+                  "row_span": 1,
+                  "col_span": 1,
+                  "bbox": {
+                    "x0": 224.5,
+                    "y0": 1117.125,
+                    "x1": 974.5,
+                    "y1": 1316.5
+                  },
+                  "confidence": 0.96577483
+                },
+                {
+                  "text": "7",
+                  "row": 2,
+                  "column": 1,
+                  "row_span": 1,
+                  "col_span": 1,
+                  "bbox": {
+                    "x0": 974.5,
+                    "y0": 1117.125,
+                    "x1": 1724.5,
+                    "y1": 1316.5
+                  },
+                  "confidence": 0.95092154
+                },
+                {
+                  "text": "metres",
+                  "row": 2,
+                  "column": 2,
+                  "row_span": 1,
+                  "col_span": 1,
+                  "bbox": {
+                    "x0": 1724.5,
+                    "y0": 1117.125,
+                    "x1": 2324.5,
+                    "y1": 1316.5
+                  },
+                  "confidence": 0.96441287
+                }
+              ]
+            ],
+            "detector_type": "grid",
+            "table_type": "data_table",
+            "bbox": {
+              "x0": 224.5,
+              "y0": 716.5,
+              "x1": 2324.5,
+              "y1": 1316.5
+            },
+            "confidence": 1.0
+          }
+        ]
+      }
+    ]
+  },
+  "tables": [
+    {
+      "page_number": 1,
+      "grids": [
+        {
+          "kind": "data_table",
+          "semantic_type": "generic_table",
+          "semantic_confidence": 0.79,
+          "header_rows": [
+            0
+          ],
+          "column_roles": [
+            {
+              "column": 0,
+              "role": "unknown",
+              "confidence": 0.574
+            },
+            {
+              "column": 1,
+              "role": "quantity",
+              "confidence": 0.95379996
+            },
+            {
+              "column": 2,
+              "role": "unit",
+              "confidence": 0.78
+            }
+          ],
+          "classification_evidence": [
+            {
+              "kind": "detector_confidence",
+              "rule": "detector:ruled_grid",
+              "score": 1.0
+            },
+            {
+              "kind": "ocr_confidence",
+              "rule": "ocr:mean_populated_cell_confidence",
+              "score": 0.95998794
+            },
+            {
+              "kind": "geometry",
+              "rule": "geometry:3x3",
+              "score": 0.6825
+            },
+            {
+              "kind": "header_alias",
+              "rule": "column_role:quantity",
+              "row": 0,
+              "column": 1,
+              "score": 0.95379996
+            },
+            {
+              "kind": "header_alias",
+              "rule": "column_role:unit",
+              "row": 0,
+              "column": 2,
+              "score": 0.78
+            },
+            {
+              "kind": "semantic_rule",
+              "rule": "semantic:generic_table",
+              "score": 0.79
+            }
+          ],
+          "bbox": {
+            "x": 225,
+            "y": 717,
+            "width": 2100,
+            "height": 600
+          },
+          "rows": 3,
+          "columns": 3,
+          "cells": [
+            {
+              "row": 0,
+              "column": 0,
+              "row_span": 1,
+              "col_span": 1,
+              "bbox": {
+                "x": 225,
+                "y": 717,
+                "width": 750,
+                "height": 200
+              },
+              "text": "Item",
+              "confidence": 0.93842185
+            },
+            {
+              "row": 0,
+              "column": 1,
+              "row_span": 1,
+              "col_span": 1,
+              "bbox": {
+                "x": 975,
+                "y": 717,
+                "width": 750,
+                "height": 200
+              },
+              "text": "Quantity",
+              "confidence": 0.96267396
+            },
+            {
+              "row": 0,
+              "column": 2,
+              "row_span": 1,
+              "col_span": 1,
+              "bbox": {
+                "x": 1725,
+                "y": 717,
+                "width": 600,
+                "height": 200
+              },
+              "text": "Unit",
+              "confidence": 0.96678805
+            },
+            {
+              "row": 1,
+              "column": 0,
+              "row_span": 1,
+              "col_span": 1,
+              "bbox": {
+                "x": 225,
+                "y": 917,
+                "width": 750,
+                "height": 200
+              },
+              "text": "Alpha",
+              "confidence": 0.96829605
+            },
+            {
+              "row": 1,
+              "column": 1,
+              "row_span": 1,
+              "col_span": 1,
+              "bbox": {
+                "x": 975,
+                "y": 917,
+                "width": 750,
+                "height": 200
+              },
+              "text": "12",
+              "confidence": 0.96780133
+            },
+            {
+              "row": 1,
+              "column": 2,
+              "row_span": 1,
+              "col_span": 1,
+              "bbox": {
+                "x": 1725,
+                "y": 917,
+                "width": 600,
+                "height": 200
+              },
+              "text": "pieces",
+              "confidence": 0.954801
+            },
+            {
+              "row": 2,
+              "column": 0,
+              "row_span": 1,
+              "col_span": 1,
+              "bbox": {
+                "x": 225,
+                "y": 1117,
+                "width": 750,
+                "height": 200
+              },
+              "text": "Beta",
+              "confidence": 0.96577483
+            },
+            {
+              "row": 2,
+              "column": 1,
+              "row_span": 1,
+              "col_span": 1,
+              "bbox": {
+                "x": 975,
+                "y": 1117,
+                "width": 750,
+                "height": 200
+              },
+              "text": "7",
+              "confidence": 0.95092154
+            },
+            {
+              "row": 2,
+              "column": 2,
+              "row_span": 1,
+              "col_span": 1,
+              "bbox": {
+                "x": 1725,
+                "y": 1117,
+                "width": 600,
+                "height": 200
+              },
+              "text": "metres",
+              "confidence": 0.96441287
+            }
+          ],
+          "confidence": 1.0
+        }
+      ]
+    }
+  ],
+  "page_processing": [
+    {
+      "page_number": 1,
+      "processing_mode": "ocr+grid",
+      "native_text_quality": {
+        "pdfium_character_count": 0,
+        "unicode_character_count": 0,
+        "unicode_coverage": 0.0,
+        "non_whitespace_characters": 0,
+        "printable_characters": 0,
+        "printable_ratio": 0.0,
+        "replacement_characters": 0,
+        "replacement_ratio": 0.0,
+        "control_characters": 0,
+        "cyrillic_characters": 0,
+        "latin_characters": 0,
+        "other_alphabetic_characters": 0,
+        "supported_script_ratio": 1.0,
+        "suspected_mojibake_characters": 0,
+        "suspected_mojibake_runs": 0,
+        "longest_suspected_mojibake_run": 0,
+        "suspected_mojibake_ratio": 0.0,
+        "has_strong_mojibake": false,
+        "contains_cyrillic": false,
+        "contains_latin": false,
+        "contains_digits": false,
+        "is_usable": false,
+        "is_near_usable": false
+      },
+      "ocr_confidence": 0.96031797,
+      "orientation": {
+        "angle": 0,
+        "confidence": 0.9417228
+      },
+      "language": "eng",
+      "render_size": {
+        "width": 2550,
+        "height": 3300,
+        "dpi": 300
+      },
+      "word_assignment": {
+        "recognized_words": 51,
+        "assigned_words": 9,
+        "words_outside_tables": 42,
+        "duplicate_assignments": 0
+      },
+      "quality": {
+        "profile": "engineering_ru_en_v1",
+        "profile_version": 1,
+        "status": "reliable",
+        "score": 1.0,
+        "signals": {
+          "character_count": 627,
+          "word_count": 51,
+          "nonempty_line_count": 8,
+          "cyrillic_characters": 0,
+          "latin_characters": 281,
+          "other_alphabetic_characters": 0,
+          "unexpected_script_ratio": 0.0,
+          "replacement_characters": 0,
+          "control_characters": 0,
+          "private_use_characters": 0,
+          "suspected_mojibake_characters": 0,
+          "suspected_mojibake_runs": 0,
+          "longest_suspected_mojibake_run": 0,
+          "suspected_mojibake_ratio": 0.0,
+          "has_strong_mojibake": false,
+          "fragmented_letter_runs": 0,
+          "fragmented_letter_characters": 0,
+          "longest_fragmented_run": 1,
+          "mixed_script_word_ratio": 0.0
+        },
+        "issues": []
+      },
+      "timings": {
+        "native_text_extraction_ms": 2.748,
+        "native_text_layout_ms": 0.0,
+        "thumbnail_render_ms": 48.2633,
+        "full_render_ms": 220.3066,
+        "grid_detection_ms": 3027.602,
+        "orientation_ms": 1853.2996,
+        "preprocessing_ms": 420.3294,
+        "tesseract_ms": 2539.0644,
+        "assignment_ms": 22.0303,
+        "total_ms": 6280.6167000000005
+      }
+    }
+  ],
+  "warnings": []
+}

@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  rust:
+    name: Windows source checks
+    runs-on: windows-2022
+    timeout-minutes: 30
+    env:
+      CARGO_BUILD_JOBS: '1'
+      CARGO_INCREMENTAL: '0'
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+        with:
+          toolchain: 1.97.1
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          cache-bin: false
+      - name: Fetch locked Rust dependencies
+        run: cargo fetch --locked
+      - name: Formatting
+        run: cargo fmt --all -- --check
+      - name: Verify reviewed synthetic documents
+        shell: pwsh
+        run: |
+          foreach ($line in Get-Content -LiteralPath 'examples/documents/SHA256SUMS') {
+            $parts = $line -split '\s+', 2
+            if ($parts.Count -ne 2 -or $parts[0] -notmatch '^[0-9a-f]{64}$' -or $parts[1] -notmatch '^synthetic-(text-table|raster)\.pdf$') {
+              throw 'Invalid synthetic fixture checksum record'
+            }
+            $path = Join-Path 'examples/documents' $parts[1]
+            if ((Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash -ne $parts[0]) {
+              throw "Synthetic document checksum mismatch: $path"
+            }
+          }
+      - name: Check default source build
+        run: cargo check --offline --locked --all-targets -j 1
+      - name: Test public source suite
+        run: cargo test --offline --locked -j 1 -- --test-threads=1
+      - name: Clippy
+        run: cargo clippy --offline --locked --all-targets -j 1 -- -D warnings
+
+  # Native integration is validated locally with separately provided PDFium,
+  # Tesseract/Leptonica, HEIF and traineddata. The default feature set is empty;
+  # this job verifies source logic, not end-to-end OCR or recognition accuracy.
+  # No customer PDFs, proprietary tools, paid services or model caches enter CI.

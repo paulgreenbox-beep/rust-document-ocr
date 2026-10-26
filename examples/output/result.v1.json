@@ -1,0 +1,458 @@
+{
+  "schema_version": 1,
+  "document": {
+    "pages": [
+      {
+        "page_number": 1,
+        "kind": "Mixed",
+        "text": "RUST DOCUMENT OCR - SYNTHETIC SAMPLE\nThis document contains original test text and a small ruled table.\nIt contains no customer information, personal data, or real invoice.\nItem Quantity Unit\nAlpha 12 pieces\nBeta 7 metres\nGeometry and recognized text are separate outputs.\nSynthetic examples demonstrate operation, not real-world OCR accuracy.",
+        "tables": [
+          {
+            "rows": [
+              [
+                {
+                  "text": "Item",
+                  "row": 0,
+                  "column": 0,
+                  "row_span": 1,
+                  "col_span": 1,
+                  "bbox": {
+                    "x0": 74.5,
+                    "y0": 238.5,
+                    "x1": 324.5,
+                    "y1": 304.3333333333333
+                  },
+                  "confidence": 1.0
+                },
+                {
+                  "text": "Quantity",
+                  "row": 0,
+                  "column": 1,
+                  "row_span": 1,
+                  "col_span": 1,
+                  "bbox": {
+                    "x0": 324.5,
+                    "y0": 238.5,
+                    "x1": 574.5,
+                    "y1": 304.3333333333333
+                  },
+                  "confidence": 1.0
+                },
+                {
+                  "text": "Unit",
+                  "row": 0,
+                  "column": 2,
+                  "row_span": 1,
+                  "col_span": 1,
+                  "bbox": {
+                    "x0": 574.5,
+                    "y0": 238.5,
+                    "x1": 774.5,
+                    "y1": 304.3333333333333
+                  },
+                  "confidence": 1.0
+                }
+              ],
+              [
+                {
+                  "text": "Alpha",
+                  "row": 1,
+                  "column": 0,
+                  "row_span": 1,
+                  "col_span": 1,
+                  "bbox": {
+                    "x0": 74.5,
+                    "y0": 304.3333333333333,
+                    "x1": 324.5,
+                    "y1": 371.5
+                  },
+                  "confidence": 1.0
+                },
+                {
+                  "text": "12",
+                  "row": 1,
+                  "column": 1,
+                  "row_span": 1,
+                  "col_span": 1,
+                  "bbox": {
+                    "x0": 324.5,
+                    "y0": 304.3333333333333,
+                    "x1": 574.5,
+                    "y1": 371.5
+                  },
+                  "confidence": 1.0
+                },
+                {
+                  "text": "pieces",
+                  "row": 1,
+                  "column": 2,
+                  "row_span": 1,
+                  "col_span": 1,
+                  "bbox": {
+                    "x0": 574.5,
+                    "y0": 304.3333333333333,
+                    "x1": 774.5,
+                    "y1": 371.5
+                  },
+                  "confidence": 1.0
+                }
+              ],
+              [
+                {
+                  "text": "Beta",
+                  "row": 2,
+                  "column": 0,
+                  "row_span": 1,
+                  "col_span": 1,
+                  "bbox": {
+                    "x0": 74.5,
+                    "y0": 371.5,
+                    "x1": 324.5,
+                    "y1": 438.5
+                  },
+                  "confidence": 1.0
+                },
+                {
+                  "text": "7",
+                  "row": 2,
+                  "column": 1,
+                  "row_span": 1,
+                  "col_span": 1,
+                  "bbox": {
+                    "x0": 324.5,
+                    "y0": 371.5,
+                    "x1": 574.5,
+                    "y1": 438.5
+                  },
+                  "confidence": 1.0
+                },
+                {
+                  "text": "metres",
+                  "row": 2,
+                  "column": 2,
+                  "row_span": 1,
+                  "col_span": 1,
+                  "bbox": {
+                    "x0": 574.5,
+                    "y0": 371.5,
+                    "x1": 774.5,
+                    "y1": 438.5
+                  },
+                  "confidence": 1.0
+                }
+              ]
+            ],
+            "detector_type": "grid",
+            "table_type": "data_table",
+            "bbox": {
+              "x0": 74.5,
+              "y0": 238.5,
+              "x1": 774.5,
+              "y1": 438.5
+            },
+            "confidence": 1.0
+          }
+        ]
+      }
+    ]
+  },
+  "tables": [
+    {
+      "page_number": 1,
+      "grids": [
+        {
+          "kind": "data_table",
+          "semantic_type": "generic_table",
+          "semantic_confidence": 0.79,
+          "header_rows": [
+            0
+          ],
+          "column_roles": [
+            {
+              "column": 0,
+              "role": "unknown",
+              "confidence": 0.574
+            },
+            {
+              "column": 1,
+              "role": "quantity",
+              "confidence": 0.95379996
+            },
+            {
+              "column": 2,
+              "role": "unit",
+              "confidence": 0.78
+            }
+          ],
+          "classification_evidence": [
+            {
+              "kind": "detector_confidence",
+              "rule": "detector:ruled_grid",
+              "score": 1.0
+            },
+            {
+              "kind": "ocr_confidence",
+              "rule": "ocr:mean_populated_cell_confidence",
+              "score": 1.0
+            },
+            {
+              "kind": "geometry",
+              "rule": "geometry:3x3",
+              "score": 0.6825
+            },
+            {
+              "kind": "header_alias",
+              "rule": "column_role:quantity",
+              "row": 0,
+              "column": 1,
+              "score": 0.95379996
+            },
+            {
+              "kind": "header_alias",
+              "rule": "column_role:unit",
+              "row": 0,
+              "column": 2,
+              "score": 0.78
+            },
+            {
+              "kind": "semantic_rule",
+              "rule": "semantic:generic_table",
+              "score": 0.79
+            }
+          ],
+          "bbox": {
+            "x": 75,
+            "y": 239,
+            "width": 700,
+            "height": 200
+          },
+          "rows": 3,
+          "columns": 3,
+          "cells": [
+            {
+              "row": 0,
+              "column": 0,
+              "row_span": 1,
+              "col_span": 1,
+              "bbox": {
+                "x": 75,
+                "y": 239,
+                "width": 250,
+                "height": 65
+              },
+              "text": "Item",
+              "confidence": 1.0
+            },
+            {
+              "row": 0,
+              "column": 1,
+              "row_span": 1,
+              "col_span": 1,
+              "bbox": {
+                "x": 325,
+                "y": 239,
+                "width": 250,
+                "height": 65
+              },
+              "text": "Quantity",
+              "confidence": 1.0
+            },
+            {
+              "row": 0,
+              "column": 2,
+              "row_span": 1,
+              "col_span": 1,
+              "bbox": {
+                "x": 575,
+                "y": 239,
+                "width": 200,
+                "height": 65
+              },
+              "text": "Unit",
+              "confidence": 1.0
+            },
+            {
+              "row": 1,
+              "column": 0,
+              "row_span": 1,
+              "col_span": 1,
+              "bbox": {
+                "x": 75,
+                "y": 304,
+                "width": 250,
+                "height": 68
+              },
+              "text": "Alpha",
+              "confidence": 1.0
+            },
+            {
+              "row": 1,
+              "column": 1,
+              "row_span": 1,
+              "col_span": 1,
+              "bbox": {
+                "x": 325,
+                "y": 304,
+                "width": 250,
+                "height": 68
+              },
+              "text": "12",
+              "confidence": 1.0
+            },
+            {
+              "row": 1,
+              "column": 2,
+              "row_span": 1,
+              "col_span": 1,
+              "bbox": {
+                "x": 575,
+                "y": 304,
+                "width": 200,
+                "height": 68
+              },
+              "text": "pieces",
+              "confidence": 1.0
+            },
+            {
+              "row": 2,
+              "column": 0,
+              "row_span": 1,
+              "col_span": 1,
+              "bbox": {
+                "x": 75,
+                "y": 372,
+                "width": 250,
+                "height": 67
+              },
+              "text": "Beta",
+              "confidence": 1.0
+            },
+            {
+              "row": 2,
+              "column": 1,
+              "row_span": 1,
+              "col_span": 1,
+              "bbox": {
+                "x": 325,
+                "y": 372,
+                "width": 250,
+                "height": 67
+              },
+              "text": "7",
+              "confidence": 1.0
+            },
+            {
+              "row": 2,
+              "column": 2,
+              "row_span": 1,
+              "col_span": 1,
+              "bbox": {
+                "x": 575,
+                "y": 372,
+                "width": 200,
+                "height": 67
+              },
+              "text": "metres",
+              "confidence": 1.0
+            }
+          ],
+          "confidence": 1.0
+        }
+      ]
+    }
+  ],
+  "page_processing": [
+    {
+      "page_number": 1,
+      "processing_mode": "native_text+grid",
+      "native_text_quality": {
+        "pdfium_character_count": 350,
+        "unicode_character_count": 343,
+        "unicode_coverage": 0.98,
+        "non_whitespace_characters": 293,
+        "printable_characters": 343,
+        "printable_ratio": 1.0,
+        "replacement_characters": 0,
+        "replacement_ratio": 0.0,
+        "control_characters": 0,
+        "cyrillic_characters": 0,
+        "latin_characters": 281,
+        "other_alphabetic_characters": 0,
+        "supported_script_ratio": 1.0,
+        "suspected_mojibake_characters": 0,
+        "suspected_mojibake_runs": 0,
+        "longest_suspected_mojibake_run": 0,
+        "suspected_mojibake_ratio": 0.0,
+        "has_strong_mojibake": false,
+        "contains_cyrillic": false,
+        "contains_latin": true,
+        "contains_digits": true,
+        "is_usable": true,
+        "is_near_usable": false
+      },
+      "native_text_layout": {
+        "text_block_count": 14,
+        "x_alignment_clusters": 4,
+        "y_alignment_clusters": 4
+      },
+      "orientation": {
+        "angle": 0,
+        "confidence": 1.0
+      },
+      "language": "eng",
+      "render_size": {
+        "width": 850,
+        "height": 1100,
+        "dpi": 100
+      },
+      "word_assignment": {
+        "recognized_words": 51,
+        "assigned_words": 9,
+        "words_outside_tables": 42,
+        "duplicate_assignments": 0
+      },
+      "quality": {
+        "profile": "engineering_ru_en_v1",
+        "profile_version": 1,
+        "status": "reliable",
+        "score": 1.0,
+        "signals": {
+          "character_count": 343,
+          "word_count": 51,
+          "nonempty_line_count": 8,
+          "cyrillic_characters": 0,
+          "latin_characters": 281,
+          "other_alphabetic_characters": 0,
+          "unexpected_script_ratio": 0.0,
+          "replacement_characters": 0,
+          "control_characters": 0,
+          "private_use_characters": 0,
+          "suspected_mojibake_characters": 0,
+          "suspected_mojibake_runs": 0,
+          "longest_suspected_mojibake_run": 0,
+          "suspected_mojibake_ratio": 0.0,
+          "has_strong_mojibake": false,
+          "fragmented_letter_runs": 0,
+          "fragmented_letter_characters": 0,
+          "longest_fragmented_run": 1,
+          "mixed_script_word_ratio": 0.0,
+          "line_structure_ratio": 1.0
+        },
+        "issues": []
+      },
+      "timings": {
+        "native_text_extraction_ms": 21.1758,
+        "native_text_layout_ms": 4.7142,
+        "thumbnail_render_ms": 26.226,
+        "full_render_ms": 0.0,
+        "grid_detection_ms": 320.85740000000004,
+        "orientation_ms": 0.0,
+        "preprocessing_ms": 0.0,
+        "tesseract_ms": 0.0,
+        "assignment_ms": 0.0249,
+        "total_ms": 414.86859999999996
+      }
+    }
+  ],
+  "warnings": []
+}
