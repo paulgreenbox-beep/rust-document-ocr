@@ -107,6 +107,15 @@ pub enum PipelineWarning {
     /// OCR orientation preflight was unavailable. The page was retained at
     /// its rendered orientation and standard OCR continued.
     OrientationDetectionFailed { page_number: u32, message: String },
+    /// One optional cell recognition failed; its original content and physical
+    /// geometry were retained. Indices are zero-based except page_number.
+    CellOcrFallbackFailed {
+        page_number: u32,
+        table_index: usize,
+        row: u32,
+        column: u32,
+        reason_code: String,
+    },
 }
 
 /// The full pipeline result plus non-fatal diagnostics.
@@ -921,7 +930,7 @@ fn finish_prepared_native_page<O: OcrEngine>(
                         &mut prepared.timings,
                     )
                 } else {
-                    fill_empty_grid_cells_with_ocr(
+                    fill_empty_grid_cells_with_ocr_diagnostics(
                         &mut grid,
                         &rendered.image,
                         ocr,
@@ -930,9 +939,15 @@ fn finish_prepared_native_page<O: OcrEngine>(
                         &mut prepared.timings,
                     )
                 };
-            fallback_confidences.extend(fallback.map_err(|error| {
-                format!("page {page_number} cell OCR fallback failed: {error}")
-            })?);
+            let fallback = fallback
+                .map_err(|error| format!("page {page_number} cell OCR fallback failed: {error}"))?;
+            fallback_confidences.extend(fallback.confidences);
+            prepared.warnings.extend(
+                fallback
+                    .failures
+                    .into_iter()
+                    .map(|failure| failure.into_warning(page_number, grid_index)),
+            );
             metrics.empty_cells = grid
                 .cells
                 .iter()
@@ -1100,10 +1115,10 @@ fn finish_prepared_ocr_page<O: OcrEngine>(
         let assignment = page_word_assignment_metrics(&words, &grid_candidates);
         let stage_started = Instant::now();
         let mut matrices = Vec::with_capacity(grid_candidates.len());
-        for mut grid in grid_candidates {
+        for (grid_index, mut grid) in grid_candidates.into_iter().enumerate() {
             let mut metrics = grid.assign_words(&words);
             if config.enable_cell_ocr_fallback {
-                fill_empty_grid_cells_with_ocr(
+                let fallback = fill_empty_grid_cells_with_ocr_diagnostics(
                     &mut grid,
                     &preprocessed,
                     ocr,
@@ -1114,6 +1129,12 @@ fn finish_prepared_ocr_page<O: OcrEngine>(
                 .map_err(|error| {
                     format!("page {page_number} raster cell OCR fallback failed: {error}")
                 })?;
+                prepared.warnings.extend(
+                    fallback
+                        .failures
+                        .into_iter()
+                        .map(|failure| failure.into_warning(page_number, grid_index)),
+                );
                 metrics.empty_cells = grid
                     .cells
                     .iter()
@@ -2350,6 +2371,58 @@ impl<'a> CellOcrRaster<'a> {
     }
 }
 
+pub(crate) struct CellOcrFailure {
+    pub(crate) row: u32,
+    pub(crate) column: u32,
+    pub(crate) reason_code: &'static str,
+}
+
+impl CellOcrFailure {
+    fn matches(&self, cell: &crate::dto::TableCell) -> bool {
+        self.row == cell.row && self.column == cell.column
+    }
+
+    fn into_warning(self, page_number: u32, table_index: usize) -> PipelineWarning {
+        PipelineWarning::CellOcrFallbackFailed {
+            page_number,
+            table_index,
+            row: self.row,
+            column: self.column,
+            reason_code: self.reason_code.to_string(),
+        }
+    }
+}
+
+pub(crate) struct CellOcrOutcome {
+    pub(crate) confidences: Vec<f32>,
+    pub(crate) failures: Vec<CellOcrFailure>,
+}
+
+fn optional_cell_ocr_result<T, O: OcrEngine>(
+    result: Result<T, Box<dyn std::error::Error>>,
+    ocr: &O,
+    cell: &crate::dto::TableCell,
+    failures: &mut Vec<CellOcrFailure>,
+) -> Result<Option<T>, Box<dyn std::error::Error>> {
+    match result {
+        Ok(value) => Ok(Some(value)),
+        Err(error) => match ocr.recoverable_cell_error_reason(error.as_ref()) {
+            Some(reason_code) => {
+                if !failures.iter().any(|failure| failure.matches(cell)) {
+                    failures.push(CellOcrFailure {
+                        row: cell.row,
+                        column: cell.column,
+                        reason_code,
+                    });
+                }
+                Ok(None)
+            }
+            None => Err(error),
+        },
+    }
+}
+
+#[cfg(test)]
 pub(crate) fn fill_empty_grid_cells_with_ocr<O: OcrEngine>(
     grid: &mut TableGrid,
     page: &GrayImage,
@@ -2358,6 +2431,20 @@ pub(crate) fn fill_empty_grid_cells_with_ocr<O: OcrEngine>(
     dpi: u32,
     timings: &mut PageStageTimings,
 ) -> Result<Vec<f32>, Box<dyn std::error::Error>> {
+    Ok(
+        fill_empty_grid_cells_with_ocr_diagnostics(grid, page, ocr, max_pixels, dpi, timings)?
+            .confidences,
+    )
+}
+
+pub(crate) fn fill_empty_grid_cells_with_ocr_diagnostics<O: OcrEngine>(
+    grid: &mut TableGrid,
+    page: &GrayImage,
+    ocr: &O,
+    max_pixels: usize,
+    dpi: u32,
+    timings: &mut PageStageTimings,
+) -> Result<CellOcrOutcome, Box<dyn std::error::Error>> {
     fill_empty_grid_cells_with_ocr_from_raster(
         grid,
         &CellOcrRaster::full_page(page, dpi),
@@ -2375,7 +2462,7 @@ fn fill_empty_grid_cells_with_ocr_from_region<O: OcrEngine>(
     ocr: &O,
     max_pixels: usize,
     timings: &mut PageStageTimings,
-) -> Result<Vec<f32>, Box<dyn std::error::Error>> {
+) -> Result<CellOcrOutcome, Box<dyn std::error::Error>> {
     let fallback =
         CellOcrRaster::full_page(&source_page.image, source_page.dpi.round().max(1.0) as u32);
     let Some(primary) = CellOcrRaster::from_region(source_page, region) else {
@@ -2400,7 +2487,12 @@ fn fill_empty_grid_cells_with_ocr_from_raster<O: OcrEngine>(
     ocr: &O,
     max_pixels: usize,
     timings: &mut PageStageTimings,
-) -> Result<Vec<f32>, Box<dyn std::error::Error>> {
+) -> Result<CellOcrOutcome, Box<dyn std::error::Error>> {
+    // A later alternate/technical pass can fail after an earlier successful
+    // mutation. Keep a transaction snapshot so that failed cells retain every
+    // original field, including text, confidence, spans and physical bbox.
+    let original_cells = grid.cells.clone();
+    let mut failures = Vec::new();
     let mut fallback_indices = Vec::new();
     let mut alternate_crops = Vec::new();
     let mut retained_crop_pixels = 0usize;
@@ -2435,11 +2527,13 @@ fn fill_empty_grid_cells_with_ocr_from_raster<O: OcrEngine>(
             continue;
         };
         let stage_started = Instant::now();
-        let recognized = ocr.recognize_text_with_request(
-            &crop.image,
-            OcrRequest::single_line(crop.effective_dpi),
-        )?;
+        let recognized = ocr
+            .recognize_text_with_request(&crop.image, OcrRequest::single_line(crop.effective_dpi));
         timings.tesseract_ms += elapsed_ms(stage_started);
+        let Some(recognized) = optional_cell_ocr_result(recognized, ocr, cell, &mut failures)?
+        else {
+            continue;
+        };
         let text = normalize_cell_ocr_text(&recognized.text);
         if accept_cell_ocr_candidate(&text, recognized.confidence) {
             cell.text = text;
@@ -2471,7 +2565,7 @@ fn fill_empty_grid_cells_with_ocr_from_raster<O: OcrEngine>(
     if let Some(header_row) = numbered_engineering_specification_header_row(grid) {
         for (cell_index, crop) in alternate_crops {
             let cell = &grid.cells[cell_index];
-            if cell.row <= header_row {
+            if cell.row <= header_row || failures.iter().any(|failure| failure.matches(cell)) {
                 continue;
             }
             if matches!(cell.column, 0 | 6) {
@@ -2484,12 +2578,20 @@ fn fill_empty_grid_cells_with_ocr_from_raster<O: OcrEngine>(
                 let word = ocr.recognize_text_with_request(
                     &crop.image,
                     OcrRequest::numeric_cell(crop.effective_dpi),
-                )?;
+                );
+                timings.tesseract_ms += elapsed_ms(stage_started);
+                let Some(word) = optional_cell_ocr_result(word, ocr, cell, &mut failures)? else {
+                    continue;
+                };
+                let stage_started = Instant::now();
                 let line = ocr.recognize_text_with_request(
                     &crop.image,
                     OcrRequest::numeric_line(crop.effective_dpi),
-                )?;
+                );
                 timings.tesseract_ms += elapsed_ms(stage_started);
+                let Some(line) = optional_cell_ocr_result(line, ocr, cell, &mut failures)? else {
+                    continue;
+                };
                 if let Some((text, confidence)) = choose_numeric_cell_candidate(
                     &cell.text,
                     cell.confidence,
@@ -2523,8 +2625,11 @@ fn fill_empty_grid_cells_with_ocr_from_raster<O: OcrEngine>(
                     crop.effective_dpi,
                     OcrLanguageProfile::EnglishOnly,
                 ),
-            )?;
+            );
             timings.tesseract_ms += elapsed_ms(stage_started);
+            let Some(english) = optional_cell_ocr_result(english, ocr, cell, &mut failures)? else {
+                continue;
+            };
             let english_text = normalize_cell_ocr_text(&english.text);
             if !prefer_english_manufacturer_candidate(
                 &cell.text,
@@ -2543,6 +2648,13 @@ fn fill_empty_grid_cells_with_ocr_from_raster<O: OcrEngine>(
                 fallback_indices.push(cell_index);
             }
         }
+        // A failed alternate request invalidates that cell's tentative primary
+        // candidate as evidence for other cells' table-wide consensus too.
+        for (cell, original) in grid.cells.iter_mut().zip(&original_cells) {
+            if failures.iter().any(|failure| failure.matches(cell)) {
+                *cell = original.clone();
+            }
+        }
         for cell_index in apply_repeated_ascii_manufacturer_consensus(grid, header_row) {
             if !fallback_indices.contains(&cell_index) {
                 fallback_indices.push(cell_index);
@@ -2550,21 +2662,37 @@ fn fill_empty_grid_cells_with_ocr_from_raster<O: OcrEngine>(
         }
     }
 
-    for cell_index in
-        recheck_suspicious_nonempty_cells(grid, raster, fallback_raster, ocr, max_pixels, timings)?
-    {
+    for cell_index in recheck_suspicious_nonempty_cells_with_diagnostics(
+        grid,
+        raster,
+        fallback_raster,
+        ocr,
+        max_pixels,
+        timings,
+        &mut failures,
+    )? {
         if !fallback_indices.contains(&cell_index) {
             fallback_indices.push(cell_index);
         }
     }
 
-    Ok(fallback_indices
+    for (cell, original) in grid.cells.iter_mut().zip(original_cells) {
+        if failures.iter().any(|failure| failure.matches(cell)) {
+            *cell = original;
+        }
+    }
+    let confidences = fallback_indices
         .into_iter()
         .filter_map(|index| {
             let cell = &grid.cells[index];
-            (cell.confidence > 0.0).then_some(cell.confidence)
+            (cell.confidence > 0.0 && !failures.iter().any(|failure| failure.matches(cell)))
+                .then_some(cell.confidence)
         })
-        .collect())
+        .collect();
+    Ok(CellOcrOutcome {
+        confidences,
+        failures,
+    })
 }
 
 /// Rechecks only bounded, role-confirmed technical cells. The configured
@@ -2572,10 +2700,7 @@ fn fill_empty_grid_cells_with_ocr_from_raster<O: OcrEngine>(
 /// agreement from the ordinary English cell pass and the separately trained,
 /// versioned technical model. Searchable/native cells use confidence 1.0 and
 /// are deliberately excluded.
-#[expect(
-    clippy::needless_character_iteration,
-    reason = "Preserve the accepted OCR baseline during source-only publication."
-)]
+#[cfg(test)]
 fn recheck_suspicious_nonempty_cells<O: OcrEngine>(
     grid: &mut TableGrid,
     raster: &CellOcrRaster<'_>,
@@ -2583,6 +2708,43 @@ fn recheck_suspicious_nonempty_cells<O: OcrEngine>(
     ocr: &O,
     max_pixels: usize,
     timings: &mut PageStageTimings,
+) -> Result<Vec<usize>, Box<dyn std::error::Error>> {
+    let originals = grid.cells.clone();
+    let mut failures = Vec::new();
+    let mut replacements = recheck_suspicious_nonempty_cells_with_diagnostics(
+        grid,
+        raster,
+        fallback_raster,
+        ocr,
+        max_pixels,
+        timings,
+        &mut failures,
+    )?;
+    for (cell, original) in grid.cells.iter_mut().zip(originals) {
+        if failures.iter().any(|failure| failure.matches(cell)) {
+            *cell = original;
+        }
+    }
+    replacements.retain(|&index| {
+        !failures
+            .iter()
+            .any(|failure| failure.matches(&grid.cells[index]))
+    });
+    Ok(replacements)
+}
+
+#[expect(
+    clippy::needless_character_iteration,
+    reason = "Preserve the accepted OCR baseline during source-only publication."
+)]
+fn recheck_suspicious_nonempty_cells_with_diagnostics<O: OcrEngine>(
+    grid: &mut TableGrid,
+    raster: &CellOcrRaster<'_>,
+    fallback_raster: Option<&CellOcrRaster<'_>>,
+    ocr: &O,
+    max_pixels: usize,
+    timings: &mut PageStageTimings,
+    failures: &mut Vec<CellOcrFailure>,
 ) -> Result<Vec<usize>, Box<dyn std::error::Error>> {
     let cells = u32::try_from(grid.cells.len()).unwrap_or(u32::MAX);
     let empty_cells = u32::try_from(
@@ -2636,6 +2798,7 @@ fn recheck_suspicious_nonempty_cells<O: OcrEngine>(
         if cell.row as usize <= header_row
             || cell.text.trim().is_empty()
             || cell.confidence >= 0.999
+            || failures.iter().any(|failure| failure.matches(cell))
         {
             continue;
         }
@@ -2663,6 +2826,7 @@ fn recheck_suspicious_nonempty_cells<O: OcrEngine>(
             if cell.row as usize <= header_row
                 || cell.text.trim().is_empty()
                 || cell.confidence >= 0.999
+                || failures.iter().any(|failure| failure.matches(cell))
             {
                 return None;
             }
@@ -2727,19 +2891,41 @@ fn recheck_suspicious_nonempty_cells<O: OcrEngine>(
             OcrLanguageProfile::EnglishOnly,
         );
         let stage_started = Instant::now();
-        let technical = match ocr.recognize_technical_text_with_request(&crop.image, request) {
-            Ok(Some(result)) => result,
-            Ok(None) | Err(_) => {
-                // The separately versioned model is optional. Its absence or
-                // failure must not turn a previously valid document into an
-                // OCR error, nor may the ordinary page model impersonate an
-                // independent consensus source.
-                timings.tesseract_ms += elapsed_ms(stage_started);
+        let technical = ocr.recognize_technical_text_with_request(&crop.image, request);
+        timings.tesseract_ms += elapsed_ms(stage_started);
+        let technical = match technical {
+            Ok(result) => result,
+            Err(error) => {
+                if let Some(reason_code) = ocr.recoverable_cell_error_reason(error.as_ref()) {
+                    let cell = &grid.cells[cell_index];
+                    if !failures.iter().any(|failure| failure.matches(cell)) {
+                        failures.push(CellOcrFailure {
+                            row: cell.row,
+                            column: cell.column,
+                            reason_code,
+                        });
+                    }
+                    continue;
+                }
+                // This independently trained model is optional. Preserve the
+                // established fallback when it cannot load or run; failures
+                // of the required configured/generic engine still propagate.
                 break;
             }
         };
-        let generic = ocr.recognize_text_with_request(&crop.image, request)?;
+        let Some(technical) = technical else {
+            // Model absence is still optional; do not impersonate independent
+            // evidence with a second pass of the ordinary page model.
+            break;
+        };
+        let stage_started = Instant::now();
+        let generic = ocr.recognize_text_with_request(&crop.image, request);
         timings.tesseract_ms += elapsed_ms(stage_started);
+        let Some(generic) =
+            optional_cell_ocr_result(generic, ocr, &grid.cells[cell_index], failures)?
+        else {
+            continue;
+        };
         if let Some((text, confidence)) = choose_technical_cell_candidate(
             &primary_text,
             primary_confidence,
@@ -3752,6 +3938,490 @@ mod tests {
             intersections,
             confidence,
         }
+    }
+
+    #[derive(Debug, thiserror::Error)]
+    enum CellIsolationError {
+        #[error("recoverable private cell text MUST NOT appear in warnings")]
+        Recognition,
+        #[error("fatal initialization failure")]
+        Initialization,
+    }
+
+    struct CellIsolationOcr {
+        cell_calls: AtomicUsize,
+        fatal: bool,
+        fail_english: bool,
+        technical_init_failure: bool,
+        fail_numeric: bool,
+    }
+
+    impl CellIsolationOcr {
+        fn new(fatal: bool, fail_english: bool) -> Self {
+            Self {
+                cell_calls: AtomicUsize::new(0),
+                fatal,
+                fail_english,
+                technical_init_failure: false,
+                fail_numeric: false,
+            }
+        }
+    }
+
+    impl OcrEngine for CellIsolationOcr {
+        fn recoverable_cell_error_reason(
+            &self,
+            error: &(dyn std::error::Error + 'static),
+        ) -> Option<&'static str> {
+            matches!(
+                error.downcast_ref::<CellIsolationError>(),
+                Some(CellIsolationError::Recognition)
+            )
+            .then_some("recognition_failed")
+        }
+
+        fn recognize_text(&self, _: &GrayImage) -> Result<String, Box<dyn std::error::Error>> {
+            Ok("Canonical complete page text 123".into())
+        }
+
+        fn recognize_words(
+            &self,
+            _: &GrayImage,
+        ) -> Result<Vec<crate::dto::Word>, Box<dyn std::error::Error>> {
+            Ok(vec![crate::dto::Word::new(
+                "Original",
+                BoundingBox::new(55.0, 60.0, 90.0, 85.0),
+                0.83,
+            )])
+        }
+
+        fn recognize_text_with_request(
+            &self,
+            image: &GrayImage,
+            request: crate::ocr::OcrRequest,
+        ) -> Result<crate::ocr::OcrTextResult, Box<dyn std::error::Error>> {
+            if request.segmentation == crate::ocr::OcrSegmentation::Sparse {
+                return Ok(crate::ocr::OcrTextResult {
+                    text: String::new(),
+                    confidence: None,
+                });
+            }
+            if request.segmentation == crate::ocr::OcrSegmentation::Automatic {
+                return Ok(crate::ocr::OcrTextResult {
+                    text: self.recognize_text(image)?,
+                    confidence: Some(0.83),
+                });
+            }
+            let call = self.cell_calls.fetch_add(1, Ordering::SeqCst);
+            if self.fatal {
+                return Err(Box::new(CellIsolationError::Initialization));
+            }
+            if (self.fail_english
+                && request.language_profile == crate::ocr::OcrLanguageProfile::EnglishOnly)
+                || (self.fail_numeric
+                    && matches!(
+                        request.segmentation,
+                        crate::ocr::OcrSegmentation::SingleWordNumeric
+                            | crate::ocr::OcrSegmentation::SingleLineNumeric
+                    ))
+                || (!self.fail_english && call == 0)
+            {
+                return Err(Box::new(CellIsolationError::Recognition));
+            }
+            Ok(crate::ocr::OcrTextResult {
+                text: "Recovered".into(),
+                confidence: Some(0.91),
+            })
+        }
+
+        fn recognize_words_with_request(
+            &self,
+            image: &GrayImage,
+            request: crate::ocr::OcrRequest,
+        ) -> Result<Vec<crate::dto::Word>, Box<dyn std::error::Error>> {
+            if request.segmentation == crate::ocr::OcrSegmentation::Sparse {
+                Ok(Vec::new())
+            } else {
+                self.recognize_words(image)
+            }
+        }
+
+        fn recognize_technical_text_with_request(
+            &self,
+            _: &GrayImage,
+            _: crate::ocr::OcrRequest,
+        ) -> Result<Option<crate::ocr::OcrTextResult>, Box<dyn std::error::Error>> {
+            if self.technical_init_failure {
+                return Err(Box::new(CellIsolationError::Initialization));
+            }
+            Ok(Some(crate::ocr::OcrTextResult {
+                text: "Recovered".into(),
+                confidence: Some(0.91),
+            }))
+        }
+    }
+
+    fn cell_isolation_image() -> GrayImage {
+        let mut image = GrayImage::from_pixel(300, 300, Luma([255]));
+        for &y in &[30, 150, 270] {
+            for x in 20..280 {
+                image.put_pixel(x, y, Luma([0]));
+            }
+        }
+        for &x in &[30, 150, 270] {
+            for y in 20..280 {
+                image.put_pixel(x, y, Luma([0]));
+            }
+        }
+        for &(x, y) in &[(60, 65), (180, 65), (60, 185), (180, 185)] {
+            for dx in 0..22 {
+                for dy in 0..18 {
+                    if !(3..=18).contains(&dx) || (7..10).contains(&dy) {
+                        image.put_pixel(x + dx, y + dy, Luma([0]));
+                    }
+                }
+            }
+        }
+        image
+    }
+
+    fn cell_isolation_prepared() -> super::PreparedPage {
+        super::PreparedPage {
+            page_number: 7,
+            page_started: Instant::now(),
+            language_profile: crate::ocr::OcrLanguageProfile::Configured,
+            effective_languages: "rus+eng".into(),
+            native_text_quality: None,
+            native_text_layout: None,
+            timings: PageStageTimings::default(),
+            warnings: Vec::new(),
+            work: None,
+        }
+    }
+
+    fn cell_isolation_finish(
+        native: bool,
+        engine: &CellIsolationOcr,
+    ) -> Result<super::ProcessedPage, String> {
+        let image = cell_isolation_image();
+        let config = super::WorkerConfig {
+            max_pixels: DEFAULT_MAX_PIXELS,
+            table_mode: TableMode::Grid,
+            languages: "rus+eng".into(),
+            enable_cell_ocr_fallback: true,
+        };
+        if native {
+            super::finish_prepared_native_page(
+                cell_isolation_prepared(),
+                NativeTextLayer::new("Canonical complete page text 123".into(), 32),
+                Default::default(),
+                Some(super::PreparedGridRender {
+                    rendered: RenderedPage::new(7, image.clone(), 300.0),
+                    native_words: engine.recognize_words(&image).unwrap(),
+                    grid_candidates: vec![grid_fixture(
+                        BoundingBox::new(30.0, 30.0, 270.0, 270.0),
+                        2,
+                        2,
+                        0.95,
+                    )],
+                    cell_ocr_regions: vec![None],
+                }),
+                engine,
+                &config,
+            )
+        } else {
+            super::finish_prepared_ocr_page(
+                cell_isolation_prepared(),
+                image,
+                300.0,
+                None,
+                None,
+                Some(Default::default()),
+                engine,
+                &config,
+            )
+        }
+    }
+
+    fn assert_cell_ocr_isolation_page(native: bool) {
+        let engine = CellIsolationOcr::new(false, false);
+        let image = cell_isolation_image();
+        let expected_grid = if native {
+            grid_fixture(BoundingBox::new(30.0, 30.0, 270.0, 270.0), 2, 2, 0.95)
+        } else {
+            super::detect_table_grids_safely(&image)
+                .unwrap()
+                .into_iter()
+                .next()
+                .expect("fixture has a ruled table")
+        };
+        let result = cell_isolation_finish(native, &engine)
+            .expect("a recoverable cell error must not discard the page");
+        assert_eq!(result.page.text, "Canonical complete page text 123");
+        assert_eq!(result.page.tables.len(), 1);
+        let cells = &result.page.tables[0].rows;
+        assert_eq!(cells[0][0].text, "Original");
+        assert_eq!(cells[0][0].confidence, 0.83);
+        assert_eq!(cells[0][1].text, "");
+        assert_eq!(cells[0][1].confidence, 0.0);
+        assert_eq!(cells[1][0].text, "Recovered", "other cells must continue");
+        assert_eq!(cells[1][1].text, "Recovered");
+        for cell in cells.iter().flatten() {
+            let original = expected_grid
+                .cells
+                .iter()
+                .find(|original| original.row == cell.row && original.column == cell.column)
+                .unwrap();
+            assert_eq!(
+                cell.bbox, original.bbox,
+                "physical bbox must remain unchanged"
+            );
+            assert_eq!(
+                (cell.row_span, cell.col_span),
+                (original.row_span, original.col_span)
+            );
+        }
+        assert_eq!(
+            result.warnings,
+            vec![PipelineWarning::CellOcrFallbackFailed {
+                page_number: 7,
+                table_index: 0,
+                row: 0,
+                column: 1,
+                reason_code: "recognition_failed".into(),
+            }]
+        );
+        assert!(!format!("{:?}", result.warnings).contains("private cell text"));
+        assert_eq!(engine.cell_calls.load(Ordering::SeqCst), 3);
+    }
+
+    #[test]
+    fn cell_ocr_isolation_preserves_native_page_after_recoverable_error() {
+        assert_cell_ocr_isolation_page(true);
+    }
+
+    #[test]
+    fn cell_ocr_isolation_preserves_raster_page_after_recoverable_error() {
+        assert_cell_ocr_isolation_page(false);
+    }
+
+    #[test]
+    fn cell_ocr_failure_does_not_abort_document() {
+        let mut source = StubPageSource::new(vec![cell_isolation_image(), cell_isolation_image()])
+            .with_dpi(300.0);
+        let engine = CellIsolationOcr::new(false, false);
+        let outcome = Pipeline::new(&mut source, &engine, DEFAULT_MAX_PIXELS, None)
+            .with_table_mode(TableMode::Grid)
+            .run_with_warnings()
+            .expect("a local cell error must not abort the document or later pages");
+        assert_eq!(outcome.document.pages.len(), 2);
+        assert_eq!(outcome.page_processing.len(), 2);
+        for (index, page) in outcome.document.pages.iter().enumerate() {
+            assert_eq!(page.page_number, index as u32 + 1);
+            assert_eq!(page.text, "Canonical complete page text 123");
+            assert_eq!(page.tables.len(), 1);
+            assert_eq!(page.tables[0].rows[0][0].text, "Original");
+            assert_eq!(page.tables[0].rows[1][0].text, "Recovered");
+            assert_eq!(page.tables[0].rows[1][1].text, "Recovered");
+        }
+        assert_eq!(outcome.document.pages[0].tables[0].rows[0][1].text, "");
+        assert_eq!(
+            outcome.document.pages[1].tables[0].rows[0][1].text,
+            "Recovered"
+        );
+        assert_eq!(
+            outcome.warnings,
+            vec![PipelineWarning::CellOcrFallbackFailed {
+                page_number: 1,
+                table_index: 0,
+                row: 0,
+                column: 1,
+                reason_code: "recognition_failed".into(),
+            }]
+        );
+        assert_eq!(engine.cell_calls.load(Ordering::SeqCst), 6);
+    }
+
+    #[test]
+    fn cell_ocr_isolation_keeps_initialization_and_unknown_errors_fatal() {
+        for native in [true, false] {
+            let error = cell_isolation_finish(native, &CellIsolationOcr::new(true, false))
+                .err()
+                .expect("initialization errors must still fail the page");
+            assert!(error.contains("fatal initialization failure"));
+        }
+        let mut failures = Vec::new();
+        let result = super::optional_cell_ocr_result::<(), _>(
+            Err("unclassified system failure".into()),
+            &StubOcrEngine::new(),
+            &TableCell::default(),
+            &mut failures,
+        );
+        assert!(result.is_err());
+        assert!(failures.is_empty());
+        let engine = CellIsolationOcr::new(false, false);
+        let routed = crate::ocr::LanguageRoutedOcrEngine::new(
+            &engine,
+            crate::ocr::OcrLanguageProfile::Configured,
+        )
+        .unwrap();
+        assert_eq!(
+            routed.recoverable_cell_error_reason(&CellIsolationError::Recognition),
+            Some("recognition_failed")
+        );
+        assert_eq!(
+            routed.recoverable_cell_error_reason(&CellIsolationError::Initialization),
+            None
+        );
+    }
+
+    fn cell_isolation_technical_fixture() -> (TableGrid, GrayImage) {
+        let mut grid = grid_fixture(BoundingBox::new(20.0, 20.0, 280.0, 280.0), 3, 4, 0.95);
+        for cell in &mut grid.cells {
+            cell.text = if cell.row == 0 {
+                ["No.", "Name", "Model", "Quantity"][cell.column as usize].into()
+            } else {
+                ["1", "Motor Cable", "M16X200", "10"][cell.column as usize].into()
+            };
+            cell.confidence = 0.6;
+        }
+        let classification = crate::table_semantics::classify_table(&grid.to_matrix(), None);
+        assert!(
+            classification.column_roles.iter().any(|role| {
+                role.column == 2
+                    && role.confidence >= super::TECHNICAL_ROLE_MIN_CONFIDENCE
+                    && matches!(role.role, crate::table_semantics::ColumnRole::Designation)
+            }),
+            "fixture must select the existing technical recheck role"
+        );
+        let mut image = GrayImage::from_pixel(300, 300, Luma([255]));
+        for cell in &grid.cells {
+            let bbox = cell.bbox.as_ref().unwrap();
+            for x in (bbox.x0 as u32 + 10)..(bbox.x0 as u32 + 25) {
+                for y in (bbox.y0 as u32 + 15)..(bbox.y0 as u32 + 30) {
+                    if x % 6 < 3 {
+                        image.put_pixel(x, y, Luma([0]));
+                    }
+                }
+            }
+        }
+        (grid, image)
+    }
+
+    #[test]
+    fn cell_ocr_isolation_restores_nonempty_cell_after_later_technical_pass_error() {
+        let (mut grid, image) = cell_isolation_technical_fixture();
+        let before = grid.cells.clone();
+        let outcome = super::fill_empty_grid_cells_with_ocr_diagnostics(
+            &mut grid,
+            &image,
+            &CellIsolationOcr::new(false, true),
+            DEFAULT_MAX_PIXELS,
+            300,
+            &mut PageStageTimings::default(),
+        )
+        .unwrap();
+        assert!(
+            !outcome.failures.is_empty(),
+            "fixture must exercise the technical pass"
+        );
+        for failure in outcome.failures {
+            let index = grid
+                .cells
+                .iter()
+                .position(|cell| failure.matches(cell))
+                .unwrap();
+            assert_eq!(
+                grid.cells[index], before[index],
+                "restore text, confidence, spans and bbox after the later error"
+            );
+        }
+    }
+
+    #[test]
+    fn cell_ocr_isolation_optional_technical_init_does_not_hide_required_generic_init() {
+        let (mut grid, image) = cell_isolation_technical_fixture();
+        let mut engine = CellIsolationOcr::new(false, true);
+        engine.technical_init_failure = true;
+        let outcome = super::fill_empty_grid_cells_with_ocr_diagnostics(
+            &mut grid,
+            &image,
+            &engine,
+            DEFAULT_MAX_PIXELS,
+            300,
+            &mut PageStageTimings::default(),
+        )
+        .expect("optional technical model failure retains the established fallback");
+        assert!(outcome.failures.is_empty());
+        assert_eq!(engine.cell_calls.load(Ordering::SeqCst), 0);
+        let (mut grid, image) = cell_isolation_technical_fixture();
+        let error = super::fill_empty_grid_cells_with_ocr_diagnostics(
+            &mut grid,
+            &image,
+            &CellIsolationOcr::new(true, true),
+            DEFAULT_MAX_PIXELS,
+            300,
+            &mut PageStageTimings::default(),
+        )
+        .err()
+        .expect("required generic OCR initialization must still fail");
+        assert!(error.to_string().contains("fatal initialization failure"));
+    }
+
+    #[test]
+    fn cell_ocr_isolation_rolls_back_primary_success_after_numeric_pass_error() {
+        let mut grid = grid_fixture(BoundingBox::new(0.0, 0.0, 900.0, 360.0), 4, 9, 0.95);
+        for cell in &mut grid.cells {
+            cell.text = if cell.row == 0 {
+                (cell.column + 1).to_string()
+            } else {
+                "source".into()
+            };
+            cell.confidence = 1.0;
+        }
+        let target = grid
+            .cells
+            .iter()
+            .position(|cell| cell.row == 1 && cell.column == 0)
+            .unwrap();
+        grid.cells[target].text = "  ".into();
+        grid.cells[target].confidence = 0.27;
+        let before = grid.cells.clone();
+        assert_eq!(
+            numbered_engineering_specification_header_row(&grid),
+            Some(0)
+        );
+        let mut image = GrayImage::from_pixel(900, 360, Luma([255]));
+        for x in 30..55 {
+            for y in 120..140 {
+                if x % 8 < 3 {
+                    image.put_pixel(x, y, Luma([0]));
+                }
+            }
+        }
+        let mut engine = CellIsolationOcr::new(false, true);
+        engine.fail_numeric = true;
+        let outcome = super::fill_empty_grid_cells_with_ocr_diagnostics(
+            &mut grid,
+            &image,
+            &engine,
+            DEFAULT_MAX_PIXELS,
+            300,
+            &mut PageStageTimings::default(),
+        )
+        .unwrap();
+        assert_eq!(
+            engine.cell_calls.load(Ordering::SeqCst),
+            2,
+            "primary succeeds before numeric request fails"
+        );
+        assert_eq!(outcome.failures.len(), 1);
+        assert!(outcome.failures[0].matches(&before[target]));
+        assert_eq!(
+            grid.cells, before,
+            "every cell field returns to its pre-fallback value"
+        );
+        assert!(outcome.confidences.is_empty());
     }
 
     #[test]

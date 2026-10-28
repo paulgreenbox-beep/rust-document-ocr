@@ -214,8 +214,9 @@ pub fn process_region(
     use crate::ocr::{OcrEngine, OcrRequest};
     use crate::page_source::PageSource;
     use crate::pipeline::{
-        detect_borderless_tables_safely, detect_table_grids_safely, fill_empty_grid_cells_with_ocr,
-        matrix_word_assignment_metrics, page_word_assignment_metrics, word_is_assignable_to_grid,
+        detect_borderless_tables_safely, detect_table_grids_safely,
+        fill_empty_grid_cells_with_ocr_diagnostics, matrix_word_assignment_metrics,
+        page_word_assignment_metrics, word_is_assignable_to_grid,
     };
     use crate::preprocessing::{preprocess, DEFAULT_MAX_PIXELS};
     use crate::table_grid::classify_grid;
@@ -501,7 +502,7 @@ pub fn process_region(
     let mut fallback_confidences = Vec::new();
     let mut filled_cells = 0_u32;
     let mut total_cells = 0_u32;
-    for mut grid in grids {
+    for (table_index, mut grid) in grids.into_iter().enumerate() {
         let assignment_started = Instant::now();
         let mut assignment_metrics = grid.assign_words(&local_words);
         timings.assignment_ms += elapsed_ms(assignment_started);
@@ -517,19 +518,25 @@ pub fn process_region(
                 page_index: request.page_index,
                 detail: error.to_string(),
             })?;
-            match fill_empty_grid_cells_with_ocr(
+            let fallback = fill_empty_grid_cells_with_ocr_diagnostics(
                 &mut grid,
                 &region.image,
                 &ocr,
                 DEFAULT_MAX_PIXELS,
                 region.dpi.max(1),
                 &mut timings,
-            ) {
-                Ok(confidences) => fallback_confidences.extend(confidences),
-                Err(error) => warnings.push(RegionWarning::CellOcrFallbackFailed {
-                    message: error.to_string(),
-                }),
-            }
+            )
+            .map_err(|error| OcrError::OcrFailed {
+                page_index: request.page_index,
+                detail: error.to_string(),
+            })?;
+            fallback_confidences.extend(fallback.confidences);
+            warnings.extend(
+                fallback
+                    .failures
+                    .iter()
+                    .map(|failure| region_cell_warning(table_index, failure)),
+            );
             assignment_metrics.empty_cells = grid
                 .cells
                 .iter()
@@ -646,6 +653,19 @@ pub fn process_region(
         metrics,
         warnings,
     })
+}
+
+#[cfg(any(feature = "native", test))]
+fn region_cell_warning(
+    table_index: usize,
+    failure: &crate::pipeline::CellOcrFailure,
+) -> RegionWarning {
+    RegionWarning::CellOcrFallbackFailed {
+        message: format!(
+            "table={table_index} row={} column={} reason_code={}",
+            failure.row, failure.column, failure.reason_code
+        ),
+    }
 }
 
 #[cfg(not(feature = "native"))]
@@ -998,6 +1018,24 @@ mod tests {
     };
     use crate::api::OcrError;
     use crate::page_analysis::{PageOrientation, PageStageTimings, ProcessingMode};
+
+    #[test]
+    fn region_cell_failure_warning_retains_sanitized_location_without_ocr_values() {
+        let warning = super::region_cell_warning(
+            2,
+            &crate::pipeline::CellOcrFailure {
+                row: 3,
+                column: 4,
+                reason_code: "recognition_failed",
+            },
+        );
+        let value = serde_json::to_value(warning).unwrap();
+        let message = value["message"].as_str().unwrap();
+        assert_eq!(
+            message,
+            "table=2 row=3 column=4 reason_code=recognition_failed"
+        );
+    }
 
     #[test]
     fn rejects_non_finite_negative_and_empty_regions() {

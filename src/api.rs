@@ -267,6 +267,14 @@ impl OcrOptions {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum OcrWarning {
+    /// A local supplemental recognition failure; the existing cell is retained.
+    CellOcrFallbackFailed {
+        page_number: u32,
+        table_index: usize,
+        row: u32,
+        column: u32,
+        reason_code: String,
+    },
     GridDetectorFailed {
         page_number: u32,
         message: String,
@@ -969,6 +977,19 @@ fn finite_non_negative_u32(value: f64) -> u32 {
 #[cfg(feature = "native")]
 fn ocr_warning_from_pipeline(warning: PipelineWarning) -> OcrWarning {
     match warning {
+        PipelineWarning::CellOcrFallbackFailed {
+            page_number,
+            table_index,
+            row,
+            column,
+            reason_code,
+        } => OcrWarning::CellOcrFallbackFailed {
+            page_number,
+            table_index,
+            row,
+            column,
+            reason_code,
+        },
         PipelineWarning::GridDetectorFailed {
             page_number,
             message,
@@ -1119,6 +1140,29 @@ mod tests {
         ProcessingMode, RenderSize,
     };
     use tempfile::tempdir;
+
+    #[test]
+    fn cell_fallback_warning_is_additive_schema_v1_and_contains_only_location_and_code() {
+        let warning = super::OcrWarning::CellOcrFallbackFailed {
+            page_number: 2,
+            table_index: 0,
+            row: 3,
+            column: 1,
+            reason_code: "recognition_failed".into(),
+        };
+        let value = serde_json::to_value(&warning).unwrap();
+        assert_eq!(value["kind"], "cell_ocr_fallback_failed");
+        assert_eq!(value["page_number"], 2);
+        assert_eq!(value["row"], 3);
+        assert_eq!(value["column"], 1);
+        assert!(value.get("text").is_none());
+        assert!(value.get("message").is_none());
+        assert_eq!(
+            serde_json::from_value::<super::OcrWarning>(value).unwrap(),
+            warning
+        );
+        assert_eq!(OCR_RESULT_SCHEMA_VERSION, 1);
+    }
 
     #[test]
     #[allow(deprecated)]
