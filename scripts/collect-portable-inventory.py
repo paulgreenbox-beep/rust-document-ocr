@@ -15,12 +15,13 @@ import os
 import re
 import shutil
 import sys
+import tomllib
 from pathlib import Path
 from typing import Any
 
 
 REPO = Path(__file__).resolve().parents[1]
-LICENSE_NAMES = re.compile(r"(?i)^(license|licence|copying|notice)(\..*)?$")
+LICENSE_NAMES = re.compile(r"(?i)^(license|licence|copying|notice|copyright)(?:[._-].*)?$")
 
 
 def sha256(path: Path) -> str:
@@ -49,23 +50,10 @@ def copy_notice(src: Path, notice_root: Path, label: str) -> str:
 
 
 def parse_lock(path: Path) -> list[dict[str, Any]]:
-    packages: list[dict[str, Any]] = []
-    current: dict[str, str] | None = None
-    for line in path.read_text(encoding="utf-8").splitlines() + [""]:
-        if line == "[[package]]":
-            if current and current.get("source", "").startswith("registry+"):
-                packages.append(current)
-            current = {}
-            continue
-        if current is None or " = " not in line:
-            continue
-        key, value = line.split(" = ", 1)
-        if key in {"name", "version", "source", "checksum"}:
-            try:
-                current[key] = json.loads(value)
-            except json.JSONDecodeError:
-                pass
-    return packages
+    return [
+        package for package in tomllib.loads(path.read_text(encoding="utf-8")).get("package", [])
+        if package.get("source", "").startswith("registry+")
+    ]
 
 
 def crate_inventory(lock: Path, registry_roots: list[Path], notices: Path) -> list[dict[str, Any]]:
