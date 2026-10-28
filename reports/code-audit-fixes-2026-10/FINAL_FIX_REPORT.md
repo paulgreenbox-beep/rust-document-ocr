@@ -1,5 +1,10 @@
 # OCR CORE AUDIT FIXES — READY FOR REVIEW
 
+Final review follow-up: see [FINAL_REVIEW_ADDENDUM.md](FINAL_REVIEW_ADDENDUM.md).
+It supersedes the original warning-compatibility claim below: a new enum
+variant in `warnings` was not readable by the baseline Serde reader. The
+follow-up restores that enum and adds optional typed `diagnostics` instead.
+
 Date: 2026-10-28. Repository: `paulgreenbox-beep/rust-document-ocr`.
 Baseline HEAD exactly matches the audited commit
 `6699a10dbfeff2471471b5eb2688e4d5394fe671`. Work is isolated on
@@ -109,8 +114,9 @@ for a pull request into main, with no automatic merge or GitHub Release.
 - PNG conversion overhead and quadratic grouping are confirmed; their
   optimizations require separate equivalence/memory reviews.
 - Reopen-only PDFium cost is not isolated from extraction/render work.
-- New warning variants are additive JSON; exhaustive Rust enum matches need
-  updating when consumers rebuild. Schema version and result fields remain v1.
+- Superseded by final review: cell failures now use the additive `diagnostics`
+  field, not a new v1 `warnings` enum variant. See the linked compatibility
+  report for JSON, strict-reader, and Rust struct-literal boundaries.
 - Native self-hosted CI execution remains pending runner provisioning.
 
 Raw local logs, runtime copies, binary controls and synthetic output documents
