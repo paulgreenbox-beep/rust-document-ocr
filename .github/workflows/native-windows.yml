@@ -1,0 +1,111 @@
+name: Native Windows OCR (manual)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: native-windows-ocr-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  native:
+    name: Pre-provisioned Windows x64 native checks
+    if: github.ref_name == github.event.repository.default_branch
+    runs-on: [self-hosted, Windows, X64, ocr-native]
+    timeout-minutes: 90
+    env:
+      CARGO_BUILD_JOBS: '1'
+      CARGO_INCREMENTAL: '0'
+      OMP_THREAD_LIMIT: '1'
+      VCPKGRS_TRIPLET: x64-windows-static-md
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Validate pre-provisioned native environment
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          foreach ($name in @('OCR_NATIVE_PDFIUM_DLL', 'OCR_NATIVE_TESSDATA_DIR', 'VCPKG_ROOT', 'LIBCLANG_PATH')) {
+            if ([string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($name))) {
+              throw "Required runner setting is missing: $name"
+            }
+          }
+          if (-not (Test-Path -LiteralPath $env:OCR_NATIVE_PDFIUM_DLL -PathType Leaf)) { throw 'Configured PDFium DLL is missing' }
+          foreach ($language in @('eng', 'rus')) {
+            if (-not (Test-Path -LiteralPath (Join-Path $env:OCR_NATIVE_TESSDATA_DIR "$language.traineddata") -PathType Leaf)) {
+              throw "Required traineddata file is missing: $language"
+            }
+          }
+          if (-not (Test-Path -LiteralPath (Join-Path $env:LIBCLANG_PATH 'libclang.dll') -PathType Leaf)) { throw 'Configured libclang.dll is missing' }
+          if (-not (Test-Path -LiteralPath (Join-Path $env:VCPKG_ROOT 'vcpkg.exe') -PathType Leaf)) { throw 'Configured vcpkg.exe is missing' }
+          if ($env:VCPKGRS_TRIPLET -ne 'x64-windows-static-md') { throw 'VCPKGRS_TRIPLET must be x64-windows-static-md' }
+          $vcpkgStatusPath = Join-Path $env:VCPKG_ROOT 'installed/vcpkg/status'
+          if (-not (Test-Path -LiteralPath $vcpkgStatusPath -PathType Leaf)) { throw 'Validated vcpkg packages are not provisioned' }
+          $vcpkgStatus = Get-Content -LiteralPath $vcpkgStatusPath -Raw
+          foreach ($package in @('tesseract', 'libheif')) {
+            if ($vcpkgStatus -notmatch "(?m)^Package: $package\r?$") { throw "Required native package is not installed: $package" }
+          }
+          foreach ($tool in @('cargo', 'rustc', 'cl.exe')) {
+            if (-not (Get-Command $tool -ErrorAction SilentlyContinue)) { throw "Required tool is not on PATH: $tool" }
+          }
+          $rustVersion = (& rustc --version)
+          if ($LASTEXITCODE -ne 0 -or $rustVersion -notmatch '1\.97\.1') { throw 'Runner must have Rust 1.97.1 provisioned' }
+          $env:OCR_TEST_PDFIUM_LIBRARY = $env:OCR_NATIVE_PDFIUM_DLL
+          $env:OCR_TEST_TESSDATA = $env:OCR_NATIVE_TESSDATA_DIR
+          $env:TESSDATA_PREFIX = $env:OCR_NATIVE_TESSDATA_DIR
+          @(
+            "OCR_TEST_PDFIUM_LIBRARY=$env:OCR_NATIVE_PDFIUM_DLL"
+            "OCR_TEST_TESSDATA=$env:OCR_NATIVE_TESSDATA_DIR"
+            "TESSDATA_PREFIX=$env:OCR_NATIVE_TESSDATA_DIR"
+          ) | Add-Content -LiteralPath $env:GITHUB_ENV
+          # A few direct PDFium binding tests resolve the documented checkout
+          # runtime layout. Populate it only from the runner-provided DLL and
+          # the committed synthetic fixture; nothing is downloaded or uploaded.
+          $runtimeDll = Join-Path $PWD 'runtime/pdfium/7881/bin/pdfium.dll'
+          $runtimeFixture = Join-Path $PWD 'runtime/fixtures/w3c-dummy.pdf'
+          New-Item -ItemType Directory -Path (Split-Path -Parent $runtimeDll) -Force | Out-Null
+          New-Item -ItemType Directory -Path (Split-Path -Parent $runtimeFixture) -Force | Out-Null
+          Copy-Item -LiteralPath $env:OCR_NATIVE_PDFIUM_DLL -Destination $runtimeDll
+          Copy-Item -LiteralPath (Join-Path $PWD 'examples/documents/synthetic-text-table.pdf') -Destination $runtimeFixture
+          "Native runner preflight passed; Rust version: $rustVersion"
+
+      - name: Check native feature (offline, locked)
+        run: cargo check --offline --locked --features native -j 1
+
+      - name: Test native feature (offline, serialized)
+        run: cargo test --offline --locked --features native -j 1 -- --test-threads=1
+
+      - name: Run synthetic raster end-to-end smoke test
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $env:OCR_TEST_PDFIUM_LIBRARY = $env:OCR_NATIVE_PDFIUM_DLL
+          $env:TESSDATA_PREFIX = $env:OCR_NATIVE_TESSDATA_DIR
+          $fixture = Join-Path $PWD 'examples/documents/synthetic-raster.pdf'
+          $runDirectory = Join-Path $env:RUNNER_TEMP ("ocr-native-" + [Guid]::NewGuid().ToString('N'))
+          $outputDirectory = Join-Path $runDirectory 'output'
+          New-Item -ItemType Directory -Path $runDirectory -Force | Out-Null
+          cargo run --offline --locked --features native --bin ocr-pipeline -- `
+            --input $fixture `
+            --output-dir $outputDirectory `
+            --pdfium-dll $env:OCR_NATIVE_PDFIUM_DLL `
+            --tessdata-path $env:OCR_NATIVE_TESSDATA_DIR `
+            --languages eng `
+            --max-page-workers 1 `
+            --page-limit 1
+          if ($LASTEXITCODE -ne 0) { throw 'Synthetic native CLI failed' }
+          foreach ($name in @('result.json', 'result.v1.json', 'result.docx', 'result.xlsx')) {
+            $artifact = Join-Path $outputDirectory $name
+            if (-not (Test-Path -LiteralPath $artifact -PathType Leaf) -or (Get-Item -LiteralPath $artifact).Length -eq 0) {
+              throw "Missing or empty synthetic output: $name"
+            }
+          }
+          $result = Get-Content -LiteralPath (Join-Path $outputDirectory 'result.v1.json') -Raw | ConvertFrom-Json
+          if ($result.schema_version -ne 1 -or @($result.document.pages).Count -ne 1 -or [string]::IsNullOrWhiteSpace($result.document.pages[0].text)) {
+            throw 'Synthetic OCR result does not satisfy the schema/page/text smoke contract'
+          }
