@@ -197,6 +197,33 @@ pub fn export_region_result_json(result: &RegionResult, output: &Path) -> Result
     })
 }
 
+/// Tracks OCR lifecycle for one region. A region can issue multiple requests,
+/// but mutable native page state must be reset just once before its first OCR.
+#[cfg(any(feature = "native", test))]
+#[derive(Default)]
+struct RegionOcrLifecycle {
+    page_started: bool,
+}
+
+#[cfg(any(feature = "native", test))]
+impl RegionOcrLifecycle {
+    fn begin_before_first_request<E: crate::ocr::OcrEngine>(
+        &mut self,
+        engine: &E,
+        page_index: usize,
+    ) -> Result<(), OcrError> {
+        if self.page_started {
+            return Ok(());
+        }
+        engine.begin_page().map_err(|error| OcrError::OcrFailed {
+            page_index,
+            detail: error.to_string(),
+        })?;
+        self.page_started = true;
+        Ok(())
+    }
+}
+
 /// Processes exactly one selected region without invoking the document
 /// pipeline or full-document exporters.
 #[cfg(feature = "native")]
@@ -302,6 +329,7 @@ pub fn process_region(
 
     let mut timings = PageStageTimings::default();
     let mut warnings = Vec::new();
+    let mut ocr_lifecycle = RegionOcrLifecycle::default();
     if clipped {
         warnings.push(RegionWarning::RegionClipped {
             requested: request.rect,
@@ -443,6 +471,7 @@ pub fn process_region(
             page_index: request.page_index,
             detail: error.to_string(),
         })?;
+        ocr_lifecycle.begin_before_first_request(&ocr, request.page_index)?;
         let ocr_started = Instant::now();
         let (recognized, local_words) = ocr
             .recognize_text_and_words_with_request(&prepared, OcrRequest::page(region.dpi.max(1)))
@@ -518,6 +547,7 @@ pub fn process_region(
                 page_index: request.page_index,
                 detail: error.to_string(),
             })?;
+            ocr_lifecycle.begin_before_first_request(&ocr, request.page_index)?;
             let fallback = fill_empty_grid_cells_with_ocr_diagnostics(
                 &mut grid,
                 &region.image,
@@ -1013,11 +1043,15 @@ fn elapsed_ms(started: std::time::Instant) -> f64 {
 mod tests {
     use super::{
         ensure_minimum_pixel_extent, intersect_rect, validate_and_clip_rect, words_to_text,
-        NormalizedRect, RegionCoordinateSpace, RegionMetrics, RegionResult, RegionWord,
-        REGION_RESULT_SCHEMA_VERSION,
+        NormalizedRect, RegionCoordinateSpace, RegionMetrics, RegionOcrLifecycle, RegionResult,
+        RegionWord, REGION_RESULT_SCHEMA_VERSION,
     };
     use crate::api::OcrError;
+    use crate::dto::Word;
+    use crate::ocr::OcrEngine;
     use crate::page_analysis::{PageOrientation, PageStageTimings, ProcessingMode};
+    use image::GrayImage;
+    use std::cell::RefCell;
 
     #[test]
     fn region_cell_failure_warning_retains_sanitized_location_without_ocr_values() {
@@ -1144,5 +1178,64 @@ mod tests {
         assert_eq!(value["coordinate_space"], "normalized_top_left");
         assert_eq!(value["processing_mode"], "native_text");
         assert!(value.get("debug").is_none());
+    }
+
+    #[test]
+    fn region_ocr_page_lifecycle_is_once_per_request_for_a_b_a() {
+        struct LifecycleEngine(RefCell<Vec<&'static str>>);
+
+        impl OcrEngine for LifecycleEngine {
+            fn begin_page(&self) -> Result<(), Box<dyn std::error::Error>> {
+                self.0.borrow_mut().push("begin_page");
+                Ok(())
+            }
+
+            fn recognize_text(
+                &self,
+                _image: &GrayImage,
+            ) -> Result<String, Box<dyn std::error::Error>> {
+                self.0.borrow_mut().push("recognize");
+                Ok(String::new())
+            }
+
+            fn recognize_words(
+                &self,
+                _image: &GrayImage,
+            ) -> Result<Vec<Word>, Box<dyn std::error::Error>> {
+                self.0.borrow_mut().push("recognize");
+                Ok(Vec::new())
+            }
+        }
+
+        let engine = LifecycleEngine(RefCell::new(Vec::new()));
+        let image = GrayImage::new(1, 1);
+        for page_index in [0, 1, 0] {
+            let mut lifecycle = RegionOcrLifecycle::default();
+            lifecycle
+                .begin_before_first_request(&engine, page_index)
+                .expect("begin page before first request");
+            engine.recognize_text(&image).expect("first OCR request");
+            lifecycle
+                .begin_before_first_request(&engine, page_index)
+                .expect("do not reset between requests for one region");
+            engine
+                .recognize_words(&image)
+                .expect("subsequent OCR request");
+        }
+
+        assert_eq!(
+            *engine.0.borrow(),
+            [
+                "begin_page",
+                "recognize",
+                "recognize",
+                "begin_page",
+                "recognize",
+                "recognize",
+                "begin_page",
+                "recognize",
+                "recognize",
+            ]
+        );
     }
 }
