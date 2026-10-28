@@ -203,6 +203,22 @@ The preserved development fallback also embeds a build-tree location in the
 EXE; binary path-remapping/privacy review is not certified by the sanitized
 JSON inventory. No such executable is publicly uploaded by this task.
 
-Public source CI observation and final PR links are recorded in the PR handoff.
+## GitHub Actions observation
+
+Both source checks passed at reviewed source/attribute HEAD
+`2df60dfc07018e53067e4112ee72508238f6bb4d`:
+[branch push PASS](https://github.com/paulgreenbox-beep/rust-document-ocr/actions/runs/40687589710/job/122813832633)
+and [PR PASS](https://github.com/paulgreenbox-beep/rust-document-ocr/actions/runs/40687597602/job/122813862100).
+GitHub reported MERGEABLE; no merge was performed. This report-only update
+follows that checked code and is checked again before final handoff.
+
+An intermediate attributes-only commit temporarily removed the pre-existing
+PDF binary-attribute rule; CI rejected the checkout's synthetic fixture checksum.
+The rule was restored, the exact manifest bytes were explicitly indexed, and
+the two checks above passed. Accepted fixture files and their committed hashes
+were not changed. Git and the validation payload now contain byte-identical
+candidate manifests with the SHA-256 recorded above.
+
 The source CI includes the new runtime-free PowerShell checks; it does not
-replace local native smoke or the NOT RUN clean-machine/release workflow gates.
+replace actual local native smoke or the **NOT RUN** clean-machine and manual
+release-workflow gates. No public Release or ZIP was created.
