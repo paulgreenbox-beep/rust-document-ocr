@@ -194,31 +194,44 @@ fn render_lock() -> &'static Mutex<()> {
 /// The preferred deployment mechanism is an explicit path passed through
 /// `OcrOptions`. When no override is supplied, the resolver checks a sibling
 /// `pdfium.dll` and a versioned `runtime\\pdfium\\7881\\bin\\pdfium.dll`
-/// next to the executable before falling back to the development bundle. It
+/// next to the executable before falling back to the development bundle. A
+/// sibling release-manifest.json makes discovery portable-only (fail closed). It
 /// never searches global `PATH`.
 pub(crate) fn pdfium_dll_path() -> Result<PathBuf, PdfRenderError> {
     #[cfg(windows)]
     {
         let development_bundle = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(PDFIUM_DLL_PATH);
-        let mut candidates = Vec::new();
-        if let Ok(executable) = std::env::current_exe() {
-            if let Some(directory) = executable.parent() {
-                candidates.push(directory.join("pdfium.dll"));
-                candidates.push(directory.join(PDFIUM_DLL_PATH));
-            }
-        }
-        candidates.push(development_bundle.clone());
-
-        Ok(candidates
-            .into_iter()
-            .find(|path| path.is_file())
-            .unwrap_or(development_bundle))
+        let executable = std::env::current_exe().ok();
+        Ok(resolve_pdfium_candidates(
+            executable.as_deref(),
+            &development_bundle,
+        ))
     }
 
     #[cfg(not(windows))]
     {
         Err(PdfRenderError::UnsupportedPlatform)
     }
+}
+
+#[cfg(windows)]
+fn resolve_pdfium_candidates(executable: Option<&Path>, development_bundle: &Path) -> PathBuf {
+    if let Some(directory) = executable.and_then(Path::parent) {
+        let adjacent = directory.join("pdfium.dll");
+        let versioned = directory.join(PDFIUM_DLL_PATH);
+        if adjacent.is_file() {
+            return adjacent;
+        }
+        if versioned.is_file() {
+            return versioned;
+        }
+        if directory.join("release-manifest.json").is_file() {
+            // Returning the missing local path preserves the existing loader's
+            // diagnostic and prevents developer DLLs masking a broken ZIP.
+            return adjacent;
+        }
+    }
+    development_bundle.to_path_buf()
 }
 
 unsafe fn symbol<T: Copy>(
@@ -644,6 +657,27 @@ mod tests {
     use crate::native::pdfium_test_lock;
     use pdfium_render::prelude::*;
     use std::{path::PathBuf, sync::OnceLock};
+
+    #[test]
+    fn portable_pdfium_discovery_never_uses_development_fallback() {
+        let root = tempfile::tempdir().unwrap();
+        let portable = root.path().join("Portable OCR Кириллица");
+        std::fs::create_dir(&portable).unwrap();
+        let executable = portable.join("ocr-pipeline.exe");
+        let development = root.path().join("development-pdfium.dll");
+        std::fs::write(&development, b"development fixture").unwrap();
+        let resolve = || super::resolve_pdfium_candidates(Some(&executable), &development);
+        assert_eq!(resolve(), development);
+        std::fs::write(portable.join("release-manifest.json"), b"{}").unwrap();
+        let adjacent = portable.join("pdfium.dll");
+        assert_eq!(resolve(), adjacent);
+        let versioned = portable.join(super::PDFIUM_DLL_PATH);
+        std::fs::create_dir_all(versioned.parent().unwrap()).unwrap();
+        std::fs::write(&versioned, b"versioned fixture").unwrap();
+        assert_eq!(resolve(), versioned);
+        std::fs::write(&adjacent, b"adjacent fixture").unwrap();
+        assert_eq!(resolve(), adjacent);
+    }
 
     fn fixture() -> PathBuf {
         PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("runtime/fixtures/w3c-dummy.pdf")
