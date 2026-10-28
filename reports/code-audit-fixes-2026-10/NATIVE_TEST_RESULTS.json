@@ -1,0 +1,33 @@
+{
+  "baseline_commit": "6699a10dbfeff2471471b5eb2688e4d5394fe671",
+  "source_candidate_commit": "c785091",
+  "date": "2026-10-28",
+  "platform": "windows-x86_64-msvc",
+  "rustc": "1.97.1",
+  "cargo": "1.97.1",
+  "required_gates": [
+    {"command":"cargo fmt --all -- --check","status":"PASS"},
+    {"command":"cargo check --offline --locked --all-targets -j 1","status":"PASS"},
+    {"command":"cargo test --offline --locked -j 1 -- --test-threads=1","status":"PASS","passed":200,"ignored":3},
+    {"command":"cargo clippy --offline --locked --all-targets -j 1 -- -D warnings","status":"PASS"},
+    {"command":"cargo check --offline --locked --features native -j 1","status":"PASS"},
+    {"command":"cargo test --offline --locked --features native -j 1 -- --test-threads=1","status":"PASS","passed":280,"ignored":4}
+  ],
+  "separate_checks": [
+    {"name":"PDFium native extraction isolated initialization","status":"PASS","passed":1},
+    {"name":"three source-only grid diagnostics explicitly run with --ignored","status":"PASS","passed":3},
+    {"name":"baseline/candidate two synthetic PDF end-to-end comparisons","status":"PASS","fixtures":2},
+    {"name":"CLI help byte comparison","status":"PASS"},
+    {"name":"new self-hosted native Windows workflow execution","status":"NOT RUN"}
+  ],
+  "runtime_sha256": {
+    "pdfium_7881":"79D4676B656CFB1ABCEA88F9ADE3B4B0826C5200382DB5F4EC72A636C598C118",
+    "eng_traineddata":"7D4322BD2A7749724879683FC3912CB542F19906C83BCC1A52132556427170B2",
+    "rus_traineddata":"E16E5E036CCE1D9EC2B00063CF8B54472625B9E14D893A169E2B0DEDEB4DF225"
+  },
+  "baseline_tests":{"source_passed":179,"native_passed":258,"native_ignored":1},
+  "coverage":{"native_pdf_text":true,"raster_ocr":true,"tables":true,"mock_cell_failures":true,"docx":true,"xlsx":true,"json_v1_and_legacy":true,"native_regions":true,"35_page_searchable_pdf":true,"mock_parallel_page_order":true},
+  "limits":["Windows local validation only","synthetic fixtures, not customer accuracy certification","A-B-A adaptive lifecycle is instrumented mock coverage","format decoder regression is existing unit coverage, not a new full-format accuracy corpus"],
+  "environment_note":"Existing LLVM/vcpkg/MSVC paths supplied only to child processes; no global changes or native/model installations.",
+  "initial_sandbox_failure":"Unchanged baseline XLSX tests could not write temporary files inside the sandbox. The full baseline and candidate suites passed after rerunning with approved filesystem access."
+}
