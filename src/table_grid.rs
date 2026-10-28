@@ -1408,6 +1408,365 @@ mod tests {
     }
 
     #[test]
+    fn microscopic_boundary_overlaps_use_deterministic_area_tie_break() {
+        let mut grid = TableGrid {
+            bbox: BoundingBox::new(0.0, 0.0, 20.0, 10.0),
+            horizontal_lines: vec![
+                GridLine {
+                    position: 0.0,
+                    start: 0.0,
+                    end: 20.0,
+                },
+                GridLine {
+                    position: 10.0,
+                    start: 0.0,
+                    end: 20.0,
+                },
+            ],
+            vertical_lines: vec![
+                GridLine {
+                    position: 0.0,
+                    start: 0.0,
+                    end: 10.0,
+                },
+                GridLine {
+                    position: 10.0,
+                    start: 0.0,
+                    end: 10.0,
+                },
+                GridLine {
+                    position: 20.0,
+                    start: 0.0,
+                    end: 10.0,
+                },
+            ],
+            intersections: Vec::new(),
+            cells: vec![
+                TableCell::grid(0, 0, BoundingBox::new(0.0, 0.0, 10.0, 10.0)),
+                TableCell::grid(0, 1, BoundingBox::new(10.0, 0.0, 20.0, 10.0)),
+            ],
+            confidence: 1.0,
+        };
+        let epsilon = 1.0e-9;
+        let words = [
+            // Equal microscopic overlap: cell order is the deterministic tie-break.
+            Word::new(
+                "tie",
+                BoundingBox::new(10.0 - epsilon, 2.0, 10.0 + epsilon, 4.0),
+                0.9,
+            ),
+            // The left cell wins by the larger positive intersection.
+            Word::new(
+                "area",
+                BoundingBox::new(10.0 - 2.0 * epsilon, 6.0, 10.0 + epsilon, 8.0),
+                0.9,
+            ),
+        ];
+
+        let metrics = grid.assign_words(&words);
+        assert_eq!(metrics.words_assigned, 2);
+        assert_eq!(metrics.words_unassigned, 0);
+        assert_eq!(grid.cells[0].text, "tie\narea");
+        assert!(grid.cells[1].text.is_empty());
+    }
+
+    #[test]
+    #[ignore = "diagnostic only: compare word-to-cell assignment strategies on six fixed geometries"]
+    fn diagnostic_assignment_strategy_six_case_comparison() {
+        let cases = [
+            ("inside", BoundingBox::new(2.0, 2.0, 4.0, 4.0), "IN"),
+            (
+                "common_edge_zero_area",
+                BoundingBox::new(10.0, 4.0, 10.0, 6.0),
+                "EDGE",
+            ),
+            (
+                "almost_outside_sliver",
+                BoundingBox::new(-1.0, 4.0, 0.1, 6.0),
+                "OUT",
+            ),
+            (
+                "overlaps_two_columns",
+                BoundingBox::new(8.0, 4.0, 12.0, 6.0),
+                "TWO",
+            ),
+            ("wide_bbox", BoundingBox::new(-5.0, 2.0, 25.0, 8.0), "WIDE"),
+            (
+                "small_boundary_code",
+                BoundingBox::new(9.95, 4.95, 10.05, 5.05),
+                "X7",
+            ),
+        ];
+        let strategy_pick = |cells: &[TableCell], word: &Word, strategy: &str| {
+            let (center_x, center_y) = box_center(&word.bbox);
+            if strategy == "center" {
+                return cells.iter().position(|cell| {
+                    cell.bbox
+                        .as_ref()
+                        .is_some_and(|bbox| point_in_box(center_x, center_y, bbox))
+                });
+            }
+
+            let mut best: Option<(usize, f64)> = None;
+            for (index, cell) in cells.iter().enumerate() {
+                let Some(cell_bbox) = cell.bbox.as_ref() else {
+                    continue;
+                };
+                let area = intersection_area(&word.bbox, cell_bbox);
+                if area <= 0.0 {
+                    continue;
+                }
+                let score = if strategy == "absolute_overlap" {
+                    area
+                } else {
+                    let word_area = (word.bbox.x1 - word.bbox.x0).max(0.0)
+                        * (word.bbox.y1 - word.bbox.y0).max(0.0);
+                    let cell_area = (cell_bbox.x1 - cell_bbox.x0).max(0.0)
+                        * (cell_bbox.y1 - cell_bbox.y0).max(0.0);
+                    let min_area = word_area.min(cell_area);
+                    let fraction = if min_area > 0.0 { area / min_area } else { 0.0 };
+                    if fraction < 0.10 {
+                        continue;
+                    }
+                    fraction
+                };
+                if best.is_none_or(|(_, current)| score > current) {
+                    best = Some((index, score));
+                }
+            }
+            best.map(|(index, _)| index)
+        };
+
+        let mut observations = Vec::new();
+        for (name, bbox, text) in cases {
+            let make_cells = || {
+                vec![
+                    TableCell::grid(0, 0, BoundingBox::new(0.0, 0.0, 10.0, 10.0)),
+                    TableCell::grid(0, 1, BoundingBox::new(10.0, 0.0, 20.0, 10.0)),
+                ]
+            };
+            let word = Word::new(text, bbox, 0.9);
+            let absolute = strategy_pick(&make_cells(), &word, "absolute_overlap");
+            let normalized = strategy_pick(&make_cells(), &word, "normalized_min_fraction_ge_0_10");
+            let center = strategy_pick(&make_cells(), &word, "center");
+            // Diagnostic combined guard: center containment is accepted as a
+            // fallback; otherwise require >=10% of the smaller box to overlap.
+            let combined = center.or(normalized);
+
+            let mut grid = TableGrid {
+                bbox: BoundingBox::new(0.0, 0.0, 20.0, 10.0),
+                horizontal_lines: vec![
+                    GridLine {
+                        position: 0.0,
+                        start: 0.0,
+                        end: 20.0,
+                    },
+                    GridLine {
+                        position: 10.0,
+                        start: 0.0,
+                        end: 20.0,
+                    },
+                ],
+                vertical_lines: vec![
+                    GridLine {
+                        position: 0.0,
+                        start: 0.0,
+                        end: 10.0,
+                    },
+                    GridLine {
+                        position: 10.0,
+                        start: 0.0,
+                        end: 10.0,
+                    },
+                    GridLine {
+                        position: 20.0,
+                        start: 0.0,
+                        end: 10.0,
+                    },
+                ],
+                intersections: Vec::new(),
+                cells: make_cells(),
+                confidence: 1.0,
+            };
+            let geometry_snapshot = |grid: &TableGrid| {
+                serde_json::json!({
+                    "bbox": &grid.bbox,
+                    "horizontal_lines": &grid.horizontal_lines,
+                    "vertical_lines": &grid.vertical_lines,
+                    "cell_bboxes": grid.cells.iter().map(|cell| &cell.bbox).collect::<Vec<_>>(),
+                })
+            };
+            let original_geometry = geometry_snapshot(&grid);
+            let (center_x, center_y) = box_center(&word.bbox);
+            let cell_scores = grid
+                .cells
+                .iter()
+                .enumerate()
+                .map(|(index, cell)| {
+                    let cell_bbox = cell.bbox.as_ref().expect("diagnostic cell geometry");
+                    let area = intersection_area(&word.bbox, cell_bbox);
+                    let word_area = (word.bbox.x1 - word.bbox.x0).max(0.0)
+                        * (word.bbox.y1 - word.bbox.y0).max(0.0);
+                    let cell_area = (cell_bbox.x1 - cell_bbox.x0).max(0.0)
+                        * (cell_bbox.y1 - cell_bbox.y0).max(0.0);
+                    let min_area = word_area.min(cell_area);
+                    serde_json::json!({
+                        "cell": index,
+                        "absolute_overlap_area": area,
+                        "normalized_min_fraction": if min_area > 0.0 { area / min_area } else { 0.0 },
+                        "center_inside": point_in_box(center_x, center_y, cell_bbox),
+                    })
+                })
+                .collect::<Vec<_>>();
+            let actual_metrics = grid.assign_words(std::slice::from_ref(&word));
+            let actual = grid.cells.iter().position(|cell| !cell.text.is_empty());
+            assert_eq!(
+                actual,
+                absolute.or(center),
+                "diagnostic mirrors current policy"
+            );
+            let actual_assignment_count = grid
+                .cells
+                .iter()
+                .filter(|cell| !cell.text.is_empty())
+                .count();
+            assert_eq!(
+                actual_assignment_count,
+                if actual.is_some() { 1 } else { 0 }
+            );
+            assert_eq!(actual_metrics.duplicate_assignments, 0);
+            assert_eq!(
+                geometry_snapshot(&grid),
+                original_geometry,
+                "assignment must not alter grid or cell geometry in case {name}"
+            );
+
+            observations.push(serde_json::json!({
+                "case": name,
+                "word_bbox": word.bbox,
+                "cell_scores": cell_scores,
+                "strategies": {
+                    "absolute_overlap": absolute,
+                    "normalized_min_fraction_ge_0_10": normalized,
+                    "center": center,
+                    "combined_center_or_normalized_guard": combined,
+                    "current_assign_words": actual,
+                },
+                "current_words_assigned": actual_metrics.words_assigned,
+                "current_words_unassigned": actual_metrics.words_unassigned,
+                "current_duplicate_assignments": actual_metrics.duplicate_assignments,
+                "geometry_unchanged": true,
+                "assignment_unique": actual_assignment_count <= 1,
+            }));
+        }
+        eprintln!(
+            "assignment_strategy_diagnostic={}",
+            serde_json::to_string_pretty(&observations).expect("serialize diagnostic observations")
+        );
+    }
+
+    #[test]
+    #[ignore = "diagnostic only: record candidate-component scaling; no geometry assertion"]
+    fn diagnostic_candidate_component_scaling() {
+        use std::time::Instant;
+
+        let config = GridDetectionConfig::for_image(500, 6_000);
+        for count in [100usize, 500, 1_000, 5_000] {
+            let candidates = (0..count)
+                .map(|index| CandidateCell {
+                    bbox: BoundingBox::new(
+                        (index % 10) as f64 * 10.0 + 20.0,
+                        (index / 10) as f64 * 10.0 + 20.0,
+                        (index % 10) as f64 * 10.0 + 30.0,
+                        (index / 10) as f64 * 10.0 + 30.0,
+                    ),
+                })
+                .collect::<Vec<_>>();
+            let started = Instant::now();
+            let grids = grids_from_candidate_cells(&candidates, 500, 6_000, &config);
+            assert_eq!(grids.len(), 1);
+            assert_eq!(grids[0].cells.len(), count);
+            eprintln!(
+                "candidate_count={count} elapsed_ms={} output_grids={}",
+                started.elapsed().as_millis(),
+                grids.len()
+            );
+        }
+    }
+
+    #[test]
+    #[ignore = "diagnostic only: compare assignment cost on increasing fixed grids"]
+    fn diagnostic_word_assignment_scaling() {
+        use std::time::Instant;
+
+        for side in [10usize, 20, 40, 70] {
+            let mut cells = Vec::with_capacity(side * side);
+            for row in 0..side {
+                for column in 0..side {
+                    cells.push(TableCell::grid(
+                        row as u32,
+                        column as u32,
+                        BoundingBox::new(
+                            column as f64 * 10.0,
+                            row as f64 * 10.0,
+                            (column + 1) as f64 * 10.0,
+                            (row + 1) as f64 * 10.0,
+                        ),
+                    ));
+                }
+            }
+            let extent = side as f64 * 10.0;
+            let mut grid = TableGrid {
+                bbox: BoundingBox::new(0.0, 0.0, extent, extent),
+                horizontal_lines: (0..=side)
+                    .map(|row| GridLine {
+                        position: row as f64 * 10.0,
+                        start: 0.0,
+                        end: extent,
+                    })
+                    .collect(),
+                vertical_lines: (0..=side)
+                    .map(|column| GridLine {
+                        position: column as f64 * 10.0,
+                        start: 0.0,
+                        end: extent,
+                    })
+                    .collect(),
+                intersections: Vec::new(),
+                cells,
+                confidence: 1.0,
+            };
+            let words = (0..side * side)
+                .map(|index| {
+                    let row = index / side;
+                    let column = index % side;
+                    Word::new(
+                        "x",
+                        BoundingBox::new(
+                            column as f64 * 10.0 + 1.0,
+                            row as f64 * 10.0 + 1.0,
+                            column as f64 * 10.0 + 2.0,
+                            row as f64 * 10.0 + 2.0,
+                        ),
+                        0.9,
+                    )
+                })
+                .collect::<Vec<_>>();
+            let started = Instant::now();
+            let metrics = grid.assign_words(&words);
+            eprintln!(
+                "grid={}x{} cells={} words={} elapsed_ms={} assigned={}",
+                side,
+                side,
+                side * side,
+                words.len(),
+                started.elapsed().as_millis(),
+                metrics.words_assigned
+            );
+        }
+    }
+
+    #[test]
     fn matrix_keeps_coordinates_for_missing_physical_cell() {
         let mut cells = Vec::new();
         for row in 0..3 {
