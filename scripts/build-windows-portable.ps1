@@ -70,7 +70,17 @@ try {
     New-Item -ItemType Directory -Path (Join-Path $dest 'licenses'),(Join-Path $dest 'examples') -Force | Out-Null
     Copy-Item LICENSE (Join-Path $dest 'licenses/MIT.txt')
     Copy-Item THIRD_PARTY_NOTICES.md (Join-Path $dest 'licenses/THIRD_PARTY_NOTICES.md')
-    Copy-Item examples/documents/synthetic-*.pdf (Join-Path $dest 'examples')
+    # Never glob arbitrary documents into a binary package. Only the two
+    # reviewed fixtures with committed checksums are permitted.
+    $fixtureSums=@(Get-Content -LiteralPath (Join-Path $repo 'examples/documents/SHA256SUMS'))
+    foreach ($fixture in @('synthetic-text-table.pdf','synthetic-raster.pdf')) {
+        $records=@($fixtureSums | Where-Object { $_ -match ('^[a-f0-9]{64}\s+'+[regex]::Escape($fixture)+'$') })
+        if ($records.Count -ne 1) { throw "Missing/ambiguous reviewed fixture checksum: $fixture" }
+        $expected=($records[0] -split '\s+',2)[0]
+        $fixturePath=Join-Path $repo "examples/documents/$fixture"
+        if ((Get-FileHash -LiteralPath $fixturePath -Algorithm SHA256).Hash -ne $expected) { throw "Reviewed fixture hash mismatch: $fixture" }
+        Copy-Item -LiteralPath $fixturePath -Destination (Join-Path $dest 'examples')
+    }
     Copy-Item deploy/windows-portable/* $dest
     $closure=@(Test-PortablePeClosure $dest)
     $files=@(Get-ChildItem -LiteralPath $dest -Recurse -File | ForEach-Object { @{path=$_.FullName.Substring($dest.Length+1).Replace('\','/');sha256=(Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash;size=$_.Length} })
