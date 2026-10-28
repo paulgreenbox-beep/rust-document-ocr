@@ -1,9 +1,11 @@
-use ocr_pipeline::table_grid::{GridLine, TableGrid};
 use std::io::Read;
 
+use ocr_pipeline::table_grid::{classify_grid, TableAssignmentMetrics};
+use ocr_pipeline::table_grid::{GridLine, TableGrid};
 use ocr_pipeline::{
-    export_ocr_result_xlsx, BoundingBox, ColumnRole, DetectedGrid, DocumentResult, GridKind,
-    OcrResult, PageKind, PageResult, SemanticTableType, TableCell, TableMatrix, TableType,
+    export_ocr_result_docx, export_ocr_result_xlsx, BoundingBox, ColumnRole, DetectedGrid,
+    DocumentResult, GridKind, OcrResult, PageKind, PageResult, SemanticTableType, TableCell,
+    TableMatrix, TableType,
 };
 use serde::Deserialize;
 use tempfile::tempdir;
@@ -181,79 +183,6 @@ fn public_result_keeps_kind_and_exposes_additive_semantics() {
 }
 
 #[test]
-fn old_grid_json_without_semantic_fields_still_deserializes() {
-    let result = result_from_tables(vec![material_specification()]);
-    let mut grid = serde_json::to_value(&result.tables[0].grids[0]).expect("serialize grid");
-    let object = grid.as_object_mut().expect("grid must be a JSON object");
-    object.remove("semantic_type");
-    object.remove("semantic_confidence");
-    object.remove("header_rows");
-    object.remove("column_roles");
-    object.remove("classification_evidence");
-
-    let decoded: DetectedGrid = serde_json::from_value(grid).expect("deserialize legacy grid JSON");
-    assert_eq!(decoded.kind, GridKind::DataTable);
-    assert_eq!(decoded.semantic_type, SemanticTableType::Unknown);
-    assert_eq!(decoded.semantic_confidence, 0.0);
-    assert!(decoded.header_rows.is_empty());
-    assert!(decoded.column_roles.is_empty());
-    assert!(decoded.classification_evidence.is_empty());
-}
-
-#[derive(Debug, Deserialize)]
-struct LegacyEnvelope {
-    schema_version: u32,
-    tables: Vec<LegacyPageTables>,
-}
-
-#[derive(Debug, Deserialize)]
-struct LegacyPageTables {
-    grids: Vec<LegacyGrid>,
-}
-
-#[derive(Debug, Deserialize)]
-struct LegacyGrid {
-    kind: GridKind,
-    rows: usize,
-    columns: usize,
-}
-
-#[test]
-fn legacy_consumer_can_ignore_additive_semantic_fields() {
-    let result = result_from_tables(vec![material_specification()]);
-    let json = serde_json::to_string(&result).expect("serialize result");
-    let legacy: LegacyEnvelope =
-        serde_json::from_str(&json).expect("legacy projection ignores new fields");
-
-    assert_eq!(legacy.schema_version, 1);
-    assert_eq!(legacy.tables[0].grids[0].kind, GridKind::DataTable);
-    assert_eq!(legacy.tables[0].grids[0].rows, 3);
-    assert_eq!(legacy.tables[0].grids[0].columns, 5);
-}
-
-#[test]
-fn legacy_xlsx_path_still_exports_borderless_data_table() {
-    let result = result_from_tables(vec![material_specification(), title_block()]);
-    let directory = tempdir().expect("create temporary export directory");
-    let path = directory.path().join("semantic-contract.xlsx");
-
-    export_ocr_result_xlsx(&result, &path, false).expect("export data table through legacy XLSX");
-    assert!(path.is_file());
-    assert!(path.metadata().expect("read XLSX metadata").len() > 0);
-
-    let file = std::fs::File::open(&path).expect("open XLSX");
-    let mut archive = ZipArchive::new(file).expect("XLSX is a ZIP archive");
-    let mut workbook = String::new();
-    archive
-        .by_name("xl/workbook.xml")
-        .expect("XLSX workbook metadata")
-        .read_to_string(&mut workbook)
-        .expect("read workbook metadata");
-    assert!(workbook.contains("Page_1"));
-    assert!(!workbook.contains("TitleBlock"));
-}
-
-#[test]
 fn sparse_grid_matrix_projects_missing_cell_with_physical_coordinates() {
     let mut physical_cells = Vec::new();
     for row in 0..3 {
@@ -337,4 +266,175 @@ fn sparse_grid_matrix_projects_missing_cell_with_physical_coordinates() {
             assert_eq!(stable["bbox"]["height"], 10);
         }
     }
+}
+
+#[test]
+fn dense_title_stamp_is_excluded_from_docx_and_xlsx_exports() {
+    let mut physical_cells = Vec::new();
+    let texts = [
+        ["SHEET", "STAMP_ONLY", "SCALE", "1:50"],
+        ["DRAWN", "Ivanov", "DATE", "28.10.26"],
+        ["CHECKED", "Petrov", "OBJECT", "Building"],
+        ["REV", "A", "SIGNATURE", ""],
+    ];
+    for (row, values) in texts.iter().enumerate() {
+        for (column, text) in values.iter().enumerate() {
+            let mut cell = TableCell::grid(
+                row as u32,
+                column as u32,
+                BoundingBox::new(
+                    600.0 + column as f64 * 50.0,
+                    720.0 + row as f64 * 45.0,
+                    600.0 + (column + 1) as f64 * 50.0,
+                    720.0 + (row + 1) as f64 * 45.0,
+                ),
+            );
+            cell.text = (*text).to_string();
+            physical_cells.push(cell);
+        }
+    }
+    let stamp_grid = TableGrid {
+        bbox: BoundingBox::new(600.0, 720.0, 800.0, 900.0),
+        horizontal_lines: (0..=4)
+            .map(|index| GridLine {
+                position: 720.0 + f64::from(index) * 45.0,
+                start: 600.0,
+                end: 800.0,
+            })
+            .collect(),
+        vertical_lines: (0..=4)
+            .map(|index| GridLine {
+                position: 600.0 + f64::from(index) * 50.0,
+                start: 720.0,
+                end: 900.0,
+            })
+            .collect(),
+        intersections: Vec::new(),
+        cells: physical_cells,
+        confidence: 1.0,
+    };
+    let metrics = TableAssignmentMetrics {
+        table_bbox: stamp_grid.bbox.clone(),
+        rows: 4,
+        columns: 4,
+        cells: 16,
+        empty_cells: 0,
+        ocr_words_total: 16,
+        words_assigned: 16,
+        words_unassigned: 0,
+        duplicate_assignments: 0,
+        detector_confidence: 1.0,
+    };
+    let stamp_type = classify_grid(&stamp_grid, &metrics, 1_000, 1_000);
+    assert_eq!(stamp_type, TableType::TitleBlock);
+    let mut stamp = stamp_grid.to_matrix_with_type(stamp_type);
+    stamp.confidence = 1.0;
+
+    let mut data = matrix(&[
+        &["Position", "Code", "Name", "Quantity"],
+        &["1", "A-1", "KEEP_DATA", "2"],
+    ]);
+    data.confidence = 0.9;
+    let result = result_from_tables(vec![data, stamp]);
+    assert_eq!(result.tables[1].grids[0].kind, GridKind::TitleBlock);
+
+    let directory = tempdir().expect("temporary export directory");
+    let xlsx_path = directory.path().join("data-only.xlsx");
+    export_ocr_result_xlsx(&result, &xlsx_path, false).expect("data-only XLSX export");
+    let xlsx = std::fs::File::open(&xlsx_path).expect("open XLSX");
+    let mut xlsx_archive = ZipArchive::new(xlsx).expect("read XLSX archive");
+    let mut workbook = String::new();
+    xlsx_archive
+        .by_name("xl/workbook.xml")
+        .expect("XLSX workbook manifest")
+        .read_to_string(&mut workbook)
+        .expect("read XLSX workbook manifest");
+    assert!(workbook.contains("Page_1"), "data worksheet is retained");
+    assert!(!workbook.contains("TitleBlock"), "title sheet is excluded");
+
+    let docx_path = directory.path().join("data-only.docx");
+    export_ocr_result_docx(&result, &docx_path, false).expect("data-only DOCX export");
+    let docx = std::fs::File::open(&docx_path).expect("open DOCX");
+    let mut docx_archive = ZipArchive::new(docx).expect("read DOCX archive");
+    let mut document = String::new();
+    docx_archive
+        .by_name("word/document.xml")
+        .expect("DOCX main document")
+        .read_to_string(&mut document)
+        .expect("read DOCX document");
+    assert!(document.contains("KEEP_DATA"), "data table is retained");
+    assert!(!document.contains("STAMP_ONLY"), "title block is excluded");
+}
+
+#[test]
+fn old_grid_json_without_semantic_fields_still_deserializes() {
+    let result = result_from_tables(vec![material_specification()]);
+    let mut grid = serde_json::to_value(&result.tables[0].grids[0]).expect("serialize grid");
+    let object = grid.as_object_mut().expect("grid must be a JSON object");
+    object.remove("semantic_type");
+    object.remove("semantic_confidence");
+    object.remove("header_rows");
+    object.remove("column_roles");
+    object.remove("classification_evidence");
+
+    let decoded: DetectedGrid = serde_json::from_value(grid).expect("deserialize legacy grid JSON");
+    assert_eq!(decoded.kind, GridKind::DataTable);
+    assert_eq!(decoded.semantic_type, SemanticTableType::Unknown);
+    assert_eq!(decoded.semantic_confidence, 0.0);
+    assert!(decoded.header_rows.is_empty());
+    assert!(decoded.column_roles.is_empty());
+    assert!(decoded.classification_evidence.is_empty());
+}
+
+#[derive(Debug, Deserialize)]
+struct LegacyEnvelope {
+    schema_version: u32,
+    tables: Vec<LegacyPageTables>,
+}
+
+#[derive(Debug, Deserialize)]
+struct LegacyPageTables {
+    grids: Vec<LegacyGrid>,
+}
+
+#[derive(Debug, Deserialize)]
+struct LegacyGrid {
+    kind: GridKind,
+    rows: usize,
+    columns: usize,
+}
+
+#[test]
+fn legacy_consumer_can_ignore_additive_semantic_fields() {
+    let result = result_from_tables(vec![material_specification()]);
+    let json = serde_json::to_string(&result).expect("serialize result");
+    let legacy: LegacyEnvelope =
+        serde_json::from_str(&json).expect("legacy projection ignores new fields");
+
+    assert_eq!(legacy.schema_version, 1);
+    assert_eq!(legacy.tables[0].grids[0].kind, GridKind::DataTable);
+    assert_eq!(legacy.tables[0].grids[0].rows, 3);
+    assert_eq!(legacy.tables[0].grids[0].columns, 5);
+}
+
+#[test]
+fn legacy_xlsx_path_still_exports_borderless_data_table() {
+    let result = result_from_tables(vec![material_specification(), title_block()]);
+    let directory = tempdir().expect("create temporary export directory");
+    let path = directory.path().join("semantic-contract.xlsx");
+
+    export_ocr_result_xlsx(&result, &path, false).expect("export data table through legacy XLSX");
+    assert!(path.is_file());
+    assert!(path.metadata().expect("read XLSX metadata").len() > 0);
+
+    let file = std::fs::File::open(&path).expect("open XLSX");
+    let mut archive = ZipArchive::new(file).expect("XLSX is a ZIP archive");
+    let mut workbook = String::new();
+    archive
+        .by_name("xl/workbook.xml")
+        .expect("XLSX workbook metadata")
+        .read_to_string(&mut workbook)
+        .expect("read workbook metadata");
+    assert!(workbook.contains("Page_1"));
+    assert!(!workbook.contains("TitleBlock"));
 }

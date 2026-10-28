@@ -20,6 +20,20 @@ use crate::page_analysis::{is_cyrillic, is_latin};
 /// the page remains a data table, so legitimate technical tables with many
 /// empty cells are not reclassified merely because they are sparse.
 pub const TITLE_BLOCK_MAX_FILLED_CELL_RATIO: f32 = 0.25;
+const TITLE_STAMP_LABEL_GROUPS: &[&[&str]] = &[
+    &["sheet", "лист", "листа"],
+    &["scale", "масштаб", "масштаба"],
+    &[
+        "drawn",
+        "designed",
+        "разраб",
+        "разработал",
+        "выполнил",
+        "выполнено",
+    ],
+    &["checked", "пров", "проверил"],
+    &["date", "дата", "даты"],
+];
 
 /// A physical horizontal or vertical line after adjacent raster segments have
 /// been merged.
@@ -260,13 +274,60 @@ pub fn classify_grid(
         && metrics.filled_cell_ratio() < TITLE_BLOCK_MAX_FILLED_CELL_RATIO
         && grid.rows() >= 3
         && grid.columns() >= 3;
-    let compact_lower_right_frame =
-        lower_right_drawing_area && grid.rows() >= 4 && grid.columns() >= 4;
+    let compact_lower_right_frame = lower_right_drawing_area
+        && grid.rows() >= 4
+        && grid.columns() >= 4
+        && title_stamp_label_group_count(grid) >= 2;
 
     if sparse_lower_right_frame || compact_lower_right_frame {
         TableType::TitleBlock
     } else {
         TableType::DataTable
+    }
+}
+
+fn title_stamp_label_group_count(grid: &TableGrid) -> usize {
+    let mut supporting_cells = Vec::new();
+    for aliases in TITLE_STAMP_LABEL_GROUPS {
+        if let Some((index, _)) = grid.cells.iter().enumerate().find(|(index, cell)| {
+            !supporting_cells.contains(index) && {
+                aliases
+                    .iter()
+                    .any(|alias| is_title_stamp_label(&cell.text, alias))
+            }
+        }) {
+            supporting_cells.push(index);
+        }
+    }
+    supporting_cells.len()
+}
+
+fn is_title_stamp_label(text: &str, alias: &str) -> bool {
+    let normalized = text.to_lowercase().replace('ё', "е");
+    let (label, has_value_separator) = normalized
+        .split_once(':')
+        .map_or((normalized.as_str(), false), |(label, _)| (label, true));
+    let tokens = label
+        .split(|character: char| !character.is_alphanumeric())
+        .filter(|token| !token.is_empty())
+        .collect::<Vec<_>>();
+    if tokens.first().copied() != Some(alias) {
+        return false;
+    }
+    if tokens.len() == 1 {
+        return true;
+    }
+
+    // Permit numeric values (Date 28.10.26) and common label qualifiers,
+    // but not arbitrary words such as sheet metal or upscaled. A colon
+    // explicitly separates a stamp label from its value.
+    let suffix = &tokens[1..];
+    if has_value_separator {
+        suffix.iter().all(|token| matches!(*token, "no" | "number"))
+    } else {
+        suffix
+            .iter()
+            .all(|token| token.chars().all(char::is_numeric))
     }
 }
 
@@ -1347,6 +1408,86 @@ mod tests {
     }
 
     #[test]
+    fn matrix_keeps_coordinates_for_missing_physical_cell() {
+        let mut cells = Vec::new();
+        for row in 0..3 {
+            for column in 0..3 {
+                if (row, column) == (2, 1) {
+                    continue;
+                }
+                let mut cell = TableCell::grid(
+                    row,
+                    column,
+                    BoundingBox::new(
+                        f64::from(column) * 10.0,
+                        f64::from(row) * 10.0,
+                        f64::from(column + 1) * 10.0,
+                        f64::from(row + 1) * 10.0,
+                    ),
+                );
+                cell.text = format!("{row},{column}");
+                cell.confidence = 0.8;
+                cells.push(cell);
+            }
+        }
+        let grid = TableGrid {
+            bbox: BoundingBox::new(0.0, 0.0, 30.0, 30.0),
+            horizontal_lines: (0..=3)
+                .map(|index| GridLine {
+                    position: f64::from(index) * 10.0,
+                    start: 0.0,
+                    end: 30.0,
+                })
+                .collect(),
+            vertical_lines: (0..=3)
+                .map(|index| GridLine {
+                    position: f64::from(index) * 10.0,
+                    start: 0.0,
+                    end: 30.0,
+                })
+                .collect(),
+            intersections: Vec::new(),
+            cells,
+            confidence: 0.9,
+        };
+
+        let matrix = grid.to_matrix();
+        assert_eq!(matrix.rows.len(), 3);
+        assert!(matrix.rows.iter().all(|row| row.len() == 3));
+        let missing = &matrix.rows[2][1];
+        assert_eq!((missing.row, missing.column), (2, 1));
+        assert_eq!((missing.row_span, missing.col_span), (1, 1));
+        assert!(missing.bbox.is_none());
+        assert!(missing.text.is_empty());
+
+        for row in 0..3 {
+            for column in 0..3 {
+                let matrix_cell = &matrix.rows[row as usize][column as usize];
+                if (row, column) == (2, 1) {
+                    continue;
+                }
+                let physical = grid
+                    .cells
+                    .iter()
+                    .find(|cell| cell.row == row && cell.column == column)
+                    .expect("physical cell");
+                assert_eq!(matrix_cell.row, physical.row);
+                assert_eq!(matrix_cell.column, physical.column);
+                assert_eq!(matrix_cell.row_span, physical.row_span);
+                assert_eq!(matrix_cell.col_span, physical.col_span);
+                assert_eq!(matrix_cell.text, physical.text);
+                assert_eq!(matrix_cell.confidence, physical.confidence);
+                let matrix_bbox = matrix_cell.bbox.as_ref().expect("physical geometry");
+                let physical_bbox = physical.bbox.as_ref().expect("source geometry");
+                assert_eq!(matrix_bbox.x0, physical_bbox.x0);
+                assert_eq!(matrix_bbox.y0, physical_bbox.y0);
+                assert_eq!(matrix_bbox.x1, physical_bbox.x1);
+                assert_eq!(matrix_bbox.y1, physical_bbox.y1);
+            }
+        }
+    }
+
+    #[test]
     fn rejects_a_full_page_border() {
         let mut image = GrayImage::from_pixel(200, 100, Luma([255]));
         for &y in &[0, 99] {
@@ -1441,7 +1582,18 @@ mod tests {
                 })
                 .collect(),
             intersections: Vec::new(),
-            cells: Vec::new(),
+            cells: vec![
+                {
+                    let mut cell = TableCell::grid(0, 0, BoundingBox::new(60.0, 75.0, 65.0, 95.0));
+                    cell.text = "SHEET".to_string();
+                    cell
+                },
+                {
+                    let mut cell = TableCell::grid(0, 1, BoundingBox::new(65.0, 75.0, 70.0, 95.0));
+                    cell.text = "SCALE".to_string();
+                    cell
+                },
+            ],
             confidence: 1.0,
         };
         let metrics = TableAssignmentMetrics {
@@ -1474,83 +1626,90 @@ mod tests {
             TableType::TitleBlock
         );
     }
+
     #[test]
-    fn matrix_keeps_coordinates_for_missing_physical_cell() {
-        let mut cells = Vec::new();
-        for row in 0..3 {
-            for column in 0..3 {
-                if (row, column) == (2, 1) {
-                    continue;
+    fn compact_dense_grid_needs_drawing_stamp_labels() {
+        let make_grid = |texts: [[&str; 4]; 4]| {
+            let mut cells = Vec::new();
+            for (row, values) in texts.iter().enumerate() {
+                for (column, text) in values.iter().enumerate() {
+                    let mut cell = TableCell::grid(
+                        row as u32,
+                        column as u32,
+                        BoundingBox::new(
+                            600.0 + column as f64 * 50.0,
+                            720.0 + row as f64 * 45.0,
+                            600.0 + (column + 1) as f64 * 50.0,
+                            720.0 + (row + 1) as f64 * 45.0,
+                        ),
+                    );
+                    cell.text = (*text).to_string();
+                    cells.push(cell);
                 }
-                let mut cell = TableCell::grid(
-                    row,
-                    column,
-                    BoundingBox::new(
-                        f64::from(column) * 10.0,
-                        f64::from(row) * 10.0,
-                        f64::from(column + 1) * 10.0,
-                        f64::from(row + 1) * 10.0,
-                    ),
-                );
-                cell.text = format!("{row},{column}");
-                cell.confidence = 0.8;
-                cells.push(cell);
             }
-        }
-        let grid = TableGrid {
-            bbox: BoundingBox::new(0.0, 0.0, 30.0, 30.0),
-            horizontal_lines: (0..=3)
-                .map(|index| GridLine {
-                    position: f64::from(index) * 10.0,
-                    start: 0.0,
-                    end: 30.0,
-                })
-                .collect(),
-            vertical_lines: (0..=3)
-                .map(|index| GridLine {
-                    position: f64::from(index) * 10.0,
-                    start: 0.0,
-                    end: 30.0,
-                })
-                .collect(),
-            intersections: Vec::new(),
-            cells,
-            confidence: 0.9,
+            TableGrid {
+                bbox: BoundingBox::new(600.0, 720.0, 800.0, 900.0),
+                horizontal_lines: (0..=4)
+                    .map(|index| GridLine {
+                        position: 720.0 + f64::from(index) * 45.0,
+                        start: 600.0,
+                        end: 800.0,
+                    })
+                    .collect(),
+                vertical_lines: (0..=4)
+                    .map(|index| GridLine {
+                        position: 600.0 + f64::from(index) * 50.0,
+                        start: 720.0,
+                        end: 900.0,
+                    })
+                    .collect(),
+                intersections: Vec::new(),
+                cells,
+                confidence: 1.0,
+            }
         };
+        let metrics = TableAssignmentMetrics {
+            table_bbox: BoundingBox::new(600.0, 720.0, 800.0, 900.0),
+            rows: 4,
+            columns: 4,
+            cells: 16,
+            empty_cells: 0,
+            ocr_words_total: 16,
+            words_assigned: 16,
+            words_unassigned: 0,
+            duplicate_assignments: 0,
+            detector_confidence: 1.0,
+        };
+        let stamp = make_grid([
+            ["SHEET", "4", "SCALE", "1:50"],
+            ["DRAWN", "Иванов", "DATE", "28.10.26"],
+            ["CHECKED", "Петров", "OBJECT", "Building"],
+            ["REV", "A", "SIGNATURE", ""],
+        ]);
+        let data = make_grid([
+            ["Position", "Code", "Name", "Quantity"],
+            ["1", "A-1", "Cabinet", "2"],
+            ["2", "B-2", "Sensor", "4"],
+            ["3", "C-3", "Cable", "10"],
+        ]);
+        let substring_traps = make_grid([
+            ["candidate", "upscaled", "sheet metal", "Quantity"],
+            ["1", "A-1", "Cabinet", "2"],
+            ["2", "B-2", "Sensor", "4"],
+            ["3", "C-3", "Cable", "10"],
+        ]);
 
-        let matrix = grid.to_matrix();
-        assert_eq!(matrix.rows.len(), 3);
-        assert!(matrix.rows.iter().all(|row| row.len() == 3));
-        let missing = &matrix.rows[2][1];
-        assert_eq!((missing.row, missing.column), (2, 1));
-        assert_eq!((missing.row_span, missing.col_span), (1, 1));
-        assert!(missing.bbox.is_none());
-        assert!(missing.text.is_empty());
-
-        for row in 0..3 {
-            for column in 0..3 {
-                let matrix_cell = &matrix.rows[row as usize][column as usize];
-                if (row, column) == (2, 1) {
-                    continue;
-                }
-                let physical = grid
-                    .cells
-                    .iter()
-                    .find(|cell| cell.row == row && cell.column == column)
-                    .expect("physical cell");
-                assert_eq!(matrix_cell.row, physical.row);
-                assert_eq!(matrix_cell.column, physical.column);
-                assert_eq!(matrix_cell.row_span, physical.row_span);
-                assert_eq!(matrix_cell.col_span, physical.col_span);
-                assert_eq!(matrix_cell.text, physical.text);
-                assert_eq!(matrix_cell.confidence, physical.confidence);
-                let matrix_bbox = matrix_cell.bbox.as_ref().expect("physical geometry");
-                let physical_bbox = physical.bbox.as_ref().expect("source geometry");
-                assert_eq!(matrix_bbox.x0, physical_bbox.x0);
-                assert_eq!(matrix_bbox.y0, physical_bbox.y0);
-                assert_eq!(matrix_bbox.x1, physical_bbox.x1);
-                assert_eq!(matrix_bbox.y1, physical_bbox.y1);
-            }
-        }
+        assert_eq!(
+            classify_grid(&stamp, &metrics, 1_000, 1_000),
+            TableType::TitleBlock
+        );
+        assert_eq!(
+            classify_grid(&data, &metrics, 1_000, 1_000),
+            TableType::DataTable
+        );
+        assert_eq!(
+            classify_grid(&substring_traps, &metrics, 1_000, 1_000),
+            TableType::DataTable
+        );
     }
 }
