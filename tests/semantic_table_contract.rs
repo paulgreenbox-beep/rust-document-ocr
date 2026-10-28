@@ -1,3 +1,4 @@
+use ocr_pipeline::table_grid::{GridLine, TableGrid};
 use std::io::Read;
 
 use ocr_pipeline::{
@@ -250,4 +251,90 @@ fn legacy_xlsx_path_still_exports_borderless_data_table() {
         .expect("read workbook metadata");
     assert!(workbook.contains("Page_1"));
     assert!(!workbook.contains("TitleBlock"));
+}
+
+#[test]
+fn sparse_grid_matrix_projects_missing_cell_with_physical_coordinates() {
+    let mut physical_cells = Vec::new();
+    for row in 0..3 {
+        for column in 0..3 {
+            if (row, column) == (2, 1) {
+                continue;
+            }
+            let mut cell = TableCell::grid(
+                row,
+                column,
+                BoundingBox::new(
+                    f64::from(column) * 10.0,
+                    f64::from(row) * 10.0,
+                    f64::from(column + 1) * 10.0,
+                    f64::from(row + 1) * 10.0,
+                ),
+            );
+            cell.text = format!("{row},{column}");
+            cell.confidence = 0.8;
+            physical_cells.push(cell);
+        }
+    }
+    let grid = TableGrid {
+        bbox: BoundingBox::new(0.0, 0.0, 30.0, 30.0),
+        horizontal_lines: (0..=3)
+            .map(|index| GridLine {
+                position: f64::from(index) * 10.0,
+                start: 0.0,
+                end: 30.0,
+            })
+            .collect(),
+        vertical_lines: (0..=3)
+            .map(|index| GridLine {
+                position: f64::from(index) * 10.0,
+                start: 0.0,
+                end: 30.0,
+            })
+            .collect(),
+        intersections: Vec::new(),
+        cells: physical_cells,
+        confidence: 0.9,
+    };
+    let table = grid.to_matrix();
+    let result = result_from_tables(vec![table]);
+    let value = serde_json::to_value(&result).expect("serialize stable OCR result");
+    let grid = &value["tables"][0]["grids"][0];
+    let cells = grid["cells"].as_array().expect("stable grid cells");
+    assert_eq!(cells.len(), 9);
+
+    let missing = cells
+        .iter()
+        .find(|cell| cell["row"] == 2 && cell["column"] == 1)
+        .expect("placeholder at the absent physical location");
+    assert_eq!(missing["row_span"], 1);
+    assert_eq!(missing["col_span"], 1);
+    assert_eq!(missing["bbox"]["x"], 0);
+    assert_eq!(missing["bbox"]["y"], 0);
+    assert_eq!(missing["bbox"]["width"], 0);
+    assert_eq!(missing["bbox"]["height"], 0);
+
+    for row in 0..3 {
+        for column in 0..3 {
+            let stable = cells
+                .iter()
+                .find(|cell| cell["row"] == row && cell["column"] == column)
+                .expect("one stable cell per matrix slot");
+            if (row, column) == (2, 1) {
+                assert_eq!(stable["text"], "");
+                let legacy = &value["document"]["pages"][0]["tables"][0]["rows"][row as usize]
+                    [column as usize];
+                assert!(
+                    legacy["bbox"].is_null(),
+                    "placeholder has no legacy geometry"
+                );
+                continue;
+            }
+            assert_eq!(stable["text"], format!("{row},{column}"));
+            assert_eq!(stable["bbox"]["x"], column * 10);
+            assert_eq!(stable["bbox"]["y"], row * 10);
+            assert_eq!(stable["bbox"]["width"], 10);
+            assert_eq!(stable["bbox"]["height"], 10);
+        }
+    }
 }

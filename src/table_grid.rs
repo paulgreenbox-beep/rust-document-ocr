@@ -187,6 +187,16 @@ impl TableGrid {
         let columns = self.columns() as usize;
         let mut matrix = vec![vec![TableCell::default(); columns]; rows];
 
+        // Empty physical slots still have a stable coordinate in both the
+        // legacy matrix and the host-facing projection. Keep their geometry
+        // absent, but do not let `Default` collapse every placeholder to 0,0.
+        for (row, line) in matrix.iter_mut().enumerate() {
+            for (column, cell) in line.iter_mut().enumerate() {
+                cell.row = row as u32;
+                cell.column = column as u32;
+            }
+        }
+
         for cell in &self.cells {
             let row = cell.row as usize;
             let column = cell.column as usize;
@@ -1463,5 +1473,84 @@ mod tests {
             classify_grid(&grid, &sparse_metrics, 100, 100),
             TableType::TitleBlock
         );
+    }
+    #[test]
+    fn matrix_keeps_coordinates_for_missing_physical_cell() {
+        let mut cells = Vec::new();
+        for row in 0..3 {
+            for column in 0..3 {
+                if (row, column) == (2, 1) {
+                    continue;
+                }
+                let mut cell = TableCell::grid(
+                    row,
+                    column,
+                    BoundingBox::new(
+                        f64::from(column) * 10.0,
+                        f64::from(row) * 10.0,
+                        f64::from(column + 1) * 10.0,
+                        f64::from(row + 1) * 10.0,
+                    ),
+                );
+                cell.text = format!("{row},{column}");
+                cell.confidence = 0.8;
+                cells.push(cell);
+            }
+        }
+        let grid = TableGrid {
+            bbox: BoundingBox::new(0.0, 0.0, 30.0, 30.0),
+            horizontal_lines: (0..=3)
+                .map(|index| GridLine {
+                    position: f64::from(index) * 10.0,
+                    start: 0.0,
+                    end: 30.0,
+                })
+                .collect(),
+            vertical_lines: (0..=3)
+                .map(|index| GridLine {
+                    position: f64::from(index) * 10.0,
+                    start: 0.0,
+                    end: 30.0,
+                })
+                .collect(),
+            intersections: Vec::new(),
+            cells,
+            confidence: 0.9,
+        };
+
+        let matrix = grid.to_matrix();
+        assert_eq!(matrix.rows.len(), 3);
+        assert!(matrix.rows.iter().all(|row| row.len() == 3));
+        let missing = &matrix.rows[2][1];
+        assert_eq!((missing.row, missing.column), (2, 1));
+        assert_eq!((missing.row_span, missing.col_span), (1, 1));
+        assert!(missing.bbox.is_none());
+        assert!(missing.text.is_empty());
+
+        for row in 0..3 {
+            for column in 0..3 {
+                let matrix_cell = &matrix.rows[row as usize][column as usize];
+                if (row, column) == (2, 1) {
+                    continue;
+                }
+                let physical = grid
+                    .cells
+                    .iter()
+                    .find(|cell| cell.row == row && cell.column == column)
+                    .expect("physical cell");
+                assert_eq!(matrix_cell.row, physical.row);
+                assert_eq!(matrix_cell.column, physical.column);
+                assert_eq!(matrix_cell.row_span, physical.row_span);
+                assert_eq!(matrix_cell.col_span, physical.col_span);
+                assert_eq!(matrix_cell.text, physical.text);
+                assert_eq!(matrix_cell.confidence, physical.confidence);
+                let matrix_bbox = matrix_cell.bbox.as_ref().expect("physical geometry");
+                let physical_bbox = physical.bbox.as_ref().expect("source geometry");
+                assert_eq!(matrix_bbox.x0, physical_bbox.x0);
+                assert_eq!(matrix_bbox.y0, physical_bbox.y0);
+                assert_eq!(matrix_bbox.x1, physical_bbox.x1);
+                assert_eq!(matrix_bbox.y1, physical_bbox.y1);
+            }
+        }
     }
 }
