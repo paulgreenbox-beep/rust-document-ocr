@@ -267,14 +267,6 @@ impl OcrOptions {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum OcrWarning {
-    /// A local supplemental recognition failure; the existing cell is retained.
-    CellOcrFallbackFailed {
-        page_number: u32,
-        table_index: usize,
-        row: u32,
-        column: u32,
-        reason_code: String,
-    },
     GridDetectorFailed {
         page_number: u32,
         message: String,
@@ -307,6 +299,21 @@ pub enum OcrWarning {
     OverlaysUnsupported,
 }
 
+/// Additive, typed diagnostics outside the frozen schema-v1 `warnings` enum.
+/// Old v1 Serde readers ignore this optional result field.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum OcrDiagnostic {
+    /// A local supplemental recognition failure; the existing cell is retained.
+    CellOcrFallbackFailed {
+        page_number: u32,
+        table_index: usize,
+        row: u32,
+        column: u32,
+        reason_code: String,
+    },
+}
+
 /// Versioned processing result returned by [`process_document`].
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OcrResult {
@@ -322,6 +329,9 @@ pub struct OcrResult {
     #[serde(default)]
     pub page_processing: Vec<crate::page_analysis::PageProcessingInfo>,
     pub warnings: Vec<OcrWarning>,
+    /// Optional additive diagnostics; never inserts new kinds into `warnings`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub diagnostics: Vec<OcrDiagnostic>,
 }
 
 impl OcrResult {
@@ -347,6 +357,7 @@ impl OcrResult {
             tables,
             page_processing: Vec::new(),
             warnings,
+            diagnostics: Vec::new(),
         }
     }
 
@@ -355,9 +366,15 @@ impl OcrResult {
         let PipelineOutcome {
             document,
             page_processing,
-            ..
+            warnings: pipeline_warnings,
         } = outcome;
         let mut result = Self::from_document(document, warnings);
+        for warning in pipeline_warnings {
+            match ocr_warning_from_pipeline(warning) {
+                Ok(warning) => result.warnings.push(warning),
+                Err(diagnostic) => result.diagnostics.push(diagnostic),
+            }
+        }
         result.page_processing = page_processing;
         result.tables = result
             .document
@@ -765,25 +782,19 @@ pub fn process_document_with_progress(
         }
     };
 
-    let mut warnings = source_warnings
+    let warnings = source_warnings
         .into_iter()
         .map(ocr_warning_from_input_source)
-        .chain(
-            outcome
-                .warnings
-                .iter()
-                .cloned()
-                .map(ocr_warning_from_pipeline),
-        )
         .collect::<Vec<_>>();
-    if options.generate_overlays {
-        warnings.push(OcrWarning::OverlaysUnsupported);
-    }
 
     // The CLI emits `export` and the terminal `completed` event only after the
     // output transaction has published every artifact. The library returns the
     // aggregated result without claiming publication succeeded.
-    Ok(OcrResult::from_pipeline_outcome(outcome, warnings))
+    let mut result = OcrResult::from_pipeline_outcome(outcome, warnings);
+    if options.generate_overlays {
+        result.warnings.push(OcrWarning::OverlaysUnsupported);
+    }
+    Ok(result)
 }
 
 /// Stub-build form of [`process_document`]. It keeps the public signature
@@ -975,21 +986,23 @@ fn finite_non_negative_u32(value: f64) -> u32 {
 }
 
 #[cfg(feature = "native")]
-fn ocr_warning_from_pipeline(warning: PipelineWarning) -> OcrWarning {
-    match warning {
+fn ocr_warning_from_pipeline(warning: PipelineWarning) -> Result<OcrWarning, OcrDiagnostic> {
+    Ok(match warning {
         PipelineWarning::CellOcrFallbackFailed {
             page_number,
             table_index,
             row,
             column,
             reason_code,
-        } => OcrWarning::CellOcrFallbackFailed {
-            page_number,
-            table_index,
-            row,
-            column,
-            reason_code,
-        },
+        } => {
+            return Err(OcrDiagnostic::CellOcrFallbackFailed {
+                page_number,
+                table_index,
+                row,
+                column,
+                reason_code,
+            })
+        }
         PipelineWarning::GridDetectorFailed {
             page_number,
             message,
@@ -1032,7 +1045,7 @@ fn ocr_warning_from_pipeline(warning: PipelineWarning) -> OcrWarning {
             page_number,
             message,
         },
-    }
+    })
 }
 
 #[cfg(feature = "native")]
@@ -1143,7 +1156,7 @@ mod tests {
 
     #[test]
     fn cell_fallback_warning_is_additive_schema_v1_and_contains_only_location_and_code() {
-        let warning = super::OcrWarning::CellOcrFallbackFailed {
+        let warning = super::OcrDiagnostic::CellOcrFallbackFailed {
             page_number: 2,
             table_index: 0,
             row: 3,
@@ -1158,10 +1171,73 @@ mod tests {
         assert!(value.get("text").is_none());
         assert!(value.get("message").is_none());
         assert_eq!(
-            serde_json::from_value::<super::OcrWarning>(value).unwrap(),
+            serde_json::from_value::<super::OcrDiagnostic>(value).unwrap(),
             warning
         );
         assert_eq!(OCR_RESULT_SCHEMA_VERSION, 1);
+    }
+
+    #[cfg(feature = "native")]
+    #[test]
+    fn pipeline_cell_failure_maps_to_typed_diagnostic_without_loss() {
+        let cell_warning = crate::pipeline::PipelineWarning::CellOcrFallbackFailed {
+            page_number: 2,
+            table_index: 3,
+            row: 4,
+            column: 5,
+            reason_code: "recognition_failed".into(),
+        };
+        let mapped = super::ocr_warning_from_pipeline(cell_warning.clone());
+        assert_eq!(
+            mapped,
+            Err(super::OcrDiagnostic::CellOcrFallbackFailed {
+                page_number: 2,
+                table_index: 3,
+                row: 4,
+                column: 5,
+                reason_code: "recognition_failed".into(),
+            })
+        );
+        assert_eq!(
+            super::ocr_warning_from_pipeline(
+                crate::pipeline::PipelineWarning::GridDetectorFailed {
+                    page_number: 2,
+                    message: "synthetic detector error".into(),
+                }
+            ),
+            Ok(super::OcrWarning::GridDetectorFailed {
+                page_number: 2,
+                message: "synthetic detector error".into(),
+            })
+        );
+        let result = OcrResult::from_pipeline_outcome(
+            crate::pipeline::PipelineOutcome {
+                document: DocumentResult::new(vec![]),
+                page_processing: vec![],
+                warnings: vec![
+                    cell_warning,
+                    crate::pipeline::PipelineWarning::GridDetectorFailed {
+                        page_number: 2,
+                        message: "synthetic detector error".into(),
+                    },
+                ],
+            },
+            vec![super::OcrWarning::OverlaysUnsupported],
+        );
+        assert_eq!(result.diagnostics, vec![mapped.unwrap_err()]);
+        assert_eq!(
+            result.warnings,
+            vec![
+                super::OcrWarning::OverlaysUnsupported,
+                super::OcrWarning::GridDetectorFailed {
+                    page_number: 2,
+                    message: "synthetic detector error".into(),
+                }
+            ]
+        );
+        let json = serde_json::to_value(result).unwrap();
+        assert_eq!(json["diagnostics"][0]["kind"], "cell_ocr_fallback_failed");
+        assert_eq!(json["warnings"][1]["kind"], "grid_detector_failed");
     }
 
     #[test]

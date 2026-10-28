@@ -44,7 +44,7 @@ pub use api::{
     export_legacy_document_json, export_ocr_result_docx, export_ocr_result_json,
     export_ocr_result_xlsx, process_document, process_document_with_progress,
     ClassificationEvidence, ColumnRole, ColumnRoleAssignment, DetectedGrid, DocumentModel,
-    EvidenceKind, GridKind, OcrError, OcrOptions, OcrResult, OcrWarning, PageTables,
+    EvidenceKind, GridKind, OcrDiagnostic, OcrError, OcrOptions, OcrResult, OcrWarning, PageTables,
     SemanticTableType, OCR_RESULT_SCHEMA_VERSION,
 };
 pub use config::Config;
