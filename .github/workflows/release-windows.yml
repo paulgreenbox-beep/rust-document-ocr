@@ -1,0 +1,46 @@
+name: Windows portable release candidate (manual)
+on:
+  workflow_dispatch:
+    inputs:
+      runtime_manifest:
+        description: Absolute local path to reviewed, hash-pinned runtime manifest
+        required: true
+        type: string
+      output_root:
+        description: Preapproved local release-candidate output root (outside checkout)
+        required: true
+        type: string
+      baseline_manifest:
+        description: Absolute local path to accepted synthetic output baseline
+        required: true
+        type: string
+      baseline_root:
+        description: Accepted output tree containing text-table and raster directories
+        required: true
+        type: string
+      python_path:
+        description: Absolute preprovisioned maintainer Python executable (not bundled)
+        required: true
+        type: string
+permissions:
+  contents: read
+jobs:
+  candidate:
+    environment: windows-portable-rc
+    runs-on: [self-hosted, Windows, X64, ocr-portable-rc]
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Offline native build and local-only candidate smoke
+        shell: pwsh
+        env:
+          RC_MANIFEST: ${{ inputs.runtime_manifest }}
+          RC_ROOT: ${{ inputs.output_root }}
+          RC_BASELINE: ${{ inputs.baseline_manifest }}
+          RC_BASELINE_ROOT: ${{ inputs.baseline_root }}
+          RC_PYTHON: ${{ inputs.python_path }}
+        run: |
+          $destination = Join-Path $env:RC_ROOT ('rust-document-ocr-rc-' + $env:GITHUB_RUN_ID + '-' + $env:GITHUB_RUN_ATTEMPT)
+          ./scripts/build-windows-portable.ps1 -RuntimeManifest $env:RC_MANIFEST -ApprovedOutputRoot $env:RC_ROOT -Destination $destination -BaselineManifest $env:RC_BASELINE -BaselineRoot $env:RC_BASELINE_ROOT -PythonPath $env:RC_PYTHON
+      # No downloads, artifact uploads, public ZIP, or GitHub Release creation.

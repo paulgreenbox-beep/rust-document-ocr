@@ -31,6 +31,9 @@ jobs:
         run: cargo fetch --locked
       - name: Formatting
         run: cargo fmt --all -- --check
+      - name: Portable packaging source-only gates
+        shell: pwsh
+        run: ./scripts/test-windows-portable.ps1
       - name: Verify reviewed synthetic documents
         shell: pwsh
         run: |
