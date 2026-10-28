@@ -1,8 +1,11 @@
 use std::io::Read;
 
+use ocr_pipeline::table_grid::{classify_grid, TableAssignmentMetrics};
+use ocr_pipeline::table_grid::{GridLine, TableGrid};
 use ocr_pipeline::{
-    export_ocr_result_xlsx, BoundingBox, ColumnRole, DetectedGrid, DocumentResult, GridKind,
-    OcrResult, PageKind, PageResult, SemanticTableType, TableCell, TableMatrix, TableType,
+    export_ocr_result_docx, export_ocr_result_xlsx, BoundingBox, ColumnRole, DetectedGrid,
+    DocumentResult, GridKind, OcrResult, PageKind, PageResult, SemanticTableType, TableCell,
+    TableMatrix, TableType,
 };
 use serde::Deserialize;
 use tempfile::tempdir;
@@ -177,6 +180,190 @@ fn public_result_keeps_kind_and_exposes_additive_semantics() {
             "missing additive JSON field {field}"
         );
     }
+}
+
+#[test]
+fn sparse_grid_matrix_projects_missing_cell_with_physical_coordinates() {
+    let mut physical_cells = Vec::new();
+    for row in 0..3 {
+        for column in 0..3 {
+            if (row, column) == (2, 1) {
+                continue;
+            }
+            let mut cell = TableCell::grid(
+                row,
+                column,
+                BoundingBox::new(
+                    f64::from(column) * 10.0,
+                    f64::from(row) * 10.0,
+                    f64::from(column + 1) * 10.0,
+                    f64::from(row + 1) * 10.0,
+                ),
+            );
+            cell.text = format!("{row},{column}");
+            cell.confidence = 0.8;
+            physical_cells.push(cell);
+        }
+    }
+    let grid = TableGrid {
+        bbox: BoundingBox::new(0.0, 0.0, 30.0, 30.0),
+        horizontal_lines: (0..=3)
+            .map(|index| GridLine {
+                position: f64::from(index) * 10.0,
+                start: 0.0,
+                end: 30.0,
+            })
+            .collect(),
+        vertical_lines: (0..=3)
+            .map(|index| GridLine {
+                position: f64::from(index) * 10.0,
+                start: 0.0,
+                end: 30.0,
+            })
+            .collect(),
+        intersections: Vec::new(),
+        cells: physical_cells,
+        confidence: 0.9,
+    };
+    let table = grid.to_matrix();
+    let result = result_from_tables(vec![table]);
+    let value = serde_json::to_value(&result).expect("serialize stable OCR result");
+    let grid = &value["tables"][0]["grids"][0];
+    let cells = grid["cells"].as_array().expect("stable grid cells");
+    assert_eq!(cells.len(), 9);
+
+    let missing = cells
+        .iter()
+        .find(|cell| cell["row"] == 2 && cell["column"] == 1)
+        .expect("placeholder at the absent physical location");
+    assert_eq!(missing["row_span"], 1);
+    assert_eq!(missing["col_span"], 1);
+    assert_eq!(missing["bbox"]["x"], 0);
+    assert_eq!(missing["bbox"]["y"], 0);
+    assert_eq!(missing["bbox"]["width"], 0);
+    assert_eq!(missing["bbox"]["height"], 0);
+
+    for row in 0..3 {
+        for column in 0..3 {
+            let stable = cells
+                .iter()
+                .find(|cell| cell["row"] == row && cell["column"] == column)
+                .expect("one stable cell per matrix slot");
+            if (row, column) == (2, 1) {
+                assert_eq!(stable["text"], "");
+                let legacy = &value["document"]["pages"][0]["tables"][0]["rows"][row as usize]
+                    [column as usize];
+                assert!(
+                    legacy["bbox"].is_null(),
+                    "placeholder has no legacy geometry"
+                );
+                continue;
+            }
+            assert_eq!(stable["text"], format!("{row},{column}"));
+            assert_eq!(stable["bbox"]["x"], column * 10);
+            assert_eq!(stable["bbox"]["y"], row * 10);
+            assert_eq!(stable["bbox"]["width"], 10);
+            assert_eq!(stable["bbox"]["height"], 10);
+        }
+    }
+}
+
+#[test]
+fn dense_title_stamp_is_excluded_from_docx_and_xlsx_exports() {
+    let mut physical_cells = Vec::new();
+    let texts = [
+        ["SHEET", "STAMP_ONLY", "SCALE", "1:50"],
+        ["DRAWN", "Ivanov", "DATE", "28.10.26"],
+        ["CHECKED", "Petrov", "OBJECT", "Building"],
+        ["REV", "A", "SIGNATURE", ""],
+    ];
+    for (row, values) in texts.iter().enumerate() {
+        for (column, text) in values.iter().enumerate() {
+            let mut cell = TableCell::grid(
+                row as u32,
+                column as u32,
+                BoundingBox::new(
+                    600.0 + column as f64 * 50.0,
+                    720.0 + row as f64 * 45.0,
+                    600.0 + (column + 1) as f64 * 50.0,
+                    720.0 + (row + 1) as f64 * 45.0,
+                ),
+            );
+            cell.text = (*text).to_string();
+            physical_cells.push(cell);
+        }
+    }
+    let stamp_grid = TableGrid {
+        bbox: BoundingBox::new(600.0, 720.0, 800.0, 900.0),
+        horizontal_lines: (0..=4)
+            .map(|index| GridLine {
+                position: 720.0 + f64::from(index) * 45.0,
+                start: 600.0,
+                end: 800.0,
+            })
+            .collect(),
+        vertical_lines: (0..=4)
+            .map(|index| GridLine {
+                position: 600.0 + f64::from(index) * 50.0,
+                start: 720.0,
+                end: 900.0,
+            })
+            .collect(),
+        intersections: Vec::new(),
+        cells: physical_cells,
+        confidence: 1.0,
+    };
+    let metrics = TableAssignmentMetrics {
+        table_bbox: stamp_grid.bbox.clone(),
+        rows: 4,
+        columns: 4,
+        cells: 16,
+        empty_cells: 0,
+        ocr_words_total: 16,
+        words_assigned: 16,
+        words_unassigned: 0,
+        duplicate_assignments: 0,
+        detector_confidence: 1.0,
+    };
+    let stamp_type = classify_grid(&stamp_grid, &metrics, 1_000, 1_000);
+    assert_eq!(stamp_type, TableType::TitleBlock);
+    let mut stamp = stamp_grid.to_matrix_with_type(stamp_type);
+    stamp.confidence = 1.0;
+
+    let mut data = matrix(&[
+        &["Position", "Code", "Name", "Quantity"],
+        &["1", "A-1", "KEEP_DATA", "2"],
+    ]);
+    data.confidence = 0.9;
+    let result = result_from_tables(vec![data, stamp]);
+    assert_eq!(result.tables[1].grids[0].kind, GridKind::TitleBlock);
+
+    let directory = tempdir().expect("temporary export directory");
+    let xlsx_path = directory.path().join("data-only.xlsx");
+    export_ocr_result_xlsx(&result, &xlsx_path, false).expect("data-only XLSX export");
+    let xlsx = std::fs::File::open(&xlsx_path).expect("open XLSX");
+    let mut xlsx_archive = ZipArchive::new(xlsx).expect("read XLSX archive");
+    let mut workbook = String::new();
+    xlsx_archive
+        .by_name("xl/workbook.xml")
+        .expect("XLSX workbook manifest")
+        .read_to_string(&mut workbook)
+        .expect("read XLSX workbook manifest");
+    assert!(workbook.contains("Page_1"), "data worksheet is retained");
+    assert!(!workbook.contains("TitleBlock"), "title sheet is excluded");
+
+    let docx_path = directory.path().join("data-only.docx");
+    export_ocr_result_docx(&result, &docx_path, false).expect("data-only DOCX export");
+    let docx = std::fs::File::open(&docx_path).expect("open DOCX");
+    let mut docx_archive = ZipArchive::new(docx).expect("read DOCX archive");
+    let mut document = String::new();
+    docx_archive
+        .by_name("word/document.xml")
+        .expect("DOCX main document")
+        .read_to_string(&mut document)
+        .expect("read DOCX document");
+    assert!(document.contains("KEEP_DATA"), "data table is retained");
+    assert!(!document.contains("STAMP_ONLY"), "title block is excluded");
 }
 
 #[test]

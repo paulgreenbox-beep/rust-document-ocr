@@ -132,6 +132,16 @@ impl Default for OcrRequest {
 /// - `recognize_words` returns the per-word geometry needed to
 ///   reconstruct tables.
 pub trait OcrEngine {
+    /// Classifies only explicitly recoverable recognition/output failures for
+    /// one optional cell request. Unknown, initialization and system errors
+    /// remain fatal. Returned codes must be fixed identifiers, never OCR text.
+    fn recoverable_cell_error_reason(
+        &self,
+        _error: &(dyn std::error::Error + 'static),
+    ) -> Option<&'static str> {
+        None
+    }
+
     /// Effective page profile, used to keep language-sensitive table repair
     /// from treating Chinese text as noise in a Latin technical identifier.
     fn active_language_profile(&self) -> OcrLanguageProfile {
@@ -272,6 +282,13 @@ impl<'a, E: OcrEngine + ?Sized> LanguageRoutedOcrEngine<'a, E> {
 }
 
 impl<E: OcrEngine + ?Sized> OcrEngine for LanguageRoutedOcrEngine<'_, E> {
+    fn recoverable_cell_error_reason(
+        &self,
+        error: &(dyn std::error::Error + 'static),
+    ) -> Option<&'static str> {
+        self.inner.recoverable_cell_error_reason(error)
+    }
+
     fn active_language_profile(&self) -> OcrLanguageProfile {
         if self.profile == OcrLanguageProfile::Configured {
             self.inner.active_language_profile()

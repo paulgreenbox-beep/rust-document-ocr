@@ -5,16 +5,16 @@ use std::process::ExitCode;
 use clap::Parser;
 use ocr_pipeline::config::Config;
 
-#[cfg(feature = "native")]
+#[cfg(any(feature = "native", test))]
 use std::ffi::OsString;
-#[cfg(feature = "native")]
+#[cfg(any(feature = "native", test))]
 use std::path::{Path, PathBuf};
-#[cfg(feature = "native")]
+#[cfg(any(feature = "native", test))]
 use std::sync::{
     atomic::{AtomicU64, Ordering},
     Mutex,
 };
-#[cfg(feature = "native")]
+#[cfg(any(feature = "native", test))]
 use std::{
     fs::{File, OpenOptions},
     io::{BufWriter, Write},
@@ -233,6 +233,13 @@ fn run_native_main(config: &Config, progress_jsonl: Option<&Path>) -> ExitCode {
         OcrProgressReporter, OcrProgressStage, TableMode,
     };
 
+    // Validate without creating output or loading native libraries. Recheck
+    // when staging and publishing, since another process can create the path.
+    if let Err(error) = preflight_output_path(&config.output_dir) {
+        eprintln!("Invalid output directory: {error}");
+        return ExitCode::from(1);
+    }
+
     let reporter = match progress_jsonl {
         Some(path) => match JsonlProgressReporter::create(path) {
             Ok(reporter) => Some(reporter),
@@ -241,7 +248,8 @@ fn run_native_main(config: &Config, progress_jsonl: Option<&Path>) -> ExitCode {
                     "Failed to create progress JSON Lines file {}: {error}",
                     path.display()
                 );
-                return ExitCode::from(1);
+                eprintln!("OCR warning [progress_write_failed]: progress telemetry is disabled.");
+                None
             }
         },
         None => None,
@@ -378,30 +386,71 @@ fn run_native_main(config: &Config, progress_jsonl: Option<&Path>) -> ExitCode {
     ExitCode::SUCCESS
 }
 
-#[cfg(feature = "native")]
-struct JsonlProgressReporter {
-    writer: Mutex<BufWriter<File>>,
+#[cfg(any(feature = "native", test))]
+struct ProgressWriter<W> {
+    writer: W,
+    first_error: Option<std::io::Error>,
 }
 
-#[cfg(feature = "native")]
-impl JsonlProgressReporter {
+#[cfg(any(feature = "native", test))]
+struct JsonlProgressReporter<W = BufWriter<File>> {
+    state: Mutex<ProgressWriter<W>>,
+}
+
+#[cfg(any(feature = "native", test))]
+impl JsonlProgressReporter<BufWriter<File>> {
     fn create(path: &Path) -> std::io::Result<Self> {
         let file = OpenOptions::new().write(true).create_new(true).open(path)?;
-        Ok(Self {
-            writer: Mutex::new(BufWriter::new(file)),
-        })
+        Ok(Self::from_writer(BufWriter::new(file)))
     }
 }
 
-#[cfg(feature = "native")]
-impl ocr_pipeline::OcrProgressReporter for JsonlProgressReporter {
+#[cfg(any(feature = "native", test))]
+impl<W: Write + Send> JsonlProgressReporter<W> {
+    fn from_writer(writer: W) -> Self {
+        Self {
+            state: Mutex::new(ProgressWriter {
+                writer,
+                first_error: None,
+            }),
+        }
+    }
+
+    #[cfg(test)]
+    fn failure_reason(&self) -> Option<String> {
+        self.state
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .first_error
+            .as_ref()
+            .map(ToString::to_string)
+    }
+}
+
+#[cfg(any(feature = "native", test))]
+impl<W: Write + Send> ocr_pipeline::OcrProgressReporter for JsonlProgressReporter<W> {
     fn report(&self, event: &ocr_pipeline::OcrProgressEvent) {
-        let Ok(mut writer) = self.writer.lock() else {
+        let mut state = self
+            .state
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        if state.first_error.is_some() {
             return;
-        };
-        if serde_json::to_writer(&mut *writer, event).is_ok() {
-            let _ = writer.write_all(b"\n");
-            let _ = writer.flush();
+        }
+        let result = (|| -> std::io::Result<()> {
+            serde_json::to_writer(&mut state.writer, event).map_err(std::io::Error::other)?;
+            state.writer.write_all(b"\n")?;
+            state.writer.flush()
+        })();
+        if let Err(error) = result {
+            // Keep the first cause and disable this optional sink. Reporting
+            // directly to stderr once avoids recursive progress/log failures.
+            let diagnostic = error.to_string();
+            state.first_error = Some(error);
+            let _ = writeln!(
+                std::io::stderr().lock(),
+                "OCR warning [progress_write_failed]: {diagnostic}; progress telemetry disabled."
+            );
         }
     }
 }
@@ -488,17 +537,17 @@ fn run_native(
 // already exist; OutputTransaction::create does NOT create it.
 // ---------------------------------------------------------------------------
 
-#[cfg(feature = "native")]
+#[cfg(any(feature = "native", test))]
 static STAGING_COUNTER: AtomicU64 = AtomicU64::new(0);
 
-#[cfg(feature = "native")]
+#[cfg(any(feature = "native", test))]
 struct OutputTransaction {
     final_dir: PathBuf,
     staging_dir: PathBuf,
     committed: bool,
 }
 
-#[cfg(feature = "native")]
+#[cfg(any(feature = "native", test))]
 impl OutputTransaction {
     /// Reserve a staging directory next to `final_dir` without creating
     /// `final_dir` itself. Returns an error if `final_dir` already exists
@@ -510,48 +559,8 @@ impl OutputTransaction {
         reason = "Preserve accepted output transaction control flow during publication."
     )]
     fn create(final_dir: &Path) -> std::io::Result<Self> {
-        // 1) final_dir must not exist (do not overwrite user data).
-        match std::fs::metadata(final_dir) {
-            Ok(_) => {
-                return Err(std::io::Error::new(
-                    std::io::ErrorKind::AlreadyExists,
-                    format!("output directory already exists: {}", final_dir.display()),
-                ));
-            }
-            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
-            Err(e) => return Err(e),
-        }
-
-        // 2) parent of final_dir must already exist; the CLI does not
-        //    create it (intentional: see module-level doc comment).
-        let parent = final_dir.parent().ok_or_else(|| {
-            std::io::Error::new(
-                std::io::ErrorKind::InvalidInput,
-                format!(
-                    "output directory has no parent component: {}",
-                    final_dir.display()
-                ),
-            )
-        })?;
-        match std::fs::metadata(parent) {
-            Ok(m) if m.is_dir() => {}
-            Ok(_) => {
-                return Err(std::io::Error::new(
-                    std::io::ErrorKind::InvalidInput,
-                    format!("output parent is not a directory: {}", parent.display()),
-                ));
-            }
-            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
-                return Err(std::io::Error::new(
-                    std::io::ErrorKind::NotFound,
-                    format!(
-                        "output parent directory does not exist: {}",
-                        parent.display()
-                    ),
-                ));
-            }
-            Err(e) => return Err(e),
-        }
+        preflight_output_path(final_dir)?;
+        let parent = output_parent(final_dir)?;
 
         // 3) Compute a unique sibling staging path.
         let final_name = final_dir.file_name().ok_or_else(|| {
@@ -603,13 +612,213 @@ impl OutputTransaction {
     /// (it has been renamed to `final_dir`).
     fn commit(&mut self) -> std::io::Result<()> {
         debug_assert!(!self.committed, "commit called twice on OutputTransaction");
-        // Directory rename within the same parent is atomic on all
-        // supported filesystems (POSIX rename, Windows MoveFileEx with
-        // REPLACE_EXISTING semantics, NTFS/JFS/ext4/ZFS all provide
-        // this). We do not pre-delete `final_dir`: the create() check
-        // guarantees it does not exist.
+        // A contender may have created final_dir after staging began. Windows
+        // directory rename also refuses an existing destination, closing the
+        // check/rename race on the validated Windows target. Do not pre-delete.
+        preflight_output_path(&self.final_dir)?;
         std::fs::rename(&self.staging_dir, &self.final_dir)?;
         self.committed = true;
         Ok(())
+    }
+}
+
+#[cfg(any(feature = "native", test))]
+fn output_parent(final_dir: &Path) -> std::io::Result<&Path> {
+    if final_dir.file_name().is_none() {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::InvalidInput,
+            "output directory has no final name component",
+        ));
+    }
+    Ok(final_dir
+        .parent()
+        .filter(|parent| !parent.as_os_str().is_empty())
+        .unwrap_or_else(|| Path::new(".")))
+}
+
+/// Read-only early validation; staging and commit repeat the same checks.
+#[cfg(any(feature = "native", test))]
+fn preflight_output_path(final_dir: &Path) -> std::io::Result<()> {
+    match std::fs::symlink_metadata(final_dir) {
+        Ok(_) => {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::AlreadyExists,
+                format!("output directory already exists: {}", final_dir.display()),
+            ));
+        }
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+        Err(error) => return Err(error),
+    }
+    let parent = output_parent(final_dir)?;
+    let metadata = std::fs::metadata(parent)?;
+    if !metadata.is_dir() {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::InvalidInput,
+            format!("output parent is not a directory: {}", parent.display()),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+mod audit_tests {
+    use super::*;
+    use ocr_pipeline::{OcrProgressEvent, OcrProgressReporter, OcrProgressStage};
+    use std::sync::Arc;
+
+    #[test]
+    fn existing_output_dir_rejected_before_ocr() {
+        let parent = tempfile::tempdir().unwrap();
+        let output = parent.path().join("existing");
+        std::fs::create_dir(&output).unwrap();
+        std::fs::write(output.join("keep.txt"), b"existing result").unwrap();
+        assert_eq!(
+            preflight_output_path(&output).unwrap_err().kind(),
+            std::io::ErrorKind::AlreadyExists
+        );
+        assert_eq!(
+            std::fs::read(output.join("keep.txt")).unwrap(),
+            b"existing result"
+        );
+        assert_eq!(std::fs::read_dir(parent.path()).unwrap().count(), 1);
+    }
+
+    #[test]
+    fn missing_output_parent_rejected_before_ocr() {
+        let parent = tempfile::tempdir().unwrap();
+        let output = parent.path().join("missing/output");
+        assert_eq!(
+            preflight_output_path(&output).unwrap_err().kind(),
+            std::io::ErrorKind::NotFound
+        );
+        assert_eq!(std::fs::read_dir(parent.path()).unwrap().count(), 0);
+    }
+
+    #[test]
+    fn valid_output_still_uses_atomic_staging() {
+        let parent = tempfile::tempdir().unwrap();
+        let output = parent.path().join("output");
+        preflight_output_path(&output).unwrap();
+        assert!(!output.exists());
+        let mut transaction = OutputTransaction::create(&output).unwrap();
+        let staging = transaction.staging_dir().to_path_buf();
+        std::fs::write(transaction.staging_path("result.json"), b"{}").unwrap();
+        assert!(!output.exists());
+        transaction.commit().unwrap();
+        assert!(!staging.exists());
+        assert_eq!(std::fs::read(output.join("result.json")).unwrap(), b"{}");
+    }
+
+    #[test]
+    fn concurrent_output_creation_does_not_overwrite_data() {
+        for populated in [false, true] {
+            let parent = tempfile::tempdir().unwrap();
+            let output = parent.path().join("output");
+            let mut first = OutputTransaction::create(&output).unwrap();
+            let mut second = OutputTransaction::create(&output).unwrap();
+            std::fs::write(first.staging_path("result.json"), b"first").unwrap();
+            std::fs::write(second.staging_path("result.json"), b"second").unwrap();
+            if populated {
+                second.commit().unwrap();
+            } else {
+                std::fs::create_dir(&output).unwrap();
+            }
+            assert_eq!(
+                first.commit().unwrap_err().kind(),
+                std::io::ErrorKind::AlreadyExists
+            );
+            assert!(first.staging_dir().exists());
+            if populated {
+                assert_eq!(
+                    std::fs::read(output.join("result.json")).unwrap(),
+                    b"second"
+                );
+            } else {
+                assert_eq!(std::fs::read_dir(&output).unwrap().count(), 0);
+            }
+        }
+    }
+
+    struct FailingWriter {
+        attempts: Arc<AtomicU64>,
+        fail_flush: bool,
+    }
+
+    impl Write for FailingWriter {
+        fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+            self.attempts.fetch_add(1, Ordering::Relaxed);
+            if self.fail_flush {
+                Ok(bytes.len())
+            } else {
+                Err(std::io::Error::new(
+                    std::io::ErrorKind::StorageFull,
+                    "synthetic write failure",
+                ))
+            }
+        }
+
+        fn flush(&mut self) -> std::io::Result<()> {
+            Err(std::io::Error::new(
+                std::io::ErrorKind::StorageFull,
+                "synthetic flush failure",
+            ))
+        }
+    }
+
+    #[test]
+    fn progress_write_failure_is_observable() {
+        for fail_flush in [false, true] {
+            let attempts = Arc::new(AtomicU64::new(0));
+            let reporter = JsonlProgressReporter::from_writer(FailingWriter {
+                attempts: attempts.clone(),
+                fail_flush,
+            });
+            let event = OcrProgressEvent::document(OcrProgressStage::Completed, 2, 0.0);
+            reporter.report(&event);
+            let reason = reporter.failure_reason().unwrap();
+            assert!(reason.contains(if fail_flush {
+                "flush failure"
+            } else {
+                "write failure"
+            }));
+            let first_attempts = attempts.load(Ordering::Relaxed);
+            assert!(first_attempts > 0);
+            for _ in 0..10 {
+                reporter.report(&event);
+            }
+            assert_eq!(attempts.load(Ordering::Relaxed), first_attempts);
+            assert_eq!(reporter.failure_reason().as_deref(), Some(reason.as_str()));
+        }
+    }
+
+    #[test]
+    fn progress_jsonl_events_keep_the_existing_schema_and_order() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("progress.jsonl");
+        let reporter = JsonlProgressReporter::create(&path).unwrap();
+        let events = [
+            OcrProgressEvent::document(OcrProgressStage::Export, 2, 0.0),
+            OcrProgressEvent::document(OcrProgressStage::Completed, 2, 0.0),
+        ];
+        for event in &events {
+            reporter.report(event);
+        }
+        assert!(reporter.failure_reason().is_none());
+        let actual = std::fs::read_to_string(&path).unwrap();
+        let parsed: Vec<serde_json::Value> = actual
+            .lines()
+            .map(|line| serde_json::from_str(line).unwrap())
+            .collect();
+        assert_eq!(
+            parsed,
+            events
+                .iter()
+                .map(|event| serde_json::to_value(event).unwrap())
+                .collect::<Vec<_>>()
+        );
+        assert_eq!(
+            JsonlProgressReporter::create(&path).err().unwrap().kind(),
+            std::io::ErrorKind::AlreadyExists
+        );
     }
 }

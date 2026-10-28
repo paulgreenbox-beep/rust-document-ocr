@@ -235,6 +235,17 @@ impl TesseractOcrEngine {
 }
 
 impl OcrEngine for TesseractOcrEngine {
+    fn recoverable_cell_error_reason(
+        &self,
+        error: &(dyn std::error::Error + 'static),
+    ) -> Option<&'static str> {
+        match error.downcast_ref::<TesseractError>() {
+            Some(TesseractError::Recognition(_)) => Some("recognition_failed"),
+            Some(TesseractError::Tsv(_)) => Some("invalid_recognition_output"),
+            _ => None,
+        }
+    }
+
     fn active_language_profile(&self) -> OcrLanguageProfile {
         if self.languages.iter().any(|language| language == "chi_sim") {
             OcrLanguageProfile::SimplifiedChinese
@@ -532,6 +543,41 @@ fn parse_tsv_words(tsv: &str) -> Result<Vec<Word>, Box<dyn std::error::Error>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn cell_error_classification_recovers_only_typed_recognition_failures() {
+        let engine = TesseractOcrEngine {
+            lang: "eng".into(),
+            languages: vec!["eng".into()],
+            tessdata_path: PathBuf::new(),
+            technical_model: None,
+        };
+        assert_eq!(
+            engine.recoverable_cell_error_reason(&TesseractError::Recognition(1)),
+            Some("recognition_failed")
+        );
+        assert_eq!(
+            engine.recoverable_cell_error_reason(&TesseractError::Tsv("private output".into())),
+            Some("invalid_recognition_output")
+        );
+        let fatal: Vec<Box<dyn std::error::Error>> = vec![
+            Box::new(TesseractError::Init {
+                language: "eng".into(),
+                tessdata: "missing".into(),
+                detail: "missing runtime".into(),
+            }),
+            Box::new(TesseractError::Configure(
+                "request configuration failed".into(),
+            )),
+            Box::new(TesseractError::Encode(image::ImageError::IoError(
+                std::io::Error::other("image encoding failed"),
+            ))),
+            Box::new(std::io::Error::other("unclassified system failure")),
+        ];
+        for error in fatal {
+            assert_eq!(engine.recoverable_cell_error_reason(error.as_ref()), None);
+        }
+    }
 
     #[test]
     fn parse_tsv_words_extracts_text_and_bbox() {

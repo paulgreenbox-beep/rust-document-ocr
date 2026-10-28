@@ -57,6 +57,10 @@ The CLI writes:
 - `result.docx`: text and supported title-block projection;
 - `result.xlsx`: detected table worksheets.
 
+Optional typed cell-failure `diagnostics` are separate from the frozen v1
+`warnings` enum. See [JSON v1 compatibility](JSON_V1_COMPATIBILITY.md) for
+old-reader behavior and the distinct Rust source-compatibility boundary.
+
 Table structure, recognized text, and inferred meaning remain separate in the
 JSON. Confidence and page-quality fields are diagnostic signals; they are not
 an accuracy guarantee.

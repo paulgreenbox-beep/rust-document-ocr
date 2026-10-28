@@ -1,0 +1,126 @@
+{
+  "report": "api",
+  "status": "equal",
+  "fixtures": {
+    "text-table": {
+      "status": "compatible",
+      "schema_v1": {
+        "baseline": 1,
+        "candidate": 1
+      },
+      "legacy_json": {
+        "status": "equal",
+        "baseline_sha256": "85f41a2a23534f177380e2698c46e85773943f3f4383d65bfbc6c1328431749b",
+        "candidate_sha256": "85f41a2a23534f177380e2698c46e85773943f3f4383d65bfbc6c1328431749b",
+        "unexpected": false
+      },
+      "legacy_document_projection": {
+        "status": "equal",
+        "baseline_sha256": "85f41a2a23534f177380e2698c46e85773943f3f4383d65bfbc6c1328431749b",
+        "candidate_sha256": "85f41a2a23534f177380e2698c46e85773943f3f4383d65bfbc6c1328431749b",
+        "cross_export_equality": {
+          "status": "equal",
+          "baseline_matches_v1_document": true,
+          "candidate_matches_v1_document": true
+        }
+      },
+      "exports": {
+        "result.docx": {
+          "status": "equal",
+          "baseline": {
+            "parts": {
+              "word/document.xml": "dd0732d171ec50b5b9d10de9197e19b1feae5949f2021fe2c5bef882d3ba8ba1"
+            }
+          },
+          "candidate": {
+            "parts": {
+              "word/document.xml": "dd0732d171ec50b5b9d10de9197e19b1feae5949f2021fe2c5bef882d3ba8ba1"
+            }
+          },
+          "differences": [],
+          "unexpected": false
+        },
+        "result.xlsx": {
+          "status": "equal",
+          "baseline": {
+            "parts": {
+              "xl/sharedStrings.xml": "4e4baf94eb4b38e2eacc1bcc60101410e7182011444f724d1b91c80bbf2625e5",
+              "xl/workbook.xml": "52846090e8ce3d9595ba09bf142765f09997ea879a8fa191035ed3f75bb0ad12",
+              "xl/worksheets/sheet1.xml": "7aa890c24608fd68a1e76beb116745d494e14c3f5a1497048cdefe3c9666f219"
+            }
+          },
+          "candidate": {
+            "parts": {
+              "xl/sharedStrings.xml": "4e4baf94eb4b38e2eacc1bcc60101410e7182011444f724d1b91c80bbf2625e5",
+              "xl/workbook.xml": "52846090e8ce3d9595ba09bf142765f09997ea879a8fa191035ed3f75bb0ad12",
+              "xl/worksheets/sheet1.xml": "7aa890c24608fd68a1e76beb116745d494e14c3f5a1497048cdefe3c9666f219"
+            }
+          },
+          "differences": [],
+          "unexpected": false
+        }
+      },
+      "unexpected": false
+    },
+    "raster": {
+      "status": "compatible",
+      "schema_v1": {
+        "baseline": 1,
+        "candidate": 1
+      },
+      "legacy_json": {
+        "status": "equal",
+        "baseline_sha256": "7638dc3f9e3f23a6d0af524576bfa9854df0232d098e94d71a124f7a925fbb53",
+        "candidate_sha256": "7638dc3f9e3f23a6d0af524576bfa9854df0232d098e94d71a124f7a925fbb53",
+        "unexpected": false
+      },
+      "legacy_document_projection": {
+        "status": "equal",
+        "baseline_sha256": "7638dc3f9e3f23a6d0af524576bfa9854df0232d098e94d71a124f7a925fbb53",
+        "candidate_sha256": "7638dc3f9e3f23a6d0af524576bfa9854df0232d098e94d71a124f7a925fbb53",
+        "cross_export_equality": {
+          "status": "equal",
+          "baseline_matches_v1_document": true,
+          "candidate_matches_v1_document": true
+        }
+      },
+      "exports": {
+        "result.docx": {
+          "status": "equal",
+          "baseline": {
+            "parts": {
+              "word/document.xml": "e5a755c2077474b7361843911d28190eb64e2aa86e1a98966e7b05a902274d2f"
+            }
+          },
+          "candidate": {
+            "parts": {
+              "word/document.xml": "e5a755c2077474b7361843911d28190eb64e2aa86e1a98966e7b05a902274d2f"
+            }
+          },
+          "differences": [],
+          "unexpected": false
+        },
+        "result.xlsx": {
+          "status": "equal",
+          "baseline": {
+            "parts": {
+              "xl/sharedStrings.xml": "4e4baf94eb4b38e2eacc1bcc60101410e7182011444f724d1b91c80bbf2625e5",
+              "xl/workbook.xml": "52846090e8ce3d9595ba09bf142765f09997ea879a8fa191035ed3f75bb0ad12",
+              "xl/worksheets/sheet1.xml": "7aa890c24608fd68a1e76beb116745d494e14c3f5a1497048cdefe3c9666f219"
+            }
+          },
+          "candidate": {
+            "parts": {
+              "xl/sharedStrings.xml": "4e4baf94eb4b38e2eacc1bcc60101410e7182011444f724d1b91c80bbf2625e5",
+              "xl/workbook.xml": "52846090e8ce3d9595ba09bf142765f09997ea879a8fa191035ed3f75bb0ad12",
+              "xl/worksheets/sheet1.xml": "7aa890c24608fd68a1e76beb116745d494e14c3f5a1497048cdefe3c9666f219"
+            }
+          },
+          "differences": [],
+          "unexpected": false
+        }
+      },
+      "unexpected": false
+    }
+  }
+}

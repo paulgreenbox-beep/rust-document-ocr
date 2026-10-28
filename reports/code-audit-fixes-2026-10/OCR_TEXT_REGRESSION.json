@@ -1,0 +1,368 @@
+{
+  "report": "ocr",
+  "status": "equal",
+  "fixtures": {
+    "text-table": {
+      "status": "equal",
+      "baseline": {
+        "page_order": [
+          1
+        ],
+        "pages": [
+          {
+            "page_number": 1,
+            "page_text": {
+              "characters": 343,
+              "sha256": "61b15e1761bfea015f3bd9554d3df16f140a67600c44148fdb59b03cc4315d15"
+            },
+            "legacy_cell_values": {
+              "count": 9,
+              "sha256": "9d7ba6d1b66fd6a1ec7ca150b789612fb1598903d87b046248902b1e42d53ec9"
+            },
+            "grid_cell_values": {
+              "count": 9,
+              "sha256": "9d7ba6d1b66fd6a1ec7ca150b789612fb1598903d87b046248902b1e42d53ec9"
+            },
+            "route": {
+              "processing_mode": "native_text+grid",
+              "language": "rus+eng",
+              "native_text_quality": {
+                "pdfium_character_count": 350,
+                "unicode_character_count": 343,
+                "unicode_coverage": 0.98,
+                "non_whitespace_characters": 293,
+                "printable_characters": 343,
+                "printable_ratio": 1.0,
+                "replacement_characters": 0,
+                "replacement_ratio": 0.0,
+                "control_characters": 0,
+                "cyrillic_characters": 0,
+                "latin_characters": 281,
+                "other_alphabetic_characters": 0,
+                "supported_script_ratio": 1.0,
+                "suspected_mojibake_characters": 0,
+                "suspected_mojibake_runs": 0,
+                "longest_suspected_mojibake_run": 0,
+                "suspected_mojibake_ratio": 0.0,
+                "has_strong_mojibake": false,
+                "contains_cyrillic": false,
+                "contains_latin": true,
+                "contains_digits": true,
+                "is_usable": true,
+                "is_near_usable": false
+              }
+            }
+          }
+        ],
+        "confidence": {
+          "pages": [
+            {
+              "page_number": 1,
+              "ocr_confidence": null,
+              "legacy_table_confidence": [
+                1.0
+              ],
+              "legacy_cell_confidence": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "grid_confidence": [
+                1.0
+              ],
+              "grid_cell_confidence": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ]
+            }
+          ]
+        },
+        "warnings": []
+      },
+      "candidate": {
+        "page_order": [
+          1
+        ],
+        "pages": [
+          {
+            "page_number": 1,
+            "page_text": {
+              "characters": 343,
+              "sha256": "61b15e1761bfea015f3bd9554d3df16f140a67600c44148fdb59b03cc4315d15"
+            },
+            "legacy_cell_values": {
+              "count": 9,
+              "sha256": "9d7ba6d1b66fd6a1ec7ca150b789612fb1598903d87b046248902b1e42d53ec9"
+            },
+            "grid_cell_values": {
+              "count": 9,
+              "sha256": "9d7ba6d1b66fd6a1ec7ca150b789612fb1598903d87b046248902b1e42d53ec9"
+            },
+            "route": {
+              "processing_mode": "native_text+grid",
+              "language": "rus+eng",
+              "native_text_quality": {
+                "pdfium_character_count": 350,
+                "unicode_character_count": 343,
+                "unicode_coverage": 0.98,
+                "non_whitespace_characters": 293,
+                "printable_characters": 343,
+                "printable_ratio": 1.0,
+                "replacement_characters": 0,
+                "replacement_ratio": 0.0,
+                "control_characters": 0,
+                "cyrillic_characters": 0,
+                "latin_characters": 281,
+                "other_alphabetic_characters": 0,
+                "supported_script_ratio": 1.0,
+                "suspected_mojibake_characters": 0,
+                "suspected_mojibake_runs": 0,
+                "longest_suspected_mojibake_run": 0,
+                "suspected_mojibake_ratio": 0.0,
+                "has_strong_mojibake": false,
+                "contains_cyrillic": false,
+                "contains_latin": true,
+                "contains_digits": true,
+                "is_usable": true,
+                "is_near_usable": false
+              }
+            }
+          }
+        ],
+        "confidence": {
+          "pages": [
+            {
+              "page_number": 1,
+              "ocr_confidence": null,
+              "legacy_table_confidence": [
+                1.0
+              ],
+              "legacy_cell_confidence": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "grid_confidence": [
+                1.0
+              ],
+              "grid_cell_confidence": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ]
+            }
+          ]
+        },
+        "warnings": []
+      },
+      "differences": [],
+      "unexpected": false
+    },
+    "raster": {
+      "status": "equal",
+      "baseline": {
+        "page_order": [
+          1
+        ],
+        "pages": [
+          {
+            "page_number": 1,
+            "page_text": {
+              "characters": 627,
+              "sha256": "46df47581c48651715ba837838483aacae430140a71e313ed0f85cf521b7c753"
+            },
+            "legacy_cell_values": {
+              "count": 9,
+              "sha256": "9d7ba6d1b66fd6a1ec7ca150b789612fb1598903d87b046248902b1e42d53ec9"
+            },
+            "grid_cell_values": {
+              "count": 9,
+              "sha256": "9d7ba6d1b66fd6a1ec7ca150b789612fb1598903d87b046248902b1e42d53ec9"
+            },
+            "route": {
+              "processing_mode": "ocr+grid",
+              "language": "rus+eng",
+              "native_text_quality": {
+                "pdfium_character_count": 0,
+                "unicode_character_count": 0,
+                "unicode_coverage": 0.0,
+                "non_whitespace_characters": 0,
+                "printable_characters": 0,
+                "printable_ratio": 0.0,
+                "replacement_characters": 0,
+                "replacement_ratio": 0.0,
+                "control_characters": 0,
+                "cyrillic_characters": 0,
+                "latin_characters": 0,
+                "other_alphabetic_characters": 0,
+                "supported_script_ratio": 1.0,
+                "suspected_mojibake_characters": 0,
+                "suspected_mojibake_runs": 0,
+                "longest_suspected_mojibake_run": 0,
+                "suspected_mojibake_ratio": 0.0,
+                "has_strong_mojibake": false,
+                "contains_cyrillic": false,
+                "contains_latin": false,
+                "contains_digits": false,
+                "is_usable": false,
+                "is_near_usable": false
+              }
+            }
+          }
+        ],
+        "confidence": {
+          "pages": [
+            {
+              "page_number": 1,
+              "ocr_confidence": 0.96031797,
+              "legacy_table_confidence": [
+                1.0
+              ],
+              "legacy_cell_confidence": [
+                0.93842185,
+                0.96267396,
+                0.96678805,
+                0.96829605,
+                0.96780133,
+                0.954801,
+                0.96577483,
+                0.95092154,
+                0.96441287
+              ],
+              "grid_confidence": [
+                1.0
+              ],
+              "grid_cell_confidence": [
+                0.93842185,
+                0.96267396,
+                0.96678805,
+                0.96829605,
+                0.96780133,
+                0.954801,
+                0.96577483,
+                0.95092154,
+                0.96441287
+              ]
+            }
+          ]
+        },
+        "warnings": []
+      },
+      "candidate": {
+        "page_order": [
+          1
+        ],
+        "pages": [
+          {
+            "page_number": 1,
+            "page_text": {
+              "characters": 627,
+              "sha256": "46df47581c48651715ba837838483aacae430140a71e313ed0f85cf521b7c753"
+            },
+            "legacy_cell_values": {
+              "count": 9,
+              "sha256": "9d7ba6d1b66fd6a1ec7ca150b789612fb1598903d87b046248902b1e42d53ec9"
+            },
+            "grid_cell_values": {
+              "count": 9,
+              "sha256": "9d7ba6d1b66fd6a1ec7ca150b789612fb1598903d87b046248902b1e42d53ec9"
+            },
+            "route": {
+              "processing_mode": "ocr+grid",
+              "language": "rus+eng",
+              "native_text_quality": {
+                "pdfium_character_count": 0,
+                "unicode_character_count": 0,
+                "unicode_coverage": 0.0,
+                "non_whitespace_characters": 0,
+                "printable_characters": 0,
+                "printable_ratio": 0.0,
+                "replacement_characters": 0,
+                "replacement_ratio": 0.0,
+                "control_characters": 0,
+                "cyrillic_characters": 0,
+                "latin_characters": 0,
+                "other_alphabetic_characters": 0,
+                "supported_script_ratio": 1.0,
+                "suspected_mojibake_characters": 0,
+                "suspected_mojibake_runs": 0,
+                "longest_suspected_mojibake_run": 0,
+                "suspected_mojibake_ratio": 0.0,
+                "has_strong_mojibake": false,
+                "contains_cyrillic": false,
+                "contains_latin": false,
+                "contains_digits": false,
+                "is_usable": false,
+                "is_near_usable": false
+              }
+            }
+          }
+        ],
+        "confidence": {
+          "pages": [
+            {
+              "page_number": 1,
+              "ocr_confidence": 0.96031797,
+              "legacy_table_confidence": [
+                1.0
+              ],
+              "legacy_cell_confidence": [
+                0.93842185,
+                0.96267396,
+                0.96678805,
+                0.96829605,
+                0.96780133,
+                0.954801,
+                0.96577483,
+                0.95092154,
+                0.96441287
+              ],
+              "grid_confidence": [
+                1.0
+              ],
+              "grid_cell_confidence": [
+                0.93842185,
+                0.96267396,
+                0.96678805,
+                0.96829605,
+                0.96780133,
+                0.954801,
+                0.96577483,
+                0.95092154,
+                0.96441287
+              ]
+            }
+          ]
+        },
+        "warnings": []
+      },
+      "differences": [],
+      "unexpected": false
+    }
+  }
+}

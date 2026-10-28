@@ -1,0 +1,71 @@
+{
+  "date":"2026-10-28",
+  "build":"debug/unoptimized, Windows x64, Rust 1.97.1",
+  "scope":"bounded synthetic diagnostics; no production optimization promoted",
+  "grid_components":{
+    "algorithm":"unchanged quadratic candidate adjacency scan",
+    "samples":[
+      {"cells":100,"elapsed_ms_rounded":0,"components":1,"component_cells":100},
+      {"cells":500,"elapsed_ms_rounded":4,"components":1,"component_cells":500},
+      {"cells":1000,"elapsed_ms_rounded":18,"components":1,"component_cells":1000},
+      {"cells":5000,"elapsed_ms_rounded":269,"components":1,"component_cells":5000}
+    ],
+    "allocations":"NOT MEASURED",
+    "decision":"CONFIRMED — DEFERRED; no spatial-index rewrite in this reliability patch"
+  },
+  "assignment":{
+    "strategy_cases":6,
+    "duplicate_assignments":0,
+    "geometry_unchanged":true,
+    "almost_outside_sliver":{"existing_assigned":true,"normalized_guard_assigned":false,"center_inside":false},
+    "timings":[{"cells":100,"words":100,"elapsed_ms_rounded":0},{"cells":400,"words":400,"elapsed_ms_rounded":3},{"cells":1600,"words":1600,"elapsed_ms_rounded":44},{"cells":4900,"words":4900,"elapsed_ms_rounded":425}],
+    "decision":"CONFIRMED — DEFERRED; no independent labels justify changed boundary behavior"
+  },
+  "image_conversion":{
+    "samples_per_component":30,
+    "warmups":3,
+    "synthetic_images":"sparse generated text and grid, not representative document accuracy data",
+    "p50_ms":[
+      {"pixels":1000000,"clone":0.0175,"clone_plus_png_encode":20.189,"leptonica_decode":2.6017,"raw_tesseract_recognize_predecoded_pix":7.4508,"steady_full_engine_call":36.1064},
+      {"pixels":4000000,"clone":0.4457,"clone_plus_png_encode":75.1998,"leptonica_decode":9.6252,"raw_tesseract_recognize_predecoded_pix":21.5814,"steady_full_engine_call":127.2415}
+    ],
+    "tesseract_initialization_ms":18.8668,
+    "decision":"RESEARCH ONLY; conversion overhead confirmed, no new unsafe Pix adapter"
+  },
+  "memory_conversion_workers":{
+    "pixels_per_worker":2000000,
+    "measurement":"separate processes, Windows peak working set sampled every 5ms while alive",
+    "samples":[
+      {"workers":1,"peak_working_set_bytes":15319040,"conversion_elapsed_ms":195.1785},
+      {"workers":2,"peak_working_set_bytes":16887808,"conversion_elapsed_ms":210.239},
+      {"workers":4,"peak_working_set_bytes":29683712,"conversion_elapsed_ms":245.6345},
+      {"workers":8,"peak_working_set_bytes":44064768,"conversion_elapsed_ms":295.6253},
+      {"workers":16,"peak_working_set_bytes":76337152,"conversion_elapsed_ms":461.1777}
+    ],
+    "full_page_worker_peak_memory":"NOT MEASURED at every concurrency level; conversion-only numbers exclude OCR models and the complete page pipeline",
+    "global_inflight_budget":"not implemented",
+    "production_default_workers":4,
+    "decision":"CONFIRMED — DEFERRED; no 64-worker stress or default change"
+  },
+  "pdfium":{
+    "source_open_ms":12.9807,
+    "native_extract_including_reopen_p50_ms":3.1734,
+    "render_including_reopen_p50_ms":45.9946,
+    "repetitions":3,
+    "reopen_only_cost":"NOT ISOLATED from extraction/render work",
+    "decision":"CONFIRMED — DEFERRED; retain serialized C API and handle lifetimes"
+  },
+  "confidence_threshold":{
+    "minimum":0.05,
+    "grid_noise_minimum":0.65,
+    "independently_labeled_quality_ab":"NOT RUN; insufficient public independently reviewed cell labels",
+    "decision":"RESEARCH ONLY — NO CHANGE"
+  },
+  "synthetic_cli_runs":{
+    "settings":{"languages":"rus+eng","ocr_dpi":300,"grid_dpi":100,"max_page_workers":4,"enable_cell_ocr_fallback":true},
+    "baseline_ms":{"text-table":812.565,"raster":8818.9902},
+    "candidate_ms":{"text-table":674.4363,"raster":5229.2613},
+    "candidate_peak_working_set_bytes":{"text-table":26234880,"raster":109920256},
+    "note":"Single control runs with different cache/load conditions, not a speedup benchmark. All OCR text, geometry and selected export XML were equal."
+  }
+}
