@@ -2496,6 +2496,7 @@ fn fill_empty_grid_cells_with_ocr_from_raster<O: OcrEngine>(
     let mut fallback_indices = Vec::new();
     let mut alternate_crops = Vec::new();
     let mut retained_crop_pixels = 0usize;
+    let mut consensus_edits = Vec::new();
     for (cell_index, cell) in grid.cells.iter_mut().enumerate() {
         if !cell.text.trim().is_empty() {
             continue;
@@ -2655,22 +2656,34 @@ fn fill_empty_grid_cells_with_ocr_from_raster<O: OcrEngine>(
                 *cell = original.clone();
             }
         }
+        let before_consensus = grid.cells.clone();
         for cell_index in apply_repeated_ascii_manufacturer_consensus(grid, header_row) {
+            consensus_edits.push((
+                cell_index,
+                before_consensus[cell_index].clone(),
+                fallback_indices.contains(&cell_index),
+            ));
             if !fallback_indices.contains(&cell_index) {
                 fallback_indices.push(cell_index);
             }
         }
     }
 
-    for cell_index in recheck_suspicious_nonempty_cells_with_diagnostics(
+    let failures_before_recheck = failures.len();
+    let mut technical_evidence = Vec::new();
+    let technical_replacements = recheck_suspicious_nonempty_cells_with_diagnostics(
         grid,
         raster,
         fallback_raster,
         ocr,
         max_pixels,
         timings,
-        &mut failures,
-    )? {
+        &mut CellRecheckDiagnostics {
+            failures: &mut failures,
+            accepted_evidence: &mut technical_evidence,
+        },
+    )?;
+    for &cell_index in &technical_replacements {
         if !fallback_indices.contains(&cell_index) {
             fallback_indices.push(cell_index);
         }
@@ -2679,6 +2692,54 @@ fn fill_empty_grid_cells_with_ocr_from_raster<O: OcrEngine>(
     for (cell, original) in grid.cells.iter_mut().zip(original_cells) {
         if failures.iter().any(|failure| failure.matches(cell)) {
             *cell = original;
+        }
+    }
+    if failures.len() > failures_before_recheck && !consensus_edits.is_empty() {
+        // Keep the successful-path request order and selectors unchanged. A
+        // late failure, however, invalidates table-wide tentative evidence:
+        // undo only consensus edits, not independent technical replacements,
+        // and decide them again using the surviving final candidates.
+        for (index, before_consensus, independently_recovered) in consensus_edits {
+            if !failures
+                .iter()
+                .any(|failure| failure.matches(&grid.cells[index]))
+            {
+                // Acceptance can itself depend on the consensus primary's
+                // edit distance. Reuse the actual independent OCR evidence,
+                // not the accepted text alone, against the restored primary.
+                if let Some(evidence) = technical_evidence
+                    .iter()
+                    .find(|evidence| evidence.index == index)
+                {
+                    if let Some((text, confidence)) = choose_technical_cell_candidate(
+                        &before_consensus.text,
+                        before_consensus.confidence,
+                        &evidence.generic.text,
+                        evidence.generic.confidence,
+                        &evidence.technical.text,
+                        evidence.technical.confidence,
+                    ) {
+                        grid.cells[index].text = text;
+                        grid.cells[index].confidence = confidence;
+                        continue;
+                    }
+                }
+                grid.cells[index] = before_consensus;
+                // This index may already represent an independent primary or
+                // alternate rescue. Keep that contribution if it really did.
+                if !independently_recovered {
+                    fallback_indices.retain(|&candidate| candidate != index);
+                }
+            }
+        }
+        if let Some(header_row) = numbered_engineering_specification_header_row(grid) {
+            for index in
+                apply_repeated_ascii_manufacturer_consensus_excluding(grid, header_row, &failures)
+            {
+                if !fallback_indices.contains(&index) {
+                    fallback_indices.push(index);
+                }
+            }
         }
     }
     let confidences = fallback_indices
@@ -2718,7 +2779,10 @@ fn recheck_suspicious_nonempty_cells<O: OcrEngine>(
         ocr,
         max_pixels,
         timings,
-        &mut failures,
+        &mut CellRecheckDiagnostics {
+            failures: &mut failures,
+            accepted_evidence: &mut Vec::new(),
+        },
     )?;
     for (cell, original) in grid.cells.iter_mut().zip(originals) {
         if failures.iter().any(|failure| failure.matches(cell)) {
@@ -2733,6 +2797,17 @@ fn recheck_suspicious_nonempty_cells<O: OcrEngine>(
     Ok(replacements)
 }
 
+struct TechnicalCellEvidence {
+    index: usize,
+    generic: crate::ocr::OcrTextResult,
+    technical: crate::ocr::OcrTextResult,
+}
+
+struct CellRecheckDiagnostics<'a> {
+    failures: &'a mut Vec<CellOcrFailure>,
+    accepted_evidence: &'a mut Vec<TechnicalCellEvidence>,
+}
+
 #[expect(
     clippy::needless_character_iteration,
     reason = "Preserve the accepted OCR baseline during source-only publication."
@@ -2744,8 +2819,12 @@ fn recheck_suspicious_nonempty_cells_with_diagnostics<O: OcrEngine>(
     ocr: &O,
     max_pixels: usize,
     timings: &mut PageStageTimings,
-    failures: &mut Vec<CellOcrFailure>,
+    diagnostics: &mut CellRecheckDiagnostics<'_>,
 ) -> Result<Vec<usize>, Box<dyn std::error::Error>> {
+    let CellRecheckDiagnostics {
+        failures,
+        accepted_evidence,
+    } = diagnostics;
     let cells = u32::try_from(grid.cells.len()).unwrap_or(u32::MAX);
     let empty_cells = u32::try_from(
         grid.cells
@@ -2937,6 +3016,11 @@ fn recheck_suspicious_nonempty_cells_with_diagnostics<O: OcrEngine>(
             let cell = &mut grid.cells[cell_index];
             cell.text = text;
             cell.confidence = confidence;
+            accepted_evidence.push(TechnicalCellEvidence {
+                index: cell_index,
+                generic,
+                technical,
+            });
             if !replacements.contains(&cell_index) {
                 replacements.push(cell_index);
             }
@@ -3107,11 +3191,20 @@ fn apply_repeated_ascii_manufacturer_consensus(
     grid: &mut TableGrid,
     header_row: u32,
 ) -> Vec<usize> {
+    apply_repeated_ascii_manufacturer_consensus_excluding(grid, header_row, &[])
+}
+
+fn apply_repeated_ascii_manufacturer_consensus_excluding(
+    grid: &mut TableGrid,
+    header_row: u32,
+    failures: &[CellOcrFailure],
+) -> Vec<usize> {
     let mut occurrences = HashMap::<String, (String, usize)>::new();
     for cell in &grid.cells {
         if cell.row <= header_row
             || cell.column != 4
             || cell.confidence >= 0.999
+            || failures.iter().any(|failure| failure.matches(cell))
             || !is_compact_ascii_identifier(cell.text.trim())
         {
             continue;
@@ -3137,6 +3230,7 @@ fn apply_repeated_ascii_manufacturer_consensus(
         if cell.row <= header_row
             || cell.column != 4
             || cell.confidence >= 0.999
+            || failures.iter().any(|failure| failure.matches(cell))
             || !is_compact_ascii_identifier(cell.text.trim())
         {
             continue;
@@ -4432,6 +4526,452 @@ mod tests {
             super::choose_canonical_page_text(Some(&native), &noisy, Some(0.54), false);
         assert!(used_native);
         assert_eq!(selected, native.text);
+    }
+
+    // Both OCR stages see byte-identical synthetic glyph crops. The mock uses
+    // the asserted request sequence, not pixel-derived private document text.
+    struct LateConsensusOcr {
+        calls: AtomicUsize,
+        technical_calls: AtomicUsize,
+        fail: bool,
+        fatal: bool,
+        dependent_technical: bool,
+        crop: Mutex<Option<GrayImage>>,
+    }
+
+    impl LateConsensusOcr {
+        fn new(fail: bool, fatal: bool) -> Self {
+            Self {
+                calls: AtomicUsize::new(0),
+                technical_calls: AtomicUsize::new(0),
+                fail,
+                fatal,
+                dependent_technical: false,
+                crop: Mutex::new(None),
+            }
+        }
+
+        fn assert_crop(&self, image: &GrayImage) {
+            let mut crop = self.crop.lock().unwrap();
+            if let Some(expected) = crop.as_ref() {
+                assert_eq!(image, expected, "all requests use the same synthetic crop");
+            } else {
+                *crop = Some(image.clone());
+            }
+        }
+    }
+
+    impl OcrEngine for LateConsensusOcr {
+        fn recognize_text(&self, _: &GrayImage) -> Result<String, Box<dyn std::error::Error>> {
+            unreachable!("fixture uses explicit cell requests")
+        }
+
+        fn recognize_words(
+            &self,
+            _: &GrayImage,
+        ) -> Result<Vec<crate::dto::Word>, Box<dyn std::error::Error>> {
+            unreachable!("fixture uses explicit cell requests")
+        }
+
+        fn recoverable_cell_error_reason(
+            &self,
+            error: &(dyn std::error::Error + 'static),
+        ) -> Option<&'static str> {
+            matches!(
+                error.downcast_ref::<CellIsolationError>(),
+                Some(CellIsolationError::Recognition)
+            )
+            .then_some("recognition_failed")
+        }
+
+        fn recognize_text_with_request(
+            &self,
+            image: &GrayImage,
+            request: crate::ocr::OcrRequest,
+        ) -> Result<crate::ocr::OcrTextResult, Box<dyn std::error::Error>> {
+            self.assert_crop(image);
+            let call = self.calls.fetch_add(1, Ordering::SeqCst);
+            assert_eq!(
+                request.segmentation,
+                crate::ocr::OcrSegmentation::SingleLine
+            );
+            assert_eq!(
+                request.language_profile,
+                if call < 2 {
+                    crate::ocr::OcrLanguageProfile::Configured
+                } else {
+                    crate::ocr::OcrLanguageProfile::EnglishOnly
+                }
+            );
+            if self.fatal && call == 4 {
+                return Err(Box::new(CellIsolationError::Initialization));
+            }
+            if self.dependent_technical && call == 3 {
+                return Ok(crate::ocr::OcrTextResult {
+                    text: "A1C".into(),
+                    confidence: Some(0.90),
+                });
+            }
+            Ok(crate::ocr::OcrTextResult {
+                text: if call == 0 {
+                    "Independent rescue"
+                } else {
+                    "ABC"
+                }
+                .into(),
+                confidence: Some(if call == 0 { 0.91 } else { 0.70 }),
+            })
+        }
+
+        fn recognize_technical_text_with_request(
+            &self,
+            image: &GrayImage,
+            request: crate::ocr::OcrRequest,
+        ) -> Result<Option<crate::ocr::OcrTextResult>, Box<dyn std::error::Error>> {
+            self.assert_crop(image);
+            assert_eq!(
+                request.language_profile,
+                crate::ocr::OcrLanguageProfile::EnglishOnly
+            );
+            let call = self.technical_calls.fetch_add(1, Ordering::SeqCst);
+            if self.fail && call == 1 {
+                return Err(Box::new(CellIsolationError::Recognition));
+            }
+            if self.dependent_technical && call == 0 {
+                return Ok(Some(crate::ocr::OcrTextResult {
+                    text: "A1C".into(),
+                    confidence: Some(0.90),
+                }));
+            }
+            Ok(Some(crate::ocr::OcrTextResult {
+                text: "ABC".into(),
+                confidence: Some(0.70),
+            }))
+        }
+    }
+
+    fn late_consensus_fixture() -> (TableGrid, GrayImage) {
+        let mut grid = grid_fixture(BoundingBox::new(0.0, 0.0, 900.0, 360.0), 6, 9, 0.95);
+        for cell in &mut grid.cells {
+            cell.text = match cell.row {
+                0 => [
+                    "No.",
+                    "Name",
+                    "Model",
+                    "Code",
+                    "Manufacturer",
+                    "Unit",
+                    "Quantity",
+                    "Weight",
+                    "Notes",
+                ][cell.column as usize]
+                    .into(),
+                1 => (cell.column + 1).to_string(),
+                _ => "source".into(),
+            };
+            cell.confidence = 1.0;
+            if cell.row >= 2 && cell.column == 4 {
+                cell.text = match cell.row {
+                    2 | 3 => "ABC",
+                    4 => "  ",
+                    _ => "ABD",
+                }
+                .into();
+                cell.confidence = match cell.row {
+                    4 => 0.27,
+                    5 => 0.60,
+                    _ => 0.85,
+                };
+            }
+            if cell.row == 4 && cell.column == 1 {
+                cell.text.clear();
+                cell.confidence = 0.31;
+            }
+        }
+        assert_eq!(
+            numbered_engineering_specification_header_row(&grid),
+            Some(1)
+        );
+        let classification = crate::table_semantics::classify_table(&grid.to_matrix(), None);
+        assert!(classification
+            .column_roles
+            .iter()
+            .any(|role| role.column == 4
+                && role.role == crate::table_semantics::ColumnRole::Manufacturer
+                && role.confidence >= super::TECHNICAL_ROLE_MIN_CONFIDENCE));
+        let mut image = GrayImage::from_pixel(900, 360, Luma([255]));
+        for cell in &grid.cells {
+            let bbox = cell.bbox.as_ref().unwrap();
+            for x in (bbox.x0 as u32 + 30)..(bbox.x0 as u32 + 55) {
+                for y in (bbox.y0 as u32 + 20)..(bbox.y0 as u32 + 40) {
+                    if (x - bbox.x0 as u32) % 8 < 3 {
+                        image.put_pixel(x, y, Luma([0]));
+                    }
+                }
+            }
+        }
+        (grid, image)
+    }
+
+    fn assert_late_consensus_transaction(fail: bool) -> (TableGrid, super::CellOcrOutcome) {
+        let (mut grid, image) = late_consensus_fixture();
+        let before = grid.clone();
+        // Execute the exact dependency independently: only the provisional
+        // third ABC authorizes the ABD edit under the existing selector.
+        let mut evidence = before.clone();
+        assert!(apply_repeated_ascii_manufacturer_consensus(&mut evidence, 1).is_empty());
+        evidence.cells[4 * 9 + 4].text = "ABC".into();
+        evidence.cells[4 * 9 + 4].confidence = 0.70;
+        assert_eq!(
+            apply_repeated_ascii_manufacturer_consensus(&mut evidence, 1),
+            vec![5 * 9 + 4]
+        );
+        let engine = LateConsensusOcr::new(fail, false);
+        let outcome = super::fill_empty_grid_cells_with_ocr_diagnostics(
+            &mut grid,
+            &image,
+            &engine,
+            DEFAULT_MAX_PIXELS,
+            300,
+            &mut PageStageTimings::default(),
+        )
+        .unwrap();
+        assert_eq!(
+            engine.technical_calls.load(Ordering::SeqCst),
+            2,
+            "ABD is rechecked first, provisional ABC second"
+        );
+        assert_eq!(
+            engine.calls.load(Ordering::SeqCst),
+            if fail { 4 } else { 5 }
+        );
+        let mut expected = before.clone();
+        expected.cells[4 * 9 + 1].text = "Independent rescue".into();
+        expected.cells[4 * 9 + 1].confidence = 0.91;
+        if !fail {
+            expected.cells[4 * 9 + 4].text = "ABC".into();
+            expected.cells[4 * 9 + 4].confidence = 0.70;
+            expected.cells[5 * 9 + 4].text = "ABC".into();
+        }
+        assert_eq!(
+            grid.cells[5 * 9 + 4],
+            expected.cells[5 * 9 + 4],
+            "dependent manufacturer must not survive invalidated third vote"
+        );
+        assert_eq!(
+            grid.cells, expected.cells,
+            "entire matrix, including confidence, bbox and spans"
+        );
+        assert_eq!(grid.bbox, before.bbox);
+        let lines = |lines: &[GridLine]| {
+            lines
+                .iter()
+                .map(|line| (line.position, line.start, line.end))
+                .collect::<Vec<_>>()
+        };
+        assert_eq!(
+            lines(&grid.horizontal_lines),
+            lines(&before.horizontal_lines)
+        );
+        assert_eq!(lines(&grid.vertical_lines), lines(&before.vertical_lines));
+        let points = |points: &[GridIntersection]| {
+            points
+                .iter()
+                .map(|point| (point.x, point.y))
+                .collect::<Vec<_>>()
+        };
+        assert_eq!(points(&grid.intersections), points(&before.intersections));
+        assert_eq!(grid.confidence, before.confidence);
+        assert_eq!(
+            outcome.confidences,
+            if fail {
+                vec![0.91]
+            } else {
+                vec![0.91, 0.70, 0.60]
+            }
+        );
+        assert_eq!(outcome.failures.len(), usize::from(fail));
+        (grid, outcome)
+    }
+
+    #[test]
+    fn late_cell_failure_invalidates_dependent_consensus() {
+        assert_late_consensus_transaction(true);
+    }
+
+    #[test]
+    fn late_cell_failure_revalidates_consensus_dependent_technical_replacement() {
+        assert_eq!(
+            choose_technical_cell_candidate("ABC", 0.60, "A1C", Some(0.90), "A1C", Some(0.90)),
+            Some(("A1C".into(), 0.90))
+        );
+        assert_eq!(
+            choose_technical_cell_candidate("ABD", 0.60, "A1C", Some(0.90), "A1C", Some(0.90)),
+            None
+        );
+        let (mut grid, image) = late_consensus_fixture();
+        let mut expected = grid.cells.clone();
+        expected[4 * 9 + 1].text = "Independent rescue".into();
+        expected[4 * 9 + 1].confidence = 0.91;
+        let mut engine = LateConsensusOcr::new(true, false);
+        engine.dependent_technical = true;
+        let outcome = super::fill_empty_grid_cells_with_ocr_diagnostics(
+            &mut grid,
+            &image,
+            &engine,
+            DEFAULT_MAX_PIXELS,
+            300,
+            &mut PageStageTimings::default(),
+        )
+        .unwrap();
+        assert_eq!(engine.technical_calls.load(Ordering::SeqCst), 2);
+        assert_eq!(engine.calls.load(Ordering::SeqCst), 4);
+        assert_eq!(outcome.failures.len(), 1);
+        assert_eq!(
+            grid.cells[5 * 9 + 4],
+            expected[5 * 9 + 4],
+            "technical replacement depended on invalidated consensus primary"
+        );
+        assert_eq!(grid.cells, expected);
+        assert_eq!(outcome.confidences, vec![0.91]);
+    }
+
+    #[test]
+    fn late_cell_failure_restores_source_cell() {
+        assert_late_consensus_transaction(true);
+    }
+
+    fn assert_technical_consensus_control(fail: bool, primary_confidence: f32) {
+        let (mut grid, image) = late_consensus_fixture();
+        grid.cells[5 * 9 + 4].confidence = primary_confidence;
+        let mut expected = grid.cells.clone();
+        expected[4 * 9 + 1].text = "Independent rescue".into();
+        expected[4 * 9 + 1].confidence = 0.91;
+        expected[5 * 9 + 4].text = "A1C".into();
+        expected[5 * 9 + 4].confidence = 0.90;
+        if !fail {
+            expected[4 * 9 + 4].text = "ABC".into();
+            expected[4 * 9 + 4].confidence = 0.70;
+        }
+        let mut engine = LateConsensusOcr::new(fail, false);
+        engine.dependent_technical = true;
+        let outcome = super::fill_empty_grid_cells_with_ocr_diagnostics(
+            &mut grid,
+            &image,
+            &engine,
+            DEFAULT_MAX_PIXELS,
+            300,
+            &mut PageStageTimings::default(),
+        )
+        .unwrap();
+        assert_eq!(
+            grid.cells, expected,
+            "all cells preserve independently accepted OCR evidence"
+        );
+        assert_eq!(
+            outcome.confidences,
+            if fail {
+                vec![0.91, 0.90]
+            } else {
+                vec![0.91, 0.70, 0.90]
+            }
+        );
+        assert_eq!(outcome.failures.len(), usize::from(fail));
+        assert_eq!(
+            engine.calls.load(Ordering::SeqCst),
+            if fail { 4 } else { 5 }
+        );
+        assert_eq!(engine.technical_calls.load(Ordering::SeqCst), 2);
+    }
+
+    #[test]
+    fn late_cell_failure_preserves_independently_admissible_technical_rescue() {
+        assert_eq!(
+            choose_technical_cell_candidate("ABD", 0.48, "A1C", Some(0.90), "A1C", Some(0.90)),
+            Some(("A1C".into(), 0.90))
+        );
+        assert_technical_consensus_control(true, 0.48);
+    }
+
+    #[test]
+    fn successful_consensus_dependent_technical_rescue_remains_unchanged() {
+        assert_technical_consensus_control(false, 0.60);
+    }
+
+    #[test]
+    fn late_cell_failure_preserves_independent_rescues() {
+        assert_late_consensus_transaction(true);
+    }
+
+    #[test]
+    fn successful_consensus_remains_unchanged() {
+        assert_late_consensus_transaction(false);
+    }
+
+    #[test]
+    fn rollback_preserves_bbox_spans_and_confidence() {
+        let (_, outcome) = assert_late_consensus_transaction(true);
+        assert_eq!(
+            super::mean_confidence_values(&outcome.confidences),
+            Some(0.91)
+        );
+    }
+
+    #[test]
+    fn fatal_cell_error_still_propagates() {
+        let (mut grid, image) = late_consensus_fixture();
+        let mut expected = grid.cells.clone();
+        expected[4 * 9 + 1].text = "Independent rescue".into();
+        expected[4 * 9 + 1].confidence = 0.91;
+        expected[4 * 9 + 4].text = "ABC".into();
+        expected[4 * 9 + 4].confidence = 0.70;
+        expected[5 * 9 + 4].text = "ABC".into();
+        let engine = LateConsensusOcr::new(false, true);
+        let error = super::fill_empty_grid_cells_with_ocr_diagnostics(
+            &mut grid,
+            &image,
+            &engine,
+            DEFAULT_MAX_PIXELS,
+            300,
+            &mut PageStageTimings::default(),
+        )
+        .err()
+        .expect("required generic late initialization error propagates");
+        assert!(matches!(
+            error.downcast_ref::<CellIsolationError>(),
+            Some(CellIsolationError::Initialization)
+        ));
+        assert_eq!(engine.calls.load(Ordering::SeqCst), 5);
+        assert_eq!(engine.technical_calls.load(Ordering::SeqCst), 2);
+        // Fatal errors abort the caller; unlike recoverable failures they do
+        // not promise a completed/committed grid. Still check every cell at
+        // the propagation point, including all geometry and confidence fields.
+        assert_eq!(grid.cells, expected);
+    }
+
+    #[test]
+    fn failure_warning_has_no_ocr_text() {
+        let (_, outcome) = assert_late_consensus_transaction(true);
+        let warning = outcome
+            .failures
+            .into_iter()
+            .next()
+            .unwrap()
+            .into_warning(7, 2);
+        assert_eq!(
+            warning,
+            PipelineWarning::CellOcrFallbackFailed {
+                page_number: 7,
+                table_index: 2,
+                row: 4,
+                column: 4,
+                reason_code: "recognition_failed".into()
+            }
+        );
+        let rendered = format!("{warning:?}");
+        for private in ["ABC", "ABD", "Independent rescue", "private cell text"] {
+            assert!(!rendered.contains(private));
+        }
     }
 
     #[test]
