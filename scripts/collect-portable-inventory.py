@@ -178,6 +178,8 @@ def vcpkg_inventory(root: Path, output: Path, notices: Path) -> tuple[list[dict[
             errors.append({"error": "static library has no matching vcpkg installed-list record", "file": str(libpath)})
             continue
         port, version = meta["port"], meta["version"]
+        # A listing must not inherit the status of the last unrelated port.
+        port_status = installed_status.get(port, {})
         manifest_path = root / "ports" / port / "vcpkg.json"
         port_manifest: dict[str, Any] = {}
         if manifest_path.exists():
@@ -194,7 +196,7 @@ def vcpkg_inventory(root: Path, output: Path, notices: Path) -> tuple[list[dict[
             "license": port_license, "distribution_status": "blocked",
             "license_review": "Inventory only: exact installed archive and status recorded; port-manifest license may be from a different port revision. Verify source correspondence, obligations, and final executable closure.",
             "notices": [notice] if notice else [], "sha256": "",
-            "evidence": {"triplet": triplet, "installed_status": {k: status.get(k) for k in ("Version", "Port-Version", "Abi", "Architecture") if status.get(k)},
+            "evidence": {"triplet": triplet, "installed_status": {k: port_status[k] for k in ("Version", "Port-Version", "Abi", "Architecture") if k in port_status},
                          "port_manifest_evidence": f"ports/{port}/vcpkg.json", "archives": []},
         })
         link_kinds = sorted({kind for req, kinds in requests.items() if req in {libpath.stem.lower(), libpath.name.lower()} for kind in kinds})
