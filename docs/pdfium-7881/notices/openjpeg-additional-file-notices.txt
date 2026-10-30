@@ -1,0 +1,175 @@
+OpenJPEG additional file notices -- candidate-source review supplement
+
+DRAFT. CANDIDATE_SOURCE_EVIDENCE ONLY.
+NOT A HISTORICAL CHECKOUT, LINK-INPUT OR RETAINED-OBJECT RECEIPT.
+NOT LICENSE CLOSURE OR REDISTRIBUTION APPROVAL.
+
+Candidate PDFium revision: 91b9d569b34be4f38eed7b3c49b227356c3aadad
+
+These additional source notices complement, and do not modify or replace,
+all 16 original producer notices and the seven existing PR #3 supplements.
+The source files below occur in candidate fx_libopenjpeg or its local
+include chain. This establishes candidate-source scope, not their retention
+in the historical PDFium DLL. The original producer notice layout is used
+when referring to licenses/pdfium.txt below; future relocation needs an
+explicit navigation map.
+
+Three full BSD-2-Clause comments follow. The last two blocks retain the
+complete leading PDFium copyright/license-pointer comments; their actual
+grant, conditions and disclaimer are already present in the unchanged
+original licenses/pdfium.txt. No new non-BSD license grant was found in
+this bounded additional-header review.
+
+========================================================================
+1. j2k.c
+Source: https://github.com/chromium/pdfium/blob/91b9d569b34be4f38eed7b3c49b227356c3aadad/third_party/libopenjpeg/j2k.c
+Coverage: Additional holder notices also occur in function_list.c/.h, invert.c/.h, mqc.c/.h, mqc_inl.h, pi.c, tcd.c, openjpeg.h, j2k.h, jp2.c and tgt.h.
+Extraction: exact leading notice through its final comment line plus LF.
+------------------------------------------------------------------------
+/*
+ * The copyright in this software is being made available under the 2-clauses
+ * BSD License, included below. This software may be subject to other third
+ * party and contributor rights, including patent rights, and no such rights
+ * are granted under this license.
+ *
+ * Copyright (c) 2002-2014, Universite catholique de Louvain (UCL), Belgium
+ * Copyright (c) 2002-2014, Professor Benoit Macq
+ * Copyright (c) 2001-2003, David Janssens
+ * Copyright (c) 2002-2003, Yannick Verschueren
+ * Copyright (c) 2003-2007, Francois-Olivier Devaux
+ * Copyright (c) 2003-2014, Antonin Descampe
+ * Copyright (c) 2005, Herve Drolon, FreeImage Team
+ * Copyright (c) 2008, Jerome Fimes, Communications & Systemes <jerome.fimes@c-s.fr>
+ * Copyright (c) 2006-2007, Parvatha Elangovan
+ * Copyright (c) 2010-2011, Kaori Hagihara
+ * Copyright (c) 2011-2012, Centre National d'Etudes Spatiales (CNES), France
+ * Copyright (c) 2012, CS Systemes d'Information, France
+ * Copyright (c) 2017, IntoPIX SA <support@intopix.com>
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS `AS IS'
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+
+========================================================================
+2. thread.c
+Source: https://github.com/chromium/pdfium/blob/91b9d569b34be4f38eed7b3c49b227356c3aadad/third_party/libopenjpeg/thread.c
+Coverage: The leading notice is identical in thread.h and tls_keys.h.
+Extraction: exact leading notice through its final comment line plus LF.
+------------------------------------------------------------------------
+/*
+ * The copyright in this software is being made available under the 2-clauses
+ * BSD License, included below. This software may be subject to other third
+ * party and contributor rights, including patent rights, and no such rights
+ * are granted under this license.
+ *
+ * Copyright (c) 2016, Even Rouault
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS `AS IS'
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+
+========================================================================
+3. sparse_array.c
+Source: https://github.com/chromium/pdfium/blob/91b9d569b34be4f38eed7b3c49b227356c3aadad/third_party/libopenjpeg/sparse_array.c
+Coverage: The leading notice is identical in sparse_array.h; it preserves the source's IntoPix spelling and contact address.
+Extraction: exact leading notice through its final comment line plus LF.
+------------------------------------------------------------------------
+/*
+ * The copyright in this software is being made available under the 2-clauses
+ * BSD License, included below. This software may be subject to other third
+ * party and contributor rights, including patent rights, and no such rights
+ * are granted under this license.
+ *
+ * Copyright (c) 2017, IntoPix SA <contact@intopix.com>
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS `AS IS'
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+
+========================================================================
+4. opj_config.h
+Source: https://github.com/chromium/pdfium/blob/91b9d569b34be4f38eed7b3c49b227356c3aadad/third_party/libopenjpeg/opj_config.h
+Coverage: The first five notice lines are identical in opj_config_private.h. The complete applicable PDFium license text remains in the unchanged original licenses/pdfium.txt; this is a copyright supplement, not a replacement grant.
+Extraction: exact leading notice through its final comment line plus LF.
+------------------------------------------------------------------------
+// Copyright 2014 The PDFium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+// Original code copyright 2014 Foxit Software Inc. http://www.foxitsoftware.com
+
+========================================================================
+5. opj_malloc.cc
+Source: https://github.com/chromium/pdfium/blob/91b9d569b34be4f38eed7b3c49b227356c3aadad/third_party/libopenjpeg/opj_malloc.cc
+Coverage: PDFium's replacement allocator has this 2020 copyright. The complete applicable PDFium license text remains in the unchanged original licenses/pdfium.txt; this is a copyright supplement, not a replacement grant.
+Extraction: exact leading notice through its final comment line plus LF.
+------------------------------------------------------------------------
+// Copyright 2020 The PDFium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+Coverage limit: this is a leading-notice inventory of the 24 explicitly
+listed fx_libopenjpeg files and 27 additional local headers reached in the
+bounded include review. Optional USE_JPIP / USE_JPWL includes are not accepted
+as included merely because their conditional names appear in opj_includes.h.
+Generated lookup data t1_luts.h and t1_ht_luts.h have no leading license
+grant; their provenance remains a separate scope question. Source and notice
+coverage here do not establish all binary objects, all generated-data rights,
+or full file-body attribution closure.

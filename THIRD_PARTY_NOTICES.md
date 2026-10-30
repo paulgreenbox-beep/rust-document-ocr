@@ -10,6 +10,9 @@ The Rust registry dependency inventory, including exact locked versions and lice
 
 The values marked validated below are external runtime compatibility requirements recorded in local runtime documentation. They are not claims that a corresponding binary is packaged, nor do they identify an exact redistributable binary build.
 
+**Specific PDFium 7881 Windows candidate (not distributed):** [notice supplements and conservative license review](docs/pdfium-7881/README.md) identify the matching signed bblanchon archive and additional source-pinned HarfBuzz, FreeType and OpenJPEG texts. These documents explicitly leave PDFium license closure **INCOMPLETE**. They do not add a DLL to this source repository, clear third-party redistribution, or authorize the portable ZIP.
+
+
 | Component | Version or evidence | Upstream license terms | Source-release decision |
 | --- | --- | --- | --- |
 | PDFium | External optional runtime; local documentation validates API revision 7881, but no exact binary build receipt is recorded here. | The upstream LICENSE begins with a BSD 3-clause-style grant and also contains Apache-2.0 text and third-party notices. The license closure of a built PDFium distribution depends on its exact build. | No PDFium binary is included. Before distributing one, identify the exact build and carry its PDFium and third-party notices from that build. |
