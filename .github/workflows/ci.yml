@@ -31,6 +31,15 @@ jobs:
         run: cargo fetch --locked
       - name: Formatting
         run: cargo fmt --all -- --check
+      - name: Portable packaging source-only gates
+        shell: pwsh
+        run: ./scripts/test-windows-portable.ps1
+      - name: Portable inventory source-only regressions
+        shell: pwsh
+        run: |
+          python --version
+          python scripts/test_portable_inventory.py
+          if ($LASTEXITCODE -ne 0) { throw 'Portable inventory regressions failed' }
       - name: Verify reviewed synthetic documents
         shell: pwsh
         run: |

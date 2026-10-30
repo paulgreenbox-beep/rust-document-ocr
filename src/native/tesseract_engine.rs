@@ -27,6 +27,103 @@ struct CachedTessApi {
     tessdata_path: PathBuf,
     cell_profile: bool,
     api: TessApi,
+    // Declared after api: native handles are destroyed before their model files.
+    _native_data: NativeTessdata,
+}
+
+struct NativeTessdata {
+    path: PathBuf,
+    owned_files: Vec<PathBuf>,
+}
+
+impl Drop for NativeTessdata {
+    fn drop(&mut self) {
+        if !self.owned_files.is_empty() {
+            for file in &self.owned_files {
+                let _ = std::fs::remove_file(file);
+            }
+            // Never recursively remove a cache root or another process's data.
+            let _ = std::fs::remove_dir(&self.path);
+        }
+    }
+}
+
+impl NativeTessdata {
+    fn prepare(source: &Path, language: &str) -> Result<Self, Box<dyn std::error::Error>> {
+        #[cfg(not(windows))]
+        let _ = language;
+        #[cfg(windows)]
+        if !source.to_str().is_some_and(str::is_ascii) {
+            return Self::ascii_mirror(source, language);
+        }
+        Ok(Self {
+            path: source.to_path_buf(),
+            owned_files: Vec::new(),
+        })
+    }
+
+    #[cfg(windows)]
+    fn ascii_mirror(source: &Path, language: &str) -> Result<Self, Box<dyn std::error::Error>> {
+        use std::sync::atomic::{AtomicU64, Ordering};
+        static NEXT: AtomicU64 = AtomicU64::new(0);
+        let mut root = std::env::temp_dir();
+        if !root.to_str().is_some_and(str::is_ascii) {
+            // Windows may provide an ASCII 8.3 alias even when the user's
+            // profile (and therefore TEMP) contains Cyrillic characters.
+            if let Some(short) = windows_short_path(&root) {
+                root = short;
+            }
+        }
+        if !root.to_str().is_some_and(str::is_ascii) {
+            return Err("Tesseract requires an ASCII temporary directory for non-ASCII tessdata paths; set TEMP for this process to a writable ASCII path".into());
+        }
+        let stamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)?
+            .as_nanos();
+        let mut mirror = Self {
+            path: root.join(format!(
+                "ocr-tessdata-{}-{stamp}-{}",
+                std::process::id(),
+                NEXT.fetch_add(1, Ordering::Relaxed)
+            )),
+            owned_files: Vec::new(),
+        };
+        // Exclusive creation means this process never trusts/reuses an existing
+        // model cache. Rust's Windows filesystem APIs open the source as UTF-16;
+        // Tesseract's narrow-char fopen sees only the ASCII mirror path.
+        std::fs::create_dir(&mirror.path)?;
+        for name in language.split('+') {
+            let filename = format!("{name}.traineddata");
+            let destination = mirror.path.join(&filename);
+            mirror.owned_files.push(destination.clone());
+            std::fs::copy(source.join(filename), destination)?;
+        }
+        Ok(mirror)
+    }
+}
+
+#[cfg(windows)]
+fn windows_short_path(path: &Path) -> Option<PathBuf> {
+    use std::os::windows::ffi::{OsStrExt, OsStringExt};
+    #[link(name = "kernel32")]
+    extern "system" {
+        fn GetShortPathNameW(long_path: *const u16, short_path: *mut u16, size: u32) -> u32;
+    }
+    let input: Vec<u16> = path.as_os_str().encode_wide().chain(Some(0)).collect();
+    // SAFETY: input is NUL-terminated and the first call only queries size.
+    let size = unsafe { GetShortPathNameW(input.as_ptr(), std::ptr::null_mut(), 0) };
+    if size == 0 {
+        return None;
+    }
+    let mut output = vec![0_u16; size as usize];
+    // SAFETY: both buffers are valid for the lengths supplied to Win32.
+    let written = unsafe { GetShortPathNameW(input.as_ptr(), output.as_mut_ptr(), size) };
+    if written == 0 || written >= size {
+        return None;
+    }
+    Some(PathBuf::from(std::ffi::OsString::from_wide(
+        &output[..written as usize],
+    )))
 }
 
 #[derive(Debug, Error)]
@@ -99,14 +196,18 @@ impl TesseractOcrEngine {
         clippy::manual_c_str_literals,
         reason = "Preserve the accepted OCR baseline during source-only publication."
     )]
-    fn initialize(&self, language: &str) -> Result<TessApi, Box<dyn std::error::Error>> {
+    fn initialize(
+        &self,
+        language: &str,
+    ) -> Result<(TessApi, NativeTessdata), Box<dyn std::error::Error>> {
         // A routed language may be absent although the configured rus+eng
         // constructor succeeded. Fail clearly before Tesseract can partially
         // load a multilingual request and silently recognize English alone.
         if language.split('+').any(|part| part == "chi_sim") {
             validate_language_data(&self.tessdata_path, &parse_languages(language)?)?;
         }
-        let tessdata = self.tessdata_path.to_str().ok_or_else(|| {
+        let native_data = NativeTessdata::prepare(&self.tessdata_path, language)?;
+        let tessdata = native_data.path.to_str().ok_or_else(|| {
             Box::new(TesseractError::Init {
                 language: language.to_string(),
                 tessdata: self.tessdata_path.display().to_string(),
@@ -136,7 +237,7 @@ impl TesseractOcrEngine {
                     detail: format!("failed to redirect Tesseract diagnostics: {e}"),
                 }) as Box<dyn std::error::Error>
             })?;
-        Ok(api)
+        Ok((api, native_data))
     }
 
     fn with_api<T>(
@@ -155,11 +256,13 @@ impl TesseractOcrEngine {
             let index = match index {
                 Some(index) => index,
                 None => {
+                    let (api, native_data) = self.initialize(language)?;
                     apis.push(CachedTessApi {
                         language: language.to_string(),
                         tessdata_path: self.tessdata_path.clone(),
                         cell_profile,
-                        api: self.initialize(language)?,
+                        api,
+                        _native_data: native_data,
                     });
                     apis.len() - 1
                 }
@@ -432,18 +535,47 @@ fn is_language_code(code: &str) -> bool {
 }
 
 fn resolve_tessdata_path(explicit: Option<&Path>) -> Result<PathBuf, Box<dyn std::error::Error>> {
-    let candidate = match explicit {
-        Some(path) => path.to_path_buf(),
-        None => match std::env::var_os("TESSDATA_PREFIX") {
-            Some(path) => PathBuf::from(path),
-            None => PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-                .join("runtime")
-                .join("tessdata"),
-        },
+    let prefix = std::env::var_os("TESSDATA_PREFIX").map(PathBuf::from);
+    let executable = std::env::current_exe().ok();
+    let development = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("runtime")
+        .join("tessdata");
+    resolve_tessdata_candidates(
+        explicit,
+        prefix.as_deref(),
+        executable.as_deref(),
+        &development,
+    )
+}
+
+// Inputs are passed in so precedence can be tested without changing process
+// environment or the working directory (both are shared by page workers).
+fn resolve_tessdata_candidates(
+    explicit: Option<&Path>,
+    prefix: Option<&Path>,
+    executable: Option<&Path>,
+    development: &Path,
+) -> Result<PathBuf, Box<dyn std::error::Error>> {
+    let adjacent = executable
+        .and_then(Path::parent)
+        .map(|path| path.join("tessdata"));
+    let (candidate, source) = if let Some(path) = explicit {
+        (path.to_path_buf(), "explicit --tessdata-path")
+    } else if let Some(path) = prefix {
+        (path.to_path_buf(), "TESSDATA_PREFIX")
+    } else if let Some(path) = adjacent.filter(|path| {
+        path.is_dir()
+            || path
+                .parent()
+                .is_some_and(|directory| directory.join("release-manifest.json").is_file())
+    }) {
+        (path, "tessdata beside executable")
+    } else {
+        (development.to_path_buf(), "development fallback")
     };
     if !candidate.is_dir() {
         return Err(format!(
-            "tessdata directory not found: {}. Pass an explicit tessdata path or set TESSDATA_PREFIX for this process",
+            "tessdata directory not found ({source}): {}. Pass --tessdata-path or set TESSDATA_PREFIX for this process",
             candidate.display()
         )
         .into());
@@ -543,6 +675,112 @@ fn parse_tsv_words(tsv: &str) -> Result<Vec<Word>, Box<dyn std::error::Error>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[cfg(windows)]
+    #[test]
+    fn tessdata_ascii_mirror_preserves_bytes_and_owns_only_its_files() {
+        let root = tempfile::tempdir().unwrap();
+        let source = root.path().join("Данные OCR with spaces");
+        std::fs::create_dir(&source).unwrap();
+        std::fs::write(source.join("eng.traineddata"), b"English model fixture").unwrap();
+        std::fs::write(source.join("rus.traineddata"), b"Russian model fixture").unwrap();
+        std::fs::write(source.join("unrequested.traineddata"), b"not requested").unwrap();
+        let first = NativeTessdata::prepare(&source, "eng+rus").unwrap();
+        let second = NativeTessdata::prepare(&source, "eng").unwrap();
+        assert!(first.path.to_str().unwrap().is_ascii());
+        assert_ne!(first.path, second.path);
+        for name in ["eng", "rus"] {
+            let filename = format!("{name}.traineddata");
+            assert_eq!(
+                std::fs::read(source.join(&filename)).unwrap(),
+                std::fs::read(first.path.join(&filename)).unwrap()
+            );
+        }
+        assert!(!first.path.join("unrequested.traineddata").exists());
+        let first_path = first.path.clone();
+        drop(first);
+        assert!(!first_path.exists());
+        assert!(second.path.join("eng.traineddata").is_file());
+        assert!(source.join("rus.traineddata").is_file());
+    }
+
+    #[test]
+    fn tessdata_portable_marker_blocks_missing_directory_development_fallback() {
+        let root = tempfile::tempdir().unwrap();
+        let portable = root.path().join("Portable OCR Кириллица");
+        std::fs::create_dir(&portable).unwrap();
+        let executable = portable.join("ocr-pipeline.exe");
+        let development = root.path().join("development");
+        std::fs::create_dir(&development).unwrap();
+        assert_eq!(
+            resolve_tessdata_candidates(None, None, Some(&executable), &development).unwrap(),
+            development
+        );
+        std::fs::write(portable.join("release-manifest.json"), b"{}").unwrap();
+        let error = resolve_tessdata_candidates(None, None, Some(&executable), &development)
+            .unwrap_err()
+            .to_string();
+        assert!(error.contains("tessdata beside executable"));
+        assert!(error.contains(&portable.display().to_string()));
+        for (explicit, prefix) in [
+            (Some(development.as_path()), None),
+            (None, Some(development.as_path())),
+        ] {
+            assert_eq!(
+                resolve_tessdata_candidates(explicit, prefix, Some(&executable), &development)
+                    .unwrap(),
+                development
+            );
+        }
+    }
+
+    #[test]
+    fn tessdata_resolver_precedence_and_invalid_overrides() {
+        let root = tempfile::tempdir().unwrap();
+        let explicit = root.path().join("explicit");
+        let prefix = root.path().join("prefix");
+        let portable = root.path().join("Портативный OCR with spaces");
+        let adjacent = portable.join("tessdata");
+        let development = root.path().join("development");
+        for directory in [&explicit, &prefix, &adjacent, &development] {
+            std::fs::create_dir_all(directory).unwrap();
+        }
+        let executable = portable.join("ocr-pipeline.exe");
+        let resolve = |explicit: Option<&Path>, prefix: Option<&Path>| {
+            resolve_tessdata_candidates(explicit, prefix, Some(&executable), &development)
+        };
+        assert_eq!(resolve(Some(&explicit), Some(&prefix)).unwrap(), explicit);
+        assert_eq!(resolve(None, Some(&prefix)).unwrap(), prefix);
+        assert_eq!(resolve(None, None).unwrap(), adjacent);
+        let missing = root.path().join("missing");
+        let error = resolve(Some(&missing), Some(&prefix))
+            .unwrap_err()
+            .to_string();
+        assert!(error.contains("explicit --tessdata-path"));
+        assert!(error.contains("missing"));
+        assert!(resolve(None, Some(&missing))
+            .unwrap_err()
+            .to_string()
+            .contains("TESSDATA_PREFIX"));
+        let file = root.path().join("not-a-directory");
+        std::fs::write(&file, b"fixture").unwrap();
+        assert!(resolve(Some(&file), None).is_err());
+        assert!(resolve(Some(Path::new("")), None).is_err());
+        assert_eq!(
+            resolve_tessdata_candidates(None, None, None, &development).unwrap(),
+            development
+        );
+        assert_eq!(
+            resolve_tessdata_candidates(
+                None,
+                None,
+                Some(&root.path().join("other/app.exe")),
+                &development
+            )
+            .unwrap(),
+            development
+        );
+    }
 
     #[test]
     fn cell_error_classification_recovers_only_typed_recognition_failures() {

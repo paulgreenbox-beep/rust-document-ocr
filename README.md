@@ -44,6 +44,10 @@ API, not a CLI endpoint or network service.
 
 ## Build and run
 
+For the separately gated Windows portable candidate, see
+[PORTABLE_WINDOWS.md](docs/PORTABLE_WINDOWS.md). This source repository does
+not imply that a redistributable binary ZIP has been cleared or published.
+
 Install the build tools and native runtime dependencies described in
 [CONTRIBUTING.md](CONTRIBUTING.md). Supply a PDFium API 7881 DLL for PDF input
 and Tesseract traineddata for the requested languages. The example paths below

@@ -1,2 +1,6 @@
 # PDF fixtures must remain byte-identical on Windows checkouts.
 *.pdf -text -diff -merge -filter
+
+# Keep the audited candidate evidence byte-identical to the local payload
+# manifest so its published SHA-256 is independent of core.autocrlf.
+/reports/WINDOWS_PORTABLE_CANDIDATE_MANIFEST.json -text
