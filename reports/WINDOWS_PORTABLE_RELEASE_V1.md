@@ -59,6 +59,28 @@ Manifest SHA-256:
 Local input manifests and raw logs remain ignored; absolute developer paths
 are removed from the public candidate manifest.
 
+### Follow-up: vcpkg installed-status evidence (2026-10-31)
+
+The committed candidate manifest is an immutable record of the **earlier** local
+validation run, not a newly regenerated or corrected runtime receipt.
+Its nested `evidence.installed_status` for all 18 `vcpkg:` components
+incorrectly repeats the last processed port's `Version: 1.5.7` and the same
+`Abi`. Seventeen of those recorded versions contradict their own component
+versions; the `zstd` version happens to agree. **Do not use any of these
+nested status fields as per-port release or license evidence.**
+
+The source-only collector now selects the installed-status stanza by the
+actual component port rather than reusing a loop variable. A synthetic test
+covers distinct port versions/ABIs, `Port-Version`, and absent stanzas without
+borrowing another component's evidence. This corrects future collection only:
+the published candidate manifest, its hashes, the existing EXE, and the
+packaging/licensing gate were **not** changed or re-attested.
+
+Before any release decision, rerun the collector on the actual reviewed vcpkg
+installation into a new ignored output directory, compare each port's status
+against installed lists and hashes, and produce fresh bound provenance. The
+Windows portable release remains **BLOCKED: LICENSING**.
+
 ## Actual dependency closure
 
 The optimized EXE's normal imports were independently checked with MSVC
