@@ -1,47 +1,60 @@
-# PDFium 7881 — compact 28-component evidence matrix
+# PDFium 7881 component evidence matrix
 
-**DRAFT. License closure INCOMPLETE; redistribution NOT approved.**
-Adapted from the local 2026-10-30 review. This table records *candidate*
-source selection, **not** proven historical retained DLL objects. No
-third-party component has a confirmed historical executed build graph.
+**DRAFT — NOT APPROVED FOR REDISTRIBUTION. License closure INCOMPLETE.**
 
-Classification: `CONFIRMED_IN_BINARY` = direct engine/API identity;
-`RECIPE_OR_SOURCE_DEFAULT` = candidate source/recipe only;
-`NOTICE_ONLY` = original notice exists but linking unverified.
-Disabled defaults do not establish `NOT INCLUDED — PROVEN`.
+This records 28 components/groups reviewed, not 28 confirmed DLL components.
+Exact sources, revisions, hashes and qualifications are in
+[LICENSE_EVIDENCE.json](LICENSE_EVIDENCE.json).
 
-| Group | Evidence | Pending review |
+| Level | Meaning |
+| --- | --- |
+| `CONFIRMED_IN_BINARY` | Direct engine/API identity; not exact source or member map |
+| `PRODUCER_RECIPE_EVIDENCE` | Pinned producer instructions or matching archived explicit config; not all resolved execution values |
+| `CANDIDATE_SOURCE_EVIDENCE` | Reachability/configuration in candidate source; historical retention remains UNKNOWN |
+| `NOTICE_ONLY` | Notice present, actual linkage unresolved |
+| `UNKNOWN` | Evidence unavailable or insufficient |
+| `NOT_INCLUDED_PROVEN` | Strong proof of exclusion required; **not used here** |
+
+The old combined `RECIPE_OR_SOURCE_DEFAULT` label is split above rather than
+silently promoted. No actual historical object/link receipt is claimed.
+
+| Group | Available evidence | Current qualification |
 | --- | --- | --- |
-| 01 Package builder | NOTICE_ONLY | MIT applies to package; not entire DLL |
-| 02 PDFium | CONFIRMED_IN_BINARY | Root grant retained; dependencies unresolved |
-| 03 FreeType | RECIPE_OR_SOURCE_DEFAULT | fthash MIT and product credit supplement |
-| 04 ICU + Unicode data | RECIPE_OR_SOURCE_DEFAULT | Composite notice; source scope open |
-| 05 libjpeg-turbo / IJG | RECIPE_OR_SOURCE_DEFAULT | Product credit / SIMD scope |
-| 06 OpenJPEG | RECIPE_OR_SOURCE_DEFAULT | Component/file notices supplemental |
-| 07 zlib | RECIPE_OR_SOURCE_DEFAULT | Header grant; source scope |
-| 08 LittleCMS | RECIPE_OR_SOURCE_DEFAULT | MIT; object scope open |
-| 09 AGG 2.3 | RECIPE_OR_SOURCE_DEFAULT | Original grant; object scope |
-| 10 Abseil | RECIPE_OR_SOURCE_DEFAULT | Apache; applicable NOTICE check |
-| 11 fast_float | RECIPE_OR_SOURCE_DEFAULT | MIT; object scope |
-| 12 HarfBuzz | RECIPE_OR_SOURCE_DEFAULT | Missing COPYING / subdir terms |
-| 13 PNG | NOTICE_ONLY | XFA scope unresolved |
-| 14 TIFF | NOTICE_ONLY | Single-file grant; other copyright scope |
-| 15 simdutf | NOTICE_ONLY | V8 checkout is not linking |
-| 16 LLVM libc | RECIPE_OR_SOURCE_DEFAULT | Existing text; runtime map open |
-| 17 LLVM libc++ | RECIPE_OR_SOURCE_DEFAULT | Runtime notices unresolved |
-| 18 compiler-rt builtins | RECIPE_OR_SOURCE_DEFAULT | Link-input scope open |
-| 19 Microsoft static CRT | RECIPE_OR_SOURCE_DEFAULT | License/REDIST rights open |
-| 20 Skia | RECIPE_OR_SOURCE_DEFAULT | Candidate disabled; not proven absent |
-| 21 Brotli | RECIPE_OR_SOURCE_DEFAULT | Candidate disabled; not proven absent |
-| 22 Fontations | RECIPE_OR_SOURCE_DEFAULT | Candidate disabled; not proven absent |
-| 23 Rust PNG | RECIPE_OR_SOURCE_DEFAULT | Candidate disabled; not proven absent |
-| 24 V8 | RECIPE_OR_SOURCE_DEFAULT | Explicit=false; not proven absent |
-| 25 XFA | RECIPE_OR_SOURCE_DEFAULT | Explicit=false; not proven absent |
-| 26 PartitionAlloc | RECIPE_OR_SOURCE_DEFAULT | Explicit=false; not proven absent |
-| 27 libc++abi/libunwind/atomic | RECIPE_OR_SOURCE_DEFAULT | Candidate exclusion only |
-| 28 Bundled Foxit font data | RECIPE_OR_SOURCE_DEFAULT | Source attribution scope |
+| 01 Package builder | `PRODUCER_RECIPE_EVIDENCE` | Package-level MIT, not DLL-wide; producer staging known. |
+| 02 PDFium | `CONFIRMED_IN_BINARY` | Engine identity confirmed; actual checkout and static members UNKNOWN. |
+| 03 FreeType | `CANDIDATE_SOURCE_EVIDENCE` | Full fthash MIT supplied; FTL credit in draft; retained scope open. |
+| 04 ICU and bundled Unicode/data notices | `CANDIDATE_SOURCE_EVIDENCE` | Full composite original retained; actual units/data scope open. |
+| 05 JPEG / libjpeg-turbo / IJG | `CANDIDATE_SOURCE_EVIDENCE` | Original terms retained; explicit IJG product credit; SIMD/API scope open. |
+| 06 OpenJPEG | `CANDIDATE_SOURCE_EVIDENCE` | Existing four supplements plus additional file notices; LUT/full-body/historical scope open. |
+| 07 zlib | `CANDIDATE_SOURCE_EVIDENCE` | Review any distinct notices in selected SIMD/source files; no generic claim that header extraction is defective. |
+| 08 LittleCMS | `CANDIDATE_SOURCE_EVIDENCE` | File-specific coverage of vendored modified component. |
+| 09 AGG 2.3 | `CANDIDATE_SOURCE_EVIDENCE` | Candidate metadata says MIT, but text is noncanonical; exact SPDX matching remains explicit. Actual retained AGG source scope; source includes PDFium downstream patches. |
+| 10 Abseil | `CANDIDATE_SOURCE_EVIDENCE` | Actual header/object scope and applicable attribution/NOTICE inventory; no specific missing NOTICE proved. Appendix placeholders are not real author attribution. |
+| 11 fast_float | `CANDIDATE_SOURCE_EVIDENCE` | Exact historical source/header scope; other optional licenses need not all be elected. |
+| 12 HarfBuzz | `CANDIDATE_SOURCE_EVIDENCE` | COPYING and ms-use supplied; candidate derived-data chain traced; historical retention UNKNOWN. |
+| 13 PNG / libpng | `NOTICE_ONLY` | Historical DLL linkage not proven absent; do not remove notice. Scope of separately licensed contrib/configure code if included/distributed. |
+| 14 TIFF / libtiff | `NOTICE_ONLY` | Any additional file-specific holders if TIFF actually linked. Do not call this MIT or declare entire TIFF coverage complete. |
+| 15 simdutf | `NOTICE_ONLY` | Historical inclusion not proven; keep existing notice. |
+| 16 LLVM libc | `CANDIDATE_SOURCE_EVIDENCE` | Actual retained headers/objects and any separately licensed portions. Coverage of libc++/compiler-rt cannot be inferred from this filename. |
+| 17 LLVM libc++ | `CANDIDATE_SOURCE_EVIDENCE` | Candidate static libc++; applicable LLVM/legacy/runtime mapping open. |
+| 18 Clang compiler-rt builtins | `CANDIDATE_SOURCE_EVIDENCE` | Candidate builtins path; not compiler-rt atomic; actual archive/version unknown. |
+| 19 Microsoft static CRT | `CANDIDATE_SOURCE_EVIDENCE` | Candidate /MT path, distinct from app-local MSVC DLLs; rights unresolved. |
+| 20 Skia | `CANDIDATE_SOURCE_EVIDENCE` | Candidate nonselection is not proof of absence from historical DLL. No affirmative license expression invented for an unreviewed inclusion. |
+| 21 Brotli | `CANDIDATE_SOURCE_EVIDENCE` | Candidate nonselection is not proof of absence from historical DLL. No affirmative license expression invented for an unreviewed inclusion. |
+| 22 Fontations | `CANDIDATE_SOURCE_EVIDENCE` | Candidate nonselection is not proof of absence from historical DLL. No affirmative license expression invented for an unreviewed inclusion. |
+| 23 Rust PNG | `CANDIDATE_SOURCE_EVIDENCE` | Candidate nonselection is not proof of absence from historical DLL. No affirmative license expression invented for an unreviewed inclusion. |
+| 24 V8 | `PRODUCER_RECIPE_EVIDENCE` | Candidate nonselection is not proof of absence from historical DLL. No affirmative license expression invented for an unreviewed inclusion. |
+| 25 XFA | `PRODUCER_RECIPE_EVIDENCE` | Candidate nonselection is not proof of absence from historical DLL. No affirmative license expression invented for an unreviewed inclusion. |
+| 26 PartitionAlloc | `PRODUCER_RECIPE_EVIDENCE` | Candidate nonselection is not proof of absence from historical DLL. No affirmative license expression invented for an unreviewed inclusion. |
+| 27 libc++abi / libunwind / compiler-rt atomic | `CANDIDATE_SOURCE_EVIDENCE` | Candidate nonselection is not proof of absence from historical DLL. No affirmative license expression invented for an unreviewed inclusion. |
+| 28 PDFium bundled Foxit font data | `CANDIDATE_SOURCE_EVIDENCE` | Complete retained font-data/source notice scope not independently enumerated. |
 
-The original 16 notices are preserved in the local bblanchon bundle.
-Full pinned sources and new supplements: [NOTICES.md](NOTICES.md).
-The exact historical PDFium checkout, DEPS, linked objects and toolchain
-were not recovered. Release blockers: [RELEASE_GATE.md](RELEASE_GATE.md).
+Candidate root .gn overrides `use_llvm_libatomic=false`; generic Chromium
+defaults must not create a fictitious atomic dependency. Windows candidate
+libc++ does not automatically imply libc++abi/libunwind. No absence of a DLL
+import proves absence of static code. Disabled candidate defaults are not
+`NOT_INCLUDED_PROVEN`.
+
+Sources and missing evidence: [draft](PDFIUM_THIRD_PARTY_NOTICES_DRAFT.md).
+The original 16 texts stay untouched; the eight supplemental files are review
+material. See [RELEASE_GATE.md](RELEASE_GATE.md) before any release decision.

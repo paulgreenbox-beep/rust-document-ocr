@@ -10,7 +10,13 @@ hashes were inspected in the local candidate and are **not changed** here.
 The original builder's MIT license does not override the PDFium engine and
 dependency licenses. Keep all original notices in any future reviewed bundle.
 
-## New source-pinned text files
+The complete original-file index and hashes are in the
+[binary-specific draft](PDFIUM_THIRD_PARTY_NOTICES_DRAFT.md) and
+[LICENSE_EVIDENCE.json](LICENSE_EVIDENCE.json). The seven original supplements
+below were verified unchanged. A separate eighth file adds further candidate
+OpenJPEG notices; it does not replace the earlier seven.
+
+## Source-pinned text supplements
 
 | Supplement | Original source at pinned revision | Review status |
 | --- | --- | --- |
@@ -21,13 +27,18 @@ dependency licenses. Keep all original notices in any future reviewed bundle.
 | [OpenJPEG dwt.c](notices/openjpeg-dwt.c-header.txt) | [Source header, 91b9d56](https://github.com/chromium/pdfium/blob/91b9d569b34be4f38eed7b3c49b227356c3aadad/third_party/libopenjpeg/dwt.c) | Full leading copyright/license comment |
 | [OpenJPEG t1.c](notices/openjpeg-t1.c-header.txt) | [Source header, 91b9d56](https://github.com/chromium/pdfium/blob/91b9d569b34be4f38eed7b3c49b227356c3aadad/third_party/libopenjpeg/t1.c) | Full leading copyright/license comment |
 | [OpenJPEG ht_dec.c](notices/openjpeg-ht_dec.c-header.txt) | [Source header, 91b9d56](https://github.com/chromium/pdfium/blob/91b9d569b34be4f38eed7b3c49b227356c3aadad/third_party/libopenjpeg/ht_dec.c) | Full leading copyright/license comment |
+| [Additional OpenJPEG file notices](notices/openjpeg-additional-file-notices.txt) | Candidate j2k.c, thread.c, sparse_array.c, opj_config.h and opj_malloc.cc, linked inside the supplement | Five complete source-exact notice blocks; candidate-only, full historical/generated-data scope open |
 
 For these two source sets, the PDFium candidate revision is **not** a
 historical executed checkout receipt. The HarfBuzz wrapper README reports
 a different revision from candidate DEPS; the discrepancy stays open.
 Even complete primary license texts do not establish full retained-object
-coverage. Additional HarfBuzz subdirectory and file-specific terms must be
-checked against the accepted scope.
+coverage. Candidate use.cc -> generated use-table -> ms-use Additional.txt integration
+is now documented in the binary-specific draft, not inferred just from a
+COPYING file's existence. The main/ms-use licenses and two relevant generator/
+table texts have identical Git blobs at the two candidate revisions. This
+narrows text uncertainty, not executed-revision uncertainty. Remaining
+HarfBuzz file/subdirectory terms still need accepted-scope review.
 
 ## Proposed user-visible product credits
 

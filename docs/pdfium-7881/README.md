@@ -18,9 +18,13 @@ The source-only scope of the repository's existing THIRD_PARTY_NOTICES.md remain
 | Producer recipe | [`867b3ecc32163d715e84708c51fae5f031254985`](https://github.com/bblanchon/pdfium-binaries/tree/867b3ecc32163d715e84708c51fae5f031254985) |
 | CI | [Run 27143496415](https://github.com/bblanchon/pdfium-binaries/actions/runs/27143496415), Windows x64 build successful |
 
-The previous local verification reported an attestation PASS for the pinned
-archive/signer and a byte-for-byte match of all 46 archive file members with the
-existing bundle. An attested producer workflow does **not** establish the exact
+On 2026-10-30, explicit verification of public attestation 30308810 against
+the existing archive passed (exit 0) with pinned repository, signer workflow,
+source/signer digest and GitHub-hosted runner policy. All 46 archive file
+members also matched the existing bundle in local byte measurements.
+See the [binary-specific draft](PDFIUM_THIRD_PARTY_NOTICES_DRAFT.md) and
+[machine-readable evidence](LICENSE_EVIDENCE.json) for the reproducible policy
+and public-claim versus local-measurement distinction. An attested producer workflow does **not** establish the exact
 PDFium source checkout, retained linker objects, compiler/SDK versions or full
 third-party license closure. The candidate current official `chromium/7881`
 revision `91b9d569b34be4f38eed7b3c49b227356c3aadad` is **not** an executed
@@ -37,12 +41,28 @@ checkout receipt.
 - [RELEASE_GATE.md](RELEASE_GATE.md) records all unresolved checks and prohibits
   promotion of the release to `verified` based on these documents alone.
 
-**Known candidate notice gaps:** HarfBuzz, FreeType `fthash`, additional
-OpenJPEG file-specific holders, and runtime/license mapping for libc++,
-Clang builtins and Microsoft CRT. The original 16 PDFium/archive notices were
+**Initial candidate omissions now supplemented:** HarfBuzz main/ms-use terms,
+FreeType `fthash`, and additional OpenJPEG file-specific holders. The original
+seven supplements were verified unchanged; one additional bounded OpenJPEG
+notice collection was added. Full historical scope, generated-data provenance,
+and runtime/license mapping for libc++, Clang builtins and Microsoft CRT
+remain unresolved. The original 16 PDFium/archive notices were
 reviewed; they remain preserved in the local candidate, not duplicated or
 removed in this repository. The new text supplements are conservative review
 material, **not** proof of the old DLL's exact retained-object graph.
+
+## Review artifacts
+
+- [PDFIUM_THIRD_PARTY_NOTICES_DRAFT.md](PDFIUM_THIRD_PARTY_NOTICES_DRAFT.md):
+  original 16-notice index, eight supplements, credits and unresolved scope.
+- [LICENSE_EVIDENCE.json](LICENSE_EVIDENCE.json): hashes, source pins and evidence levels.
+- [Closure addendum](../../reports/PDFIUM_7881_LICENSE_CLOSURE_ADDENDUM.md):
+  provenance, notice checks and actual CI retry evidence.
+- Independent [HEIF LGPL options](../compliance/HEIF_LGPL_RELEASE_OPTIONS.md)
+  and [MSVC review](../compliance/MSVC_REDISTRIBUTION_REVIEW.md).
+
+**PDFIUM PROVENANCE — PUBLIC ARTIFACT VERIFIED.** This does not upgrade
+license closure or Windows release readiness.
 
 ## Publication boundary
 

@@ -17,10 +17,10 @@ It contains no software binary, license approval, or production runtime update.
   OpenJPEG component license and selected file-level copyrights.
 - [ ] Establish applicable file/subdirectory terms for the *actual*
   HarfBuzz/OpenJPEG/FreeType scope; the historical link graph is unavailable.
-- [ ] Evaluate whether the conservative extra HarfBuzz ms-use notice applies
-  to selected object sources. It is present for review, not asserted linked.
-- [ ] Resolve or consciously document the discrepancy between HarfBuzz
-  candidate DEPS and wrapper README revisions.
+- [x] Trace candidate HarfBuzz use.cc/use-table/generator to ms-use data.
+  This supports conservative notice retention, not actual historical objects.
+- [x] Document different HarfBuzz DEPS/README revisions and equal Git blobs
+  for the main/ms-use licenses and relevant table/generator; actual revision remains unknown.
 - [ ] Map exact libc++, Clang/compiler-rt and static CRT dependencies in the
   PDFium DLL to applicable copyright grants, exceptions and notices.
 - [ ] Establish which component inclusions/exclusions are supported by
@@ -28,8 +28,12 @@ It contains no software binary, license approval, or production runtime update.
   SHA, DEPS, resolved GN args or link map.
 - [ ] Finish file-specific copyright and Apache NOTICE scope review,
   including vendored changes and font/data notices where applicable.
-- [ ] Assemble a binary-specific `PDFIUM_THIRD_PARTY_NOTICES.md` incorporating
-  required FreeType/IJG credits; keep source-only notices accurate.
+- [x] Create a binary-specific review index and FreeType/IJG credits in
+  [PDFIUM_THIRD_PARTY_NOTICES_DRAFT.md](PDFIUM_THIRD_PARTY_NOTICES_DRAFT.md).
+- [x] Verify seven existing supplements and add further candidate OpenJPEG
+  notices after reviewing 24 selected files and 27 local leading headers.
+- [ ] Resolve generated OpenJPEG LUT provenance/full-body attribution and
+  actual retained scope; assemble and approve the final physical packet.
 - [ ] Obtain explicit release-owner/legal/compliance review of the entire
   proposed PDFium binary notice packet.
 
@@ -46,11 +50,16 @@ It contains no software binary, license approval, or production runtime update.
 - [ ] Clean Windows x64 VM smoke test of the *approved* ZIP with verified
   EXE/inputs and baseline results, including native-text and raster OCR.
 
+Evidence and actual CI retry: [closure addendum](../../reports/PDFIUM_7881_LICENSE_CLOSURE_ADDENDUM.md).
+Concrete independent routes: [HEIF LGPL options](../compliance/HEIF_LGPL_RELEASE_OPTIONS.md)
+and [MSVC review](../compliance/MSVC_REDISTRIBUTION_REVIEW.md).
+Neither analysis implements a new build/deployment route or grants rights.
+
 ## No-promotion rule
 
 Do not change `distribution_status` to `verified`; do not build/upload a
 public ZIP, create a GitHub Release, or report the license gate as PASS
-because the seven text files exist. A SHA-256, signed attestation, stable
+because the original notices and eight supplements exist. A SHA-256, signed attestation, stable
 API, synthetic smoke test or absence of an old source checkout is not
 itself proof of all license obligations.
 

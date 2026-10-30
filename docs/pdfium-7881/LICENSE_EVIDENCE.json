@@ -1,0 +1,728 @@
+{
+  "schema_version": 1,
+  "status": "DRAFT — NOT APPROVED FOR REDISTRIBUTION",
+  "checked_date": "2026-10-30",
+  "provenance_status": "PDFIUM PROVENANCE — PUBLIC ARTIFACT VERIFIED",
+  "license_closure": "PDFIUM LICENSE CLOSURE — INCOMPLETE",
+  "windows_portable_status": "WINDOWS PORTABLE RELEASE — BLOCKED: LICENSING",
+  "distribution_status": "blocked",
+  "artifact": {
+    "name": "pdfium.dll",
+    "version": "151.0.7881.0",
+    "api": 7881,
+    "architecture": "AMD64",
+    "size": 7211520,
+    "sha256": "79d4676b656cfb1abcea88f9ade3b4b0826c5200382db5f4ec72a636c598c118"
+  },
+  "published_archive": {
+    "name": "pdfium-win-x64.tgz",
+    "sha256": "73cc0de638ac2095e7445bf56a38200a5b7c7ca0e9f4ba144598f2457377ac08",
+    "bytes": 3733154,
+    "release_id": 336103186,
+    "asset_id": 441936973,
+    "release_url": "https://github.com/bblanchon/pdfium-binaries/releases/tag/chromium%2F7881",
+    "metadata_url": "https://api.github.com/repos/bblanchon/pdfium-binaries/releases/tags/chromium%2F7881"
+  },
+  "attestation": {
+    "id": 30308810,
+    "url": "https://github.com/bblanchon/pdfium-binaries/attestations/30308810",
+    "verification_date": "2026-10-30",
+    "explicit_bundle_verification_exit_code": 0,
+    "issuer": "https://token.actions.githubusercontent.com",
+    "signer": "https://github.com/bblanchon/pdfium-binaries/.github/workflows/build-all.yml@refs/heads/master",
+    "source_and_signer_digest": "867b3ecc32163d715e84708c51fae5f031254985",
+    "runner_environment": "github-hosted",
+    "run_id": 27143496415,
+    "resolved_dependency_scope": "Builder repository only; not executed PDFium SHA, DEPS or toolchain",
+    "verification_policy": {
+      "repository": "bblanchon/pdfium-binaries",
+      "signer_workflow": "bblanchon/pdfium-binaries/.github/workflows/build-all.yml",
+      "deny_self_hosted_runners": true
+    }
+  },
+  "local_measurements": {
+    "classification": "LOCAL_REVIEW_NOT_UPSTREAM_CLAIM",
+    "dll_hash_matches": true,
+    "archive_hash_matches": true,
+    "archive_regular_file_count": 46,
+    "matching_extracted_bundle_files": 46,
+    "method": "Read tar members in memory, compare size and SHA256 with existing bundle; no extraction or runtime execution",
+    "limits": "No public upload of runtime or internal logs; binary bytes and measurement are independently reproducible given the producer asset"
+  },
+  "source_limits": {
+    "executed_pdfium_revision": null,
+    "candidate_pdfium_revision": "91b9d569b34be4f38eed7b3c49b227356c3aadad",
+    "actual_resolved_gn": null,
+    "actual_toolchain": null,
+    "historical_link_or_object_map": null,
+    "local_custom_changes": "No distinct local binary mutation established; this DLL matches public producer artifact",
+    "producer_recipe_patches": [
+      "patches/shared_library.patch",
+      "patches/public_headers.patch",
+      "patches/win/build.patch"
+    ],
+    "explicit_gn_sha256": "161bf08999e403b7da9d924c45b7ee7bc8beb3038b08f9e174ba6761dd06a976",
+    "explicit_args": {
+      "sha256": "161bf08999e403b7da9d924c45b7ee7bc8beb3038b08f9e174ba6761dd06a976",
+      "is_component_build": false,
+      "is_debug": false,
+      "pdf_enable_v8": false,
+      "pdf_enable_xfa": false,
+      "pdf_is_standalone": true,
+      "pdf_use_partition_alloc": false,
+      "target_cpu": "x64",
+      "target_os": "win",
+      "treat_warnings_as_errors": false
+    }
+  },
+  "sources": {
+    "producer_recipe": "https://github.com/bblanchon/pdfium-binaries/blob/867b3ecc32163d715e84708c51fae5f031254985/steps/03-patch.sh",
+    "collector": "https://github.com/bblanchon/pdfium-binaries/blob/867b3ecc32163d715e84708c51fae5f031254985/steps/08-licenses.sh",
+    "configure": "https://github.com/bblanchon/pdfium-binaries/blob/867b3ecc32163d715e84708c51fae5f031254985/steps/05-configure.sh",
+    "candidate_deps": "https://pdfium.googlesource.com/pdfium/+/91b9d569b34be4f38eed7b3c49b227356c3aadad/DEPS",
+    "candidate_root_defaults": "https://pdfium.googlesource.com/pdfium/+/91b9d569b34be4f38eed7b3c49b227356c3aadad/.gn",
+    "candidate_third_party_graph": "https://pdfium.googlesource.com/pdfium/+/91b9d569b34be4f38eed7b3c49b227356c3aadad/third_party/BUILD.gn"
+  },
+  "original_notices": [
+    {
+      "archive_path": "licenses/abseil.txt",
+      "bytes": 11564,
+      "sha256": "f54fff0b905df5b3464527c652a30e903b172d6dcab4d89b5e6f105d5e4a4603",
+      "source_url": "https://chromium.googlesource.com/chromium/src/third_party/abseil-cpp/+/5e42a36a85a252d8cdee6c39661d2bfd9883fd5c/LICENSE",
+      "source_scope": "Candidate/DEPS or producer text; see collector transformation, not executed checkout proof",
+      "distribution_status": "PRESERVE_UNCHANGED; completeness not inferred"
+    },
+    {
+      "archive_path": "licenses/agg23.txt",
+      "bytes": 725,
+      "sha256": "c110d3ea2ad77467ce0dcff7d3337e6c8be8049a5103f4b9bd5fd911a77972e5",
+      "source_url": "https://pdfium.googlesource.com/pdfium/+/91b9d569b34be4f38eed7b3c49b227356c3aadad/third_party/agg23/agg_array.h",
+      "source_scope": "Candidate/DEPS or producer text; see collector transformation, not executed checkout proof",
+      "distribution_status": "PRESERVE_UNCHANGED; completeness not inferred"
+    },
+    {
+      "archive_path": "licenses/fast_float.txt",
+      "bytes": 1106,
+      "sha256": "bf1b57355feca8fce77ee95f48002f8d4789fb71b30ec7599c06cda4901fbb2b",
+      "source_url": "https://chromium.googlesource.com/external/github.com/fastfloat/fast_float/+/05087a303dad9c98768b33c829d398223a649bc6/LICENSE-MIT",
+      "source_scope": "Candidate/DEPS or producer text; see collector transformation, not executed checkout proof",
+      "distribution_status": "PRESERVE_UNCHANGED; completeness not inferred"
+    },
+    {
+      "archive_path": "licenses/freetype.txt",
+      "bytes": 6741,
+      "sha256": "f4b133e25df1f86ad3ffea453aa0e613f0474f34778dbbb3e437e7b2724937d8",
+      "source_url": "https://pdfium.googlesource.com/pdfium/+/91b9d569b34be4f38eed7b3c49b227356c3aadad/third_party/freetype/FTL.TXT",
+      "source_scope": "Candidate/DEPS or producer text; see collector transformation, not executed checkout proof",
+      "distribution_status": "PRESERVE_UNCHANGED; completeness not inferred"
+    },
+    {
+      "archive_path": "licenses/icu.txt",
+      "bytes": 28286,
+      "sha256": "93679f4389d53b6835d89843f251844fb9bc455b35bab036d3c8e7abe497a47a",
+      "source_url": "https://chromium.googlesource.com/chromium/deps/icu/+/3859e64eed5d34544b27fbcab0ac1685ce83df3c/LICENSE",
+      "source_scope": "Candidate/DEPS or producer text; see collector transformation, not executed checkout proof",
+      "distribution_status": "PRESERVE_UNCHANGED; completeness not inferred"
+    },
+    {
+      "archive_path": "licenses/lcms.txt",
+      "bytes": 1353,
+      "sha256": "7312b68c5b25e9bf2b828706fb4e29588f22705112f411fd42e1f7d84c3d139a",
+      "source_url": "https://pdfium.googlesource.com/pdfium/+/91b9d569b34be4f38eed7b3c49b227356c3aadad/third_party/lcms/include/lcms2.h",
+      "source_scope": "Candidate/DEPS or producer text; see collector transformation, not executed checkout proof",
+      "distribution_status": "PRESERVE_UNCHANGED; completeness not inferred"
+    },
+    {
+      "archive_path": "licenses/libjpeg_turbo.ijg",
+      "bytes": 13059,
+      "sha256": "db16a04128171879c60708d171b88d97345a2dd20f9bfc173680a4497c73f704",
+      "source_url": "https://chromium.googlesource.com/chromium/deps/libjpeg_turbo/+/640f254ad0fa03f6b1f29f89b7dd9366f2f6e533/LICENSE.md",
+      "source_scope": "Candidate/DEPS or producer text; see collector transformation, not executed checkout proof",
+      "distribution_status": "PRESERVE_UNCHANGED; completeness not inferred"
+    },
+    {
+      "archive_path": "licenses/libjpeg_turbo.md",
+      "bytes": 5755,
+      "sha256": "be2b2b5ab168bce87bc3e31f2a5c5adba4b7f6e9e51d618e958d1d46972ebd95",
+      "source_url": "https://chromium.googlesource.com/chromium/deps/libjpeg_turbo/+/640f254ad0fa03f6b1f29f89b7dd9366f2f6e533/LICENSE.md",
+      "source_scope": "Candidate/DEPS or producer text; see collector transformation, not executed checkout proof",
+      "distribution_status": "PRESERVE_UNCHANGED; completeness not inferred"
+    },
+    {
+      "archive_path": "licenses/libopenjpeg.txt",
+      "bytes": 1794,
+      "sha256": "c5ab0890a737c2dfa7ba675036554f6d17741d98629b0c2a145354d00617e6b2",
+      "source_url": "https://pdfium.googlesource.com/pdfium/+/91b9d569b34be4f38eed7b3c49b227356c3aadad/third_party/libopenjpeg/openjpeg.c",
+      "source_scope": "Candidate/DEPS or producer text; see collector transformation, not executed checkout proof",
+      "distribution_status": "PRESERVE_UNCHANGED; completeness not inferred"
+    },
+    {
+      "archive_path": "licenses/libpng.txt",
+      "bytes": 5479,
+      "sha256": "452390433ba0f88aa3e2b122c647741b72a0c117cd6ed7a329b49785aecb5511",
+      "source_url": "https://chromium.googlesource.com/chromium/src/third_party/libpng/+/8a5b4ace0c2a8a47d73037610b98096f55f3d18f/LICENSE",
+      "source_scope": "Candidate/DEPS or producer text; see collector transformation, not executed checkout proof",
+      "distribution_status": "PRESERVE_UNCHANGED; completeness not inferred"
+    },
+    {
+      "archive_path": "licenses/libtiff.txt",
+      "bytes": 1139,
+      "sha256": "92b72ba97e6c2749c2a94bc0ef646b47080217f1e772a482b33cf5a5f98a6506",
+      "source_url": "https://pdfium.googlesource.com/pdfium/+/91b9d569b34be4f38eed7b3c49b227356c3aadad/third_party/libtiff/t4.h",
+      "source_scope": "Candidate/DEPS or producer text; see collector transformation, not executed checkout proof",
+      "distribution_status": "PRESERVE_UNCHANGED; completeness not inferred"
+    },
+    {
+      "archive_path": "LICENSE",
+      "bytes": 1184,
+      "sha256": "8854f4388f1ca13b3ad9baa42e95f5546b4c0b17109c159256d3eca7be39b09b",
+      "source_url": "https://github.com/bblanchon/pdfium-binaries/blob/867b3ecc32163d715e84708c51fae5f031254985/LICENSE",
+      "source_scope": "Candidate/DEPS or producer text; see collector transformation, not executed checkout proof",
+      "distribution_status": "PRESERVE_UNCHANGED; completeness not inferred"
+    },
+    {
+      "archive_path": "licenses/llvm-libc.txt",
+      "bytes": 15418,
+      "sha256": "3b6226c32e168c83b891d8d6f0d3c29c2116dc3ef93dc93c307b54f279ecf383",
+      "source_url": "https://chromium.googlesource.com/external/github.com/llvm/llvm-project/libc.git/+/9309c117ebae84dd2f9df1ef99de4782162527d5/LICENSE.TXT",
+      "source_scope": "Candidate/DEPS or producer text; see collector transformation, not executed checkout proof",
+      "distribution_status": "PRESERVE_UNCHANGED; completeness not inferred"
+    },
+    {
+      "archive_path": "licenses/pdfium.txt",
+      "bytes": 12818,
+      "sha256": "961eacd9633fff6d051db7208b755e9210e30efac7adec3e6a6d52798f0ccf0e",
+      "source_url": "https://pdfium.googlesource.com/pdfium/+/91b9d569b34be4f38eed7b3c49b227356c3aadad/LICENSE",
+      "source_scope": "Candidate/DEPS or producer text; see collector transformation, not executed checkout proof",
+      "distribution_status": "PRESERVE_UNCHANGED; completeness not inferred"
+    },
+    {
+      "archive_path": "licenses/simdutf.txt",
+      "bytes": 1077,
+      "sha256": "c172a0ba936ff31230febb5dad869e25cb7c1a07480c7a381be8cf011bb52719",
+      "source_url": "https://chromium.googlesource.com/chromium/src/third_party/simdutf/+/f7356eed293f8208c40b3c1b344a50bd70971983/LICENSE",
+      "source_scope": "Candidate/DEPS or producer text; see collector transformation, not executed checkout proof",
+      "distribution_status": "PRESERVE_UNCHANGED; completeness not inferred"
+    },
+    {
+      "archive_path": "licenses/zlib.txt",
+      "bytes": 1332,
+      "sha256": "33fd641c9f3b0e0be64bc78fea9e94807674cdd70c48477599226cb8956565fe",
+      "source_url": "https://chromium.googlesource.com/chromium/src/third_party/zlib/+/5c1dfd53066bf58d3d28197f715717dd88762443/zlib.h",
+      "source_scope": "Candidate/DEPS or producer text; see collector transformation, not executed checkout proof",
+      "distribution_status": "PRESERVE_UNCHANGED; completeness not inferred"
+    }
+  ],
+  "supplements": [
+    {
+      "path": "notices/freetype-fthash-MIT.txt",
+      "bytes": 1232,
+      "sha256": "5285d96f6aa3188193d5fbefd8710ed6a46af185e0a43817c17acee5f4b1ab3d",
+      "sources": [
+        "https://github.com/freetype/freetype/blob/b08a2eb0dd37f4a6c886fa5b0ecf5b3e1d27aac7/src/base/fthash.c",
+        "https://github.com/freetype/freetype/blob/b08a2eb0dd37f4a6c886fa5b0ecf5b3e1d27aac7/include/freetype/internal/fthash.h"
+      ],
+      "extraction": "Exact complete MIT comment at byte135 in .c / byte144 in .h; filename masthead and following origin comment excluded",
+      "checked_at": "2026-10-30",
+      "evidence": "CANDIDATE_SOURCE_EVIDENCE",
+      "redistribution_approved": false
+    },
+    {
+      "path": "notices/harfbuzz-COPYING.txt",
+      "bytes": 1971,
+      "sha256": "ba8f810f2455c2f08e2d56bb49b72f37fcf68f1f4fade38977cfd7372050ad64",
+      "sources": [
+        "https://github.com/harfbuzz/harfbuzz/blob/d639197ed529b05c27f38ebaab365a621d5edad5/COPYING"
+      ],
+      "extraction": "Whole file byte-identical",
+      "checked_at": "2026-10-30",
+      "evidence": "CANDIDATE_SOURCE_EVIDENCE",
+      "redistribution_approved": false
+    },
+    {
+      "path": "notices/harfbuzz-ms-use-COPYING.txt",
+      "bytes": 1141,
+      "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383",
+      "sources": [
+        "https://github.com/harfbuzz/harfbuzz/blob/d639197ed529b05c27f38ebaab365a621d5edad5/src/ms-use/COPYING"
+      ],
+      "extraction": "Whole file byte-identical; candidate generated-table integration, actual binary retention UNKNOWN",
+      "checked_at": "2026-10-30",
+      "evidence": "CANDIDATE_SOURCE_EVIDENCE",
+      "redistribution_approved": false
+    },
+    {
+      "path": "notices/openjpeg-LICENSE.txt",
+      "bytes": 2112,
+      "sha256": "a6af136f3e15038a666b61f376612a07d9a4e48cb7c01adbf3e33b3f14ab49b6",
+      "sources": [
+        "https://pdfium.googlesource.com/pdfium/+/91b9d569b34be4f38eed7b3c49b227356c3aadad/third_party/libopenjpeg/LICENSE"
+      ],
+      "extraction": "Whole file byte-identical",
+      "checked_at": "2026-10-30",
+      "evidence": "CANDIDATE_SOURCE_EVIDENCE",
+      "redistribution_approved": false
+    },
+    {
+      "path": "notices/openjpeg-dwt.c-header.txt",
+      "bytes": 2144,
+      "sha256": "c251cf39bf030146b6cc78a12f492a2b3d6272e1da9382535bd5aa8941143aa4",
+      "sources": [
+        "https://pdfium.googlesource.com/pdfium/+/91b9d569b34be4f38eed7b3c49b227356c3aadad/third_party/libopenjpeg/dwt.c"
+      ],
+      "extraction": "Exact prefix through first closing comment plus LF",
+      "checked_at": "2026-10-30",
+      "evidence": "CANDIDATE_SOURCE_EVIDENCE",
+      "redistribution_approved": false
+    },
+    {
+      "path": "notices/openjpeg-t1.c-header.txt",
+      "bytes": 2123,
+      "sha256": "aeda538d62ab8c138b7c4bdd3333224afa9f4eba41653ac3ed3f40664d9aba71",
+      "sources": [
+        "https://pdfium.googlesource.com/pdfium/+/91b9d569b34be4f38eed7b3c49b227356c3aadad/third_party/libopenjpeg/t1.c"
+      ],
+      "extraction": "Exact prefix through first closing comment plus LF",
+      "checked_at": "2026-10-30",
+      "evidence": "CANDIDATE_SOURCE_EVIDENCE",
+      "redistribution_approved": false
+    },
+    {
+      "path": "notices/openjpeg-ht_dec.c-header.txt",
+      "bytes": 1703,
+      "sha256": "148fe28ad876cd8a8d526b85522b2b8cb87768eb6bdba1c45d46c0f5b149a7be",
+      "sources": [
+        "https://pdfium.googlesource.com/pdfium/+/91b9d569b34be4f38eed7b3c49b227356c3aadad/third_party/libopenjpeg/ht_dec.c"
+      ],
+      "extraction": "Exact prefix through closing license banner plus LF; following descriptive comment excluded",
+      "checked_at": "2026-10-30",
+      "evidence": "CANDIDATE_SOURCE_EVIDENCE",
+      "redistribution_approved": false
+    },
+    {
+      "path": "notices/openjpeg-additional-file-notices.txt",
+      "bytes": 10259,
+      "sha256": "d4a587d834032b6c1a0e017ac6def40e33bb9018e961e6d1b88905e2f0b1f035",
+      "sources": [
+        "https://pdfium.googlesource.com/pdfium/+/91b9d569b34be4f38eed7b3c49b227356c3aadad/third_party/libopenjpeg/j2k.c",
+        "https://pdfium.googlesource.com/pdfium/+/91b9d569b34be4f38eed7b3c49b227356c3aadad/third_party/libopenjpeg/thread.c",
+        "https://pdfium.googlesource.com/pdfium/+/91b9d569b34be4f38eed7b3c49b227356c3aadad/third_party/libopenjpeg/sparse_array.c",
+        "https://pdfium.googlesource.com/pdfium/+/91b9d569b34be4f38eed7b3c49b227356c3aadad/third_party/libopenjpeg/opj_config.h",
+        "https://pdfium.googlesource.com/pdfium/+/91b9d569b34be4f38eed7b3c49b227356c3aadad/third_party/libopenjpeg/opj_malloc.cc"
+      ],
+      "extraction": "New assembled supplement, not an upstream whole file: five complete source-exact notice blocks plus clearly separated review prose; 24 selected files and 27 local leading headers reviewed, not full body/generated-data closure",
+      "checked_at": "2026-10-30",
+      "evidence": "CANDIDATE_SOURCE_EVIDENCE",
+      "redistribution_approved": false
+    }
+  ],
+  "components": [
+    {
+      "component": "Package builder",
+      "evidence_level": "PRODUCER_RECIPE_EVIDENCE",
+      "historical_retention": "UNKNOWN",
+      "candidate_source_revision": "867b3ecc32163d715e84708c51fae5f031254985",
+      "source_url": "https://github.com/bblanchon/pdfium-binaries/blob/867b3ecc32163d715e84708c51fae5f031254985/LICENSE",
+      "license_expression": "MIT",
+      "scope_note": "Exact MIT file plus third-party pointer copied by steps/07-stage.sh; all package files match existing archive.",
+      "remaining_review": [
+        "Map original licenses/ pointer to relocated package layout."
+      ]
+    },
+    {
+      "component": "PDFium",
+      "evidence_level": "CONFIRMED_IN_BINARY",
+      "historical_retention": "Engine identity confirmed; exact source and static members UNKNOWN",
+      "candidate_source_revision": "91b9d569b34be4f38eed7b3c49b227356c3aadad",
+      "source_url": "https://pdfium.googlesource.com/pdfium/+/91b9d569b34be4f38eed7b3c49b227356c3aadad/LICENSE",
+      "license_expression": "BSD-3-Clause AND Apache-2.0",
+      "scope_note": "Matching published package, PDFium PE/API identity and version. Candidate public source LICENSE matches saved transformed text; does not prove executed source.",
+      "remaining_review": [
+        "Exact executed source/DEPS and per-file license applicability.",
+        "Target-specific third-party and runtime scope."
+      ]
+    },
+    {
+      "component": "FreeType",
+      "evidence_level": "CANDIDATE_SOURCE_EVIDENCE",
+      "historical_retention": "UNKNOWN",
+      "candidate_source_revision": "b08a2eb0dd37f4a6c886fa5b0ecf5b3e1d27aac7",
+      "source_url": "https://chromium.googlesource.com/chromium/src/third_party/freetype2/+/b08a2eb0dd37f4a6c886fa5b0ecf5b3e1d27aac7/LICENSE.TXT",
+      "license_expression": "FTL AND MIT",
+      "scope_note": "Candidate bundled FreeType target includes ftbase.c, which includes separately MIT-licensed fthash.c.",
+      "remaining_review": [
+        "fthash complete grant supplied in unchanged existing supplement; actual retained scope and other applicable source exceptions remain open."
+      ]
+    },
+    {
+      "component": "ICU and bundled Unicode/data notices",
+      "evidence_level": "CANDIDATE_SOURCE_EVIDENCE",
+      "historical_retention": "UNKNOWN",
+      "candidate_source_revision": "3859e64eed5d34544b27fbcab0ac1685ce83df3c",
+      "source_url": "https://chromium.googlesource.com/chromium/deps/icu/+/3859e64eed5d34544b27fbcab0ac1685ce83df3c/LICENSE",
+      "license_expression": "LicenseRef-ICU-Composite",
+      "scope_note": "Candidate deps reach ICU icuuc; saved full composite LICENSE matches pinned text.",
+      "remaining_review": [
+        "Exact linked ICU units/data; no blanket copyleft-free assertion.",
+        "Main Unicode-3.0 label is not a replacement for the composite text."
+      ]
+    },
+    {
+      "component": "JPEG / libjpeg-turbo / IJG",
+      "evidence_level": "CANDIDATE_SOURCE_EVIDENCE",
+      "historical_retention": "UNKNOWN",
+      "candidate_source_revision": "640f254ad0fa03f6b1f29f89b7dd9366f2f6e533",
+      "source_url": "https://chromium.googlesource.com/chromium/deps/libjpeg_turbo/+/640f254ad0fa03f6b1f29f89b7dd9366f2f6e533/LICENSE.md",
+      "license_expression": "IJG AND BSD-3-Clause AND Zlib",
+      "scope_note": "Candidate bundled default uses libjpeg API; SIMD source code and NASM build tool must not be conflated.",
+      "remaining_review": [
+        "Clear product-level credit/navigation, including renamed README.ijg link.",
+        "Exact libjpeg/TurboJPEG/SIMD retained scope and file notices."
+      ]
+    },
+    {
+      "component": "OpenJPEG",
+      "evidence_level": "CANDIDATE_SOURCE_EVIDENCE",
+      "historical_retention": "UNKNOWN",
+      "candidate_source_revision": "91b9d569b34be4f38eed7b3c49b227356c3aadad",
+      "source_url": "https://pdfium.googlesource.com/pdfium/+/91b9d569b34be4f38eed7b3c49b227356c3aadad/third_party/libopenjpeg/README.pdfium",
+      "license_expression": "BSD-2-Clause",
+      "scope_note": "fx_libopenjpeg candidate sources include openjpeg.c, dwt.c, t1.c, ht_dec.c; collector extracts only openjpeg.c header.",
+      "remaining_review": [
+        "Component plus source-header supplements now include additional candidate holders; generated LUT provenance/full-body attribution/historical scope remain open."
+      ]
+    },
+    {
+      "component": "zlib",
+      "evidence_level": "CANDIDATE_SOURCE_EVIDENCE",
+      "historical_retention": "UNKNOWN",
+      "candidate_source_revision": "5c1dfd53066bf58d3d28197f715717dd88762443",
+      "source_url": "https://chromium.googlesource.com/chromium/src/third_party/zlib/+/5c1dfd53066bf58d3d28197f715717dd88762443/zlib.h",
+      "license_expression": "Zlib",
+      "scope_note": "Candidate bundled zlib selected; x64 sources can have additional file-specific holders.",
+      "remaining_review": [
+        "Review any distinct notices in selected SIMD/source files; no generic claim that header extraction is defective."
+      ]
+    },
+    {
+      "component": "LittleCMS",
+      "evidence_level": "CANDIDATE_SOURCE_EVIDENCE",
+      "historical_retention": "UNKNOWN",
+      "candidate_source_revision": "91b9d569b34be4f38eed7b3c49b227356c3aadad",
+      "source_url": "https://pdfium.googlesource.com/pdfium/+/91b9d569b34be4f38eed7b3c49b227356c3aadad/third_party/lcms/README.pdfium",
+      "license_expression": "MIT",
+      "scope_note": "Candidate reaches fx_lcms2; header MIT grant copied by collector.",
+      "remaining_review": [
+        "File-specific coverage of vendored modified component."
+      ]
+    },
+    {
+      "component": "AGG 2.3",
+      "evidence_level": "CANDIDATE_SOURCE_EVIDENCE",
+      "historical_retention": "UNKNOWN",
+      "candidate_source_revision": "91b9d569b34be4f38eed7b3c49b227356c3aadad",
+      "source_url": "https://pdfium.googlesource.com/pdfium/+/91b9d569b34be4f38eed7b3c49b227356c3aadad/third_party/agg23/copying",
+      "license_expression": "LicenseRef-AGG-2.3",
+      "scope_note": "Candidate AGG enabled by default; published excerpt is complete short permissive header, not later AGG license.",
+      "remaining_review": [
+        "Candidate metadata says MIT, but text is noncanonical; exact SPDX matching remains explicit.",
+        "Actual retained AGG source scope; source includes PDFium downstream patches."
+      ]
+    },
+    {
+      "component": "Abseil",
+      "evidence_level": "CANDIDATE_SOURCE_EVIDENCE",
+      "historical_retention": "UNKNOWN",
+      "candidate_source_revision": "5e42a36a85a252d8cdee6c39661d2bfd9883fd5c",
+      "source_url": "https://chromium.googlesource.com/chromium/src/third_party/abseil-cpp/+/5e42a36a85a252d8cdee6c39661d2bfd9883fd5c/LICENSE",
+      "license_expression": "Apache-2.0",
+      "scope_note": "Candidate fxcrt dependency; full Apache text matches pinned dependency.",
+      "remaining_review": [
+        "Actual header/object scope and applicable attribution/NOTICE inventory; no specific missing NOTICE proved.",
+        "Appendix placeholders are not real author attribution."
+      ]
+    },
+    {
+      "component": "fast_float",
+      "evidence_level": "CANDIDATE_SOURCE_EVIDENCE",
+      "historical_retention": "UNKNOWN",
+      "candidate_source_revision": "05087a303dad9c98768b33c829d398223a649bc6",
+      "source_url": "https://chromium.googlesource.com/external/github.com/fastfloat/fast_float/+/05087a303dad9c98768b33c829d398223a649bc6/LICENSE-MIT",
+      "license_expression": "MIT",
+      "scope_note": "Candidate header dependency; full selected MIT text matches.",
+      "remaining_review": [
+        "Exact historical source/header scope; other optional licenses need not all be elected."
+      ]
+    },
+    {
+      "component": "HarfBuzz",
+      "evidence_level": "CANDIDATE_SOURCE_EVIDENCE",
+      "historical_retention": "UNKNOWN",
+      "candidate_source_revision": "d639197ed529b05c27f38ebaab365a621d5edad5",
+      "source_url": "https://chromium.googlesource.com/external/github.com/harfbuzz/harfbuzz.git/+/d639197ed529b05c27f38ebaab365a621d5edad5/COPYING",
+      "license_expression": "MIT-Modern-Variant",
+      "scope_note": "Production candidate edit target depends unconditionally on bundled HarfBuzz; collector has no HarfBuzz case.",
+      "remaining_review": [
+        "Main and ms-use notices supplied; candidate use-table derived-data chain checked; actual binary scope and remaining per-file/subdirectory terms remain open."
+      ]
+    },
+    {
+      "component": "PNG / libpng",
+      "evidence_level": "NOTICE_ONLY",
+      "historical_retention": "UNKNOWN",
+      "candidate_source_revision": "8a5b4ace0c2a8a47d73037610b98096f55f3d18f",
+      "source_url": "https://chromium.googlesource.com/chromium/src/third_party/libpng/+/8a5b4ace0c2a8a47d73037610b98096f55f3d18f/LICENSE",
+      "license_expression": "libpng-2.0",
+      "scope_note": "Candidate codec path gated by XFA; saved notice may come from other targets.",
+      "remaining_review": [
+        "Historical DLL linkage not proven absent; do not remove notice.",
+        "Scope of separately licensed contrib/configure code if included/distributed."
+      ]
+    },
+    {
+      "component": "TIFF / libtiff",
+      "evidence_level": "NOTICE_ONLY",
+      "historical_retention": "UNKNOWN",
+      "candidate_source_revision": "91b9d569b34be4f38eed7b3c49b227356c3aadad",
+      "source_url": "https://pdfium.googlesource.com/pdfium/+/91b9d569b34be4f38eed7b3c49b227356c3aadad/third_party/libtiff/t4.h",
+      "license_expression": "libtiff",
+      "scope_note": "Candidate no XFA codec edge; saved notice alone does not prove inclusion/exclusion.",
+      "remaining_review": [
+        "Any additional file-specific holders if TIFF actually linked.",
+        "Do not call this MIT or declare entire TIFF coverage complete."
+      ]
+    },
+    {
+      "component": "simdutf",
+      "evidence_level": "NOTICE_ONLY",
+      "historical_retention": "UNKNOWN",
+      "candidate_source_revision": "f7356eed293f8208c40b3c1b344a50bd70971983",
+      "source_url": "https://chromium.googlesource.com/chromium/src/third_party/simdutf/+/f7356eed293f8208c40b3c1b344a50bd70971983/LICENSE",
+      "license_expression": "MIT",
+      "scope_note": "DEPS checkout conditioned on V8; no selected candidate ICU dependency found. Checkout presence != linkage.",
+      "remaining_review": [
+        "Historical inclusion not proven; keep existing notice."
+      ]
+    },
+    {
+      "component": "LLVM libc",
+      "evidence_level": "CANDIDATE_SOURCE_EVIDENCE",
+      "historical_retention": "UNKNOWN",
+      "candidate_source_revision": "9309c117ebae84dd2f9df1ef99de4782162527d5",
+      "source_url": "https://chromium.googlesource.com/external/github.com/llvm/llvm-project/libc.git/+/9309c117ebae84dd2f9df1ef99de4782162527d5/LICENSE.TXT",
+      "license_expression": "Apache-2.0 WITH LLVM-exception",
+      "scope_note": "Candidate libc++ depends on LLVM libc header/config group, not proof of separately compiled libc code.",
+      "remaining_review": [
+        "Actual retained headers/objects and any separately licensed portions.",
+        "Coverage of libc++/compiler-rt cannot be inferred from this filename."
+      ]
+    },
+    {
+      "component": "LLVM libc++",
+      "evidence_level": "CANDIDATE_SOURCE_EVIDENCE",
+      "historical_retention": "UNKNOWN",
+      "candidate_source_revision": "5abc7f839700f0f17338434e1c1c6a8c87c00c11",
+      "source_url": "https://chromium.googlesource.com/external/github.com/llvm/llvm-project/libcxx.git/+/5abc7f839700f0f17338434e1c1c6a8c87c00c11/LICENSE.TXT",
+      "license_expression": null,
+      "scope_note": "Candidate use_custom_libcxx=true and is_component_build=false imply static libc++.",
+      "remaining_review": [
+        "Pinned libc++ source/license applicability and actual retained objects require explicit final review.",
+        "Exact historical source revision unproven; license_expression remains null until component license/file review is complete."
+      ]
+    },
+    {
+      "component": "Clang compiler-rt builtins",
+      "evidence_level": "CANDIDATE_SOURCE_EVIDENCE",
+      "historical_retention": "UNKNOWN",
+      "candidate_source_revision": null,
+      "source_url": "https://chromium.googlesource.com/chromium/src/build/+/613f5c13bccbc15bd7ce8da9acb13ac06459f8cb/config/clang/BUILD.gn",
+      "license_expression": null,
+      "scope_note": "Candidate Clang build adds compiler_builtins; Windows x64 path clang_rt.builtins-x86_64.lib.",
+      "remaining_review": [
+        "Historical compiler package/retained archive members unknown.",
+        "Differentiate Clang builtins from compiler-rt atomic: root .gn disables use_llvm_libatomic."
+      ]
+    },
+    {
+      "component": "Microsoft static CRT",
+      "evidence_level": "CANDIDATE_SOURCE_EVIDENCE",
+      "historical_retention": "UNKNOWN",
+      "candidate_source_revision": null,
+      "source_url": "https://chromium.googlesource.com/chromium/src/build/+/613f5c13bccbc15bd7ce8da9acb13ac06459f8cb/config/win/BUILD.gn",
+      "license_expression": null,
+      "scope_note": "Candidate noncomponent desktop release defaults select /MT; libc++ path adds /DEFAULTLIB:libcpmt.lib. PE import table cannot inventory statically retained CRT code.",
+      "remaining_review": [
+        "Exact historical MSVC/SDK versions and rights unproven.",
+        "Do not conflate PDFium static CRT with app-local MSVC DLLs needed by Rust EXE."
+      ]
+    },
+    {
+      "component": "Skia",
+      "evidence_level": "CANDIDATE_SOURCE_EVIDENCE",
+      "historical_retention": "UNKNOWN",
+      "candidate_source_revision": "e4281d5a79a7874f9f073451cdc50163a30bb292",
+      "source_url": "https://pdfium.googlesource.com/pdfium/+/91b9d569b34be4f38eed7b3c49b227356c3aadad/DEPS",
+      "license_expression": null,
+      "scope_note": "pdf_use_skia=false by candidate default",
+      "remaining_review": [
+        "Candidate nonselection is not proof of absence from historical DLL.",
+        "No affirmative license expression invented for an unreviewed inclusion."
+      ]
+    },
+    {
+      "component": "Brotli",
+      "evidence_level": "CANDIDATE_SOURCE_EVIDENCE",
+      "historical_retention": "UNKNOWN",
+      "candidate_source_revision": "803ac71664ad62af1de39ff55e63ebbe07006fc8",
+      "source_url": "https://pdfium.googlesource.com/pdfium/+/91b9d569b34be4f38eed7b3c49b227356c3aadad/DEPS",
+      "license_expression": null,
+      "scope_note": "pdf_enable_brotli=false by PDFium override",
+      "remaining_review": [
+        "Candidate nonselection is not proof of absence from historical DLL.",
+        "No affirmative license expression invented for an unreviewed inclusion."
+      ]
+    },
+    {
+      "component": "Fontations",
+      "evidence_level": "CANDIDATE_SOURCE_EVIDENCE",
+      "historical_retention": "UNKNOWN",
+      "candidate_source_revision": null,
+      "source_url": "https://pdfium.googlesource.com/pdfium/+/91b9d569b34be4f38eed7b3c49b227356c3aadad/DEPS",
+      "license_expression": null,
+      "scope_note": "pdf_enable_fontations=false by override; Rust/skrifa paths gated",
+      "remaining_review": [
+        "Candidate nonselection is not proof of absence from historical DLL.",
+        "No affirmative license expression invented for an unreviewed inclusion."
+      ]
+    },
+    {
+      "component": "Rust PNG",
+      "evidence_level": "CANDIDATE_SOURCE_EVIDENCE",
+      "historical_retention": "UNKNOWN",
+      "candidate_source_revision": null,
+      "source_url": "https://pdfium.googlesource.com/pdfium/+/91b9d569b34be4f38eed7b3c49b227356c3aadad/DEPS",
+      "license_expression": null,
+      "scope_note": "pdf_enable_rust_png=false; also requires Rust/Skia paths",
+      "remaining_review": [
+        "Candidate nonselection is not proof of absence from historical DLL.",
+        "No affirmative license expression invented for an unreviewed inclusion."
+      ]
+    },
+    {
+      "component": "V8",
+      "evidence_level": "PRODUCER_RECIPE_EVIDENCE",
+      "historical_retention": "UNKNOWN",
+      "candidate_source_revision": "0c6c73eea6994260f0a1d88469708360ea60c660",
+      "source_url": "https://pdfium.googlesource.com/pdfium/+/91b9d569b34be4f38eed7b3c49b227356c3aadad/DEPS",
+      "license_expression": null,
+      "scope_note": "pdf_enable_v8=false in archived explicit args and configure recipe",
+      "remaining_review": [
+        "Candidate nonselection is not proof of absence from historical DLL.",
+        "No affirmative license expression invented for an unreviewed inclusion."
+      ]
+    },
+    {
+      "component": "XFA",
+      "evidence_level": "PRODUCER_RECIPE_EVIDENCE",
+      "historical_retention": "UNKNOWN",
+      "candidate_source_revision": "91b9d569b34be4f38eed7b3c49b227356c3aadad",
+      "source_url": "https://pdfium.googlesource.com/pdfium/+/91b9d569b34be4f38eed7b3c49b227356c3aadad/DEPS",
+      "license_expression": null,
+      "scope_note": "pdf_enable_xfa=false in archived explicit args and configure recipe",
+      "remaining_review": [
+        "Candidate nonselection is not proof of absence from historical DLL.",
+        "No affirmative license expression invented for an unreviewed inclusion."
+      ]
+    },
+    {
+      "component": "PartitionAlloc",
+      "evidence_level": "PRODUCER_RECIPE_EVIDENCE",
+      "historical_retention": "UNKNOWN",
+      "candidate_source_revision": null,
+      "source_url": "https://pdfium.googlesource.com/pdfium/+/91b9d569b34be4f38eed7b3c49b227356c3aadad/DEPS",
+      "license_expression": null,
+      "scope_note": "pdf_use_partition_alloc=false in archived explicit args",
+      "remaining_review": [
+        "Candidate nonselection is not proof of absence from historical DLL.",
+        "No affirmative license expression invented for an unreviewed inclusion."
+      ]
+    },
+    {
+      "component": "libc++abi / libunwind / compiler-rt atomic",
+      "evidence_level": "CANDIDATE_SOURCE_EVIDENCE",
+      "historical_retention": "UNKNOWN",
+      "candidate_source_revision": null,
+      "source_url": "https://pdfium.googlesource.com/pdfium/+/91b9d569b34be4f38eed7b3c49b227356c3aadad/DEPS",
+      "license_expression": null,
+      "scope_note": "Candidate Windows !is_win gate excludes libc++abi dependency; libunwind checkout_android; root .gn explicitly use_llvm_libatomic=false",
+      "remaining_review": [
+        "Candidate nonselection is not proof of absence from historical DLL.",
+        "No affirmative license expression invented for an unreviewed inclusion."
+      ]
+    },
+    {
+      "component": "PDFium bundled Foxit font data",
+      "evidence_level": "CANDIDATE_SOURCE_EVIDENCE",
+      "historical_retention": "UNKNOWN",
+      "candidate_source_revision": "91b9d569b34be4f38eed7b3c49b227356c3aadad",
+      "source_url": "https://pdfium.googlesource.com/pdfium/+/91b9d569b34be4f38eed7b3c49b227356c3aadad/core/fxge/fontdata/chromefontdata/FoxitSans.cpp",
+      "license_expression": "BSD-3-Clause",
+      "scope_note": "Sampled header credits original Foxit code and points to PDFium BSD-style license; no separate font license gap established.",
+      "remaining_review": [
+        "Complete retained font-data/source notice scope not independently enumerated."
+      ]
+    }
+  ],
+  "additional_findings": {
+    "harfbuzz": {
+      "deps_revision": "d639197ed529b05c27f38ebaab365a621d5edad5",
+      "wrapper_readme_revision": "e6741e2205309752839da60ff075b7fa2e7cddd3",
+      "same_blobs_at_both_revisions": [
+        "COPYING",
+        "src/ms-use/COPYING",
+        "src/hb-ot-shaper-use-table.hh",
+        "src/gen-use-table.py"
+      ],
+      "scope_chain": [
+        "Candidate BUILD selects hb-ot-shaper-use.cc and use-table.hh",
+        "use.cc includes table and calls hb_use_get_category",
+        "Generated table names Additional.txt input",
+        "Generator locates Additional.txt in ms-use"
+      ],
+      "source_links": [
+        "https://pdfium.googlesource.com/pdfium/+/91b9d569b34be4f38eed7b3c49b227356c3aadad/third_party/harfbuzz/BUILD.gn",
+        "https://github.com/harfbuzz/harfbuzz/blob/d639197ed529b05c27f38ebaab365a621d5edad5/src/hb-ot-shaper-use.cc",
+        "https://github.com/harfbuzz/harfbuzz/blob/d639197ed529b05c27f38ebaab365a621d5edad5/src/hb-ot-shaper-use-table.hh",
+        "https://github.com/harfbuzz/harfbuzz/blob/d639197ed529b05c27f38ebaab365a621d5edad5/src/gen-use-table.py"
+      ],
+      "historical_retention": "UNKNOWN"
+    },
+    "openjpeg": {
+      "leading_notice_review": {
+        "selected_files": 24,
+        "additional_local_headers": 27
+      },
+      "unresolved": [
+        "Generated t1_luts.h/t1_ht_luts.h provenance",
+        "Optional JPIP/JPWL selection not inferred from conditional names",
+        "Full-body attribution and historical retained objects"
+      ]
+    }
+  },
+  "ci_baseline": {
+    "head": "1d7611195d4cd1e6dc54103b5d562cbbe672fdcc",
+    "push": {
+      "run": 41072156283,
+      "first_attempt": "FAIL: linker process creation, Windows error433",
+      "second_attempt": "PASS",
+      "second_attempt_job": 124212898829
+    },
+    "pull_request": {
+      "run": 41072348342,
+      "result": "PASS"
+    },
+    "final_changed_head": "Check PR #3 checks and final handoff; do not inherit baseline PASS"
+  },
+  "approval_owner": "Release owner after qualified legal/compliance review",
+  "packet_is_packager_input": false
+}
