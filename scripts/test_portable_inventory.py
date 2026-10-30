@@ -3,6 +3,7 @@ import importlib.util
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 spec = importlib.util.spec_from_file_location("inventory", Path(__file__).with_name("collect-portable-inventory.py"))
 inventory = importlib.util.module_from_spec(spec)
@@ -27,6 +28,77 @@ class InventoryTests(unittest.TestCase):
         records = inventory.parse_lock(Path(__file__).resolve().parents[1] / "Cargo.lock")
         self.assertEqual(len(records), 282)
         self.assertEqual(records[-1]["name"], "zune-jpeg")
+
+
+    def test_vcpkg_status_is_per_port_and_missing_status_never_borrows_another(self):
+        # Reproduces the old collector assigning the final .list package's
+        # Version/Abi to every separately linked vcpkg archive.
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            root = base / "vcpkg"
+            installed = root / "installed"
+            triplet = "x64-windows-static-md"
+            info = installed / "vcpkg" / "info"
+            libdir = installed / triplet / "lib"
+            info.mkdir(parents=True)
+            libdir.mkdir(parents=True)
+
+            packages = [
+                ("libheif", "1.23.1", "heif", "a" * 40, None),
+                ("libde265", "1.1.1", "libde265", "b" * 40, "2"),
+                ("zstd", "1.5.7", "zstd", "c" * 40, None),
+                ("unknownport", "0.3.0", "unknownlib", None, None),
+            ]
+            statuses = []
+            link_requests = []
+            for port, version, lib, abi, port_version in packages:
+                (info / f"{port}_{version}_{triplet}.list").write_text(
+                    f"{triplet}/lib/{lib}.lib\n", encoding="utf-8"
+                )
+                (libdir / f"{lib}.lib").write_bytes(f"synthetic-{port}".encode("ascii"))
+                link_requests.append(f"cargo:rustc-link-lib=static={lib}")
+                if abi is not None:
+                    lines = [
+                        f"Package: {port}",
+                        f"Version: {version}",
+                        f"Architecture: {triplet}",
+                        f"Abi: {abi}",
+                    ]
+                    if port_version is not None:
+                        lines.append(f"Port-Version: {port_version}")
+                    statuses.append("\n".join(lines))
+            (installed / "vcpkg" / "status").write_text(
+                "\n\n".join(statuses) + "\n", encoding="utf-8"
+            )
+
+            repo = base / "repo"
+            output = repo / "target" / "release" / "build" / "synthetic" / "output"
+            output.parent.mkdir(parents=True)
+            output.write_text("\n".join(link_requests) + "\n", encoding="utf-8")
+            with mock.patch.object(inventory, "REPO", repo):
+                components, warnings = inventory.vcpkg_inventory(
+                    root, base / "unused-output", base / "notices"
+                )
+
+            self.assertEqual(warnings, [])
+            by_id = {component["id"]: component for component in components}
+            self.assertEqual(set(by_id), {f"vcpkg:{port}" for port, *_ in packages})
+            for port, version, _, abi, port_version in packages:
+                component = by_id[f"vcpkg:{port}"]
+                self.assertEqual(component["distribution_status"], "blocked")
+                evidence = component["evidence"]["installed_status"]
+                if abi is None:
+                    # Without an installed-status stanza, no version or ABI
+                    # may be invented or inherited from another package.
+                    self.assertEqual(evidence, {})
+                    self.assertEqual(component["version"], version)
+                    continue
+                self.assertEqual(evidence["Version"], version)
+                self.assertEqual(evidence["Abi"], abi)
+                self.assertEqual(evidence["Architecture"], triplet)
+                self.assertEqual(evidence.get("Port-Version"), port_version)
+                expected = version + (f"#{port_version}" if port_version else "")
+                self.assertEqual(component["version"], expected)
 
 
 if __name__ == "__main__":
