@@ -40,12 +40,18 @@ def copy_notice(src: Path, notice_root: Path, label: str) -> str:
     notice_root.mkdir(parents=True, exist_ok=True)
     name = f"{safe_id(label)}-{safe_id(src.name)}"
     dest = notice_root / name
+    if not dest.resolve().is_relative_to(notice_root.resolve()):
+        raise ValueError("Notice destination resolves outside output root")
     # Avoid collision while retaining deterministic output.
     if dest.exists() and sha256(dest) != sha256(src):
         name = f"{safe_id(label)}-{sha256(src)[:12]}-{safe_id(src.name)}"
         dest = notice_root / name
+        if not dest.resolve().is_relative_to(notice_root.resolve()):
+            raise ValueError("Notice destination resolves outside output root")
     if not dest.exists():
-        shutil.copyfile(src, dest)
+        # Exclusive creation also refuses dangling symlinks and race-time files.
+        with src.open("rb") as source, dest.open("xb") as target:
+            shutil.copyfileobj(source, target)
     return f"licenses/{name}"
 
 
@@ -106,113 +112,132 @@ def crate_inventory(lock: Path, registry_roots: list[Path], notices: Path) -> li
     return out
 
 
-def vcpkg_inventory(root: Path, output: Path, notices: Path) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-    installed = root / "installed"
-    triplet = "x64-windows-static-md"
-    info = installed / "vcpkg" / "info"
-    share = installed / triplet / "share"
-    libdir = installed / triplet / "lib"
-    if not info.is_dir() or not libdir.is_dir():
-        return [], [{"error": "vcpkg metadata/library directories not found", "root": str(root)}]
-    # Filename maps the exact installed package version and triplet. Each list
-    # enumerates the package's installed paths; match selected .lib archives.
-    list_meta: dict[str, dict[str, Any]] = {}
-    installed_status: dict[str, dict[str, str]] = {}
-    status_file = installed / "vcpkg" / "status"
-    if status_file.is_file():
-        for stanza in re.split(r"\r?\n\s*\r?\n", status_file.read_text(encoding="utf-8", errors="replace")):
-            fields = {}
-            for line in stanza.splitlines():
-                if ": " in line and not line[:1].isspace():
-                    key, value = line.split(": ", 1)
-                    fields[key] = value
-            if fields.get("Architecture") == triplet and fields.get("Package") and fields.get("Version"):
-                installed_status[fields["Package"]] = fields
-    for listing in info.glob(f"*_{triplet}.list"):
-        m = re.match(r"(.+)_([^_]+)_" + re.escape(triplet) + r"\.list$", listing.name)
-        if not m:
-            continue
-        port, version = m.group(1), m.group(2)
-        status = installed_status.get(port, {})
-        if status.get("Version"):
-            version = status["Version"] + (f"#{status['Port-Version']}" if status.get("Port-Version") else "")
-        for line in listing.read_text(encoding="utf-8", errors="replace").splitlines():
-            rel = line.strip().replace("\\", "/")
-            if rel.lower().endswith(".lib"):
-                list_meta[Path(rel).name.lower()] = {"port": port, "version": version, "listed_path": rel}
+def vcpkg_inventory(root: Path, output: Path, notices: Path, *,
+                    repo: Path | None = None,
+                    triplet: str = "x64-windows-static-md") -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Collect installed-state evidence, never infer final executable closure.
 
-    # Read link requests from Cargo build-script output and resolve exact .lib
-    # artifacts only in rustc native search paths or the selected triplet lib.
-    build_root = REPO / "target" / "release" / "build"
-    requests: dict[str, set[str]] = {}
-    search_dirs: set[Path] = {libdir}
-    if build_root.is_dir():
-        for output_file in build_root.glob("*/output"):
-            try:
-                lines = output_file.read_text(encoding="utf-8", errors="replace").splitlines()
-            except OSError:
+    Receipt association/validation is shared with the metadata-only replay API.
+    All selected-triplet packages and both archive configurations are retained;
+    Cargo link requests are annotations, not proof of retained archive members.
+    """
+    from vcpkg_inventory import (
+        ensure_output_separate, parse_status, safe_relative, validate_metadata,
+    )
+
+    root, output, notices = root.resolve(), output.resolve(), notices.resolve()
+    ensure_output_separate(root, output)
+    ensure_output_separate(root, notices)
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.+-]*", triplet):
+        raise ValueError("Unsafe triplet identity")
+    installed = root / "installed"
+    info = installed / "vcpkg" / "info"
+    status_path = installed / "vcpkg" / "status"
+    if any(not p.resolve().is_relative_to(root) for p in (installed, info, status_path)):
+        raise ValueError("Installed metadata resolves outside input root")
+    if not info.is_dir() or not status_path.is_file():
+        raise ValueError("vcpkg installed metadata directories/status not found")
+    pending = installed / "vcpkg" / "updates"
+    if pending.exists() and any(pending.iterdir()):
+        raise ValueError("Pending vcpkg status updates")
+    status_text = status_path.read_text(encoding="utf-8-sig")
+    cores, _ = parse_status(status_text)
+    selected = {p for p, t in cores if t == triplet}
+    listing_paths = sorted(info.glob(f"*_{triplet}.list"))
+    if any(not p.resolve().is_relative_to(installed.resolve()) for p in listing_paths):
+        raise ValueError("Installed list resolves outside input root")
+    listings = {p.name: p.read_text(encoding="utf-8-sig") for p in listing_paths}
+    # Keep hashes tied to full installed-relative paths, never basename.
+    files: dict[str, dict[str, Any]] = {}
+    for text in listings.values():
+        for line in text.splitlines():
+            if not line.strip():
                 continue
-            for line in lines:
-                m = re.search(r"rustc-link-lib=(?:(static|dylib|framework|verbatim)=)?([^:;\s]+)", line)
-                if m:
-                    kind, libname = m.group(1) or "unspecified", m.group(2).lower()
-                    requests.setdefault(libname, set()).add(kind)
-                sm = re.search(r"rustc-link-search=native=(.+)$", line)
-                if sm:
-                    candidate = Path(sm.group(1).strip().strip('"'))
-                    if candidate.is_dir():
-                        search_dirs.add(candidate)
-    # Build-script output may be absent before a native build. Do not silently
-    # substitute all installed libraries: report that limitation explicitly.
-    found_libs: dict[str, Path] = {}
-    for d in sorted(search_dirs, key=str):
-        if d.is_dir():
-            for p in d.glob("*.lib"):
-                if not requests or p.stem.lower() in requests or p.name.lower() in requests:
-                    found_libs.setdefault(p.name.lower(), p)
-    by_port: dict[str, dict[str, Any]] = {}
-    errors: list[dict[str, Any]] = []
-    for filename, libpath in sorted(found_libs.items()):
-        meta = list_meta.get(filename)
-        if not meta:
-            errors.append({"error": "static library has no matching vcpkg installed-list record", "file": str(libpath)})
-            continue
-        port, version = meta["port"], meta["version"]
-        # A listing must not inherit the status of the last unrelated port.
-        port_status = installed_status.get(port, {})
-        manifest_path = root / "ports" / port / "vcpkg.json"
-        port_manifest: dict[str, Any] = {}
-        if manifest_path.exists():
-            try:
-                port_manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-            except (OSError, json.JSONDecodeError):
-                pass
-        port_license = port_manifest.get("license") or "NOASSERTION"
-        copyright = share / port / "copyright"
-        notice = copy_notice(copyright, notices, f"vcpkg-{port}-{version}") if copyright.is_file() else None
-        item = by_port.setdefault(port, {
-            "id": f"vcpkg:{port}", "version": version,
-            "source_url": port_manifest.get("homepage") or f"https://github.com/microsoft/vcpkg/tree/master/ports/{port}",
-            "license": port_license, "distribution_status": "blocked",
-            "license_review": "Inventory only: exact installed archive and status recorded; port-manifest license may be from a different port revision. Verify source correspondence, obligations, and final executable closure.",
-            "notices": [notice] if notice else [], "sha256": "",
-            "evidence": {"triplet": triplet, "installed_status": {k: port_status[k] for k in ("Version", "Port-Version", "Abi", "Architecture") if k in port_status},
-                         "port_manifest_evidence": f"ports/{port}/vcpkg.json", "archives": []},
-        })
-        link_kinds = sorted({kind for req, kinds in requests.items() if req in {libpath.stem.lower(), libpath.name.lower()} for kind in kinds})
-        item["evidence"]["archives"].append({"path": meta["listed_path"], "name": libpath.name, "sha256": sha256(libpath), "rustc_link_kinds": link_kinds})
-        if notice:
-            item["evidence"]["notice_sha256"] = sha256(notices / Path(notice).name)
-    result = list(by_port.values())
+            rel = safe_relative(line.strip(), triplet).as_posix()
+            if line.strip().endswith(("/", "\\")):
+                continue
+            actual = installed / rel
+            if not actual.resolve().is_relative_to(installed.resolve()):
+                raise ValueError("Installed file resolves outside input root")
+            before = actual.stat()
+            measured = sha256(actual)
+            after = actual.stat()
+            if (before.st_size, before.st_mtime_ns, before.st_ino) != (after.st_size, after.st_mtime_ns, after.st_ino):
+                raise ValueError("Installed file changed while hashing")
+            files[rel] = {"size": after.st_size, "sha256": measured}
+    # Also catch archives added without a .list receipt in either configuration.
+    listed_archives = {p for p in files if p.lower().endswith(".lib")
+                       and (p.startswith(f"{triplet}/lib/") or p.startswith(f"{triplet}/debug/lib/"))}
+    observed_archives = {
+        p.relative_to(installed).as_posix()
+        for subdir in ("lib", "debug/lib")
+        for p in (installed / triplet / subdir).rglob("*")
+        if p.is_file() and p.suffix.lower() == ".lib"
+    }
+    if listed_archives != observed_archives:
+        raise ValueError("Orphan/missing installed archive membership")
+    receipts: dict[str, dict[str, bytes | None]] = {}
+    for port in selected:
+        share = installed / triplet / "share" / port
+        receipts[port] = {}
+        for key, name in (("abi_info", "vcpkg_abi_info.txt"), ("spdx", "vcpkg.spdx.json")):
+            path = share / name
+            if not path.resolve().is_relative_to(installed.resolve()):
+                raise ValueError("Receipt resolves outside input root")
+            raw = path.read_bytes() if path.is_file() else None
+            rel = path.relative_to(installed).as_posix()
+            if raw is not None and rel in files and hashlib.sha256(raw).hexdigest().upper() != files[rel]["sha256"]:
+                raise ValueError("Receipt changed after installed-file measurement")
+            receipts[port][key] = raw
+    result = validate_metadata(status_text, listings, triplet, receipts, files)
+    # Recheck metadata and directory membership before copying notices/output.
+    if status_path.read_text(encoding="utf-8-sig") != status_text:
+        raise ValueError("Installed status changed during collection")
+    if {p.name: p.read_text(encoding="utf-8-sig") for p in info.glob(f"*_{triplet}.list")} != listings:
+        raise ValueError("Installed list membership/content changed during collection")
+    final_archives = {
+        p.relative_to(installed).as_posix()
+        for subdir in ("lib", "debug/lib")
+        for p in (installed / triplet / subdir).rglob("*")
+        if p.is_file() and p.suffix.lower() == ".lib"
+    }
+    if final_archives != observed_archives or (pending.exists() and any(pending.iterdir())):
+        raise ValueError("Installed archive membership/status updates changed during collection")
+    for port, values in receipts.items():
+        for key, name in (("abi_info", "vcpkg_abi_info.txt"), ("spdx", "vcpkg.spdx.json")):
+            path = installed / triplet / "share" / port / name
+            if (path.read_bytes() if path.is_file() else None) != values[key]:
+                raise ValueError("Installed receipt changed during collection")
+    requests: dict[str, set[str]] = {}
+    build_root = (repo or REPO) / "target" / "release" / "build"
+    if build_root.is_dir():
+        for build_output in sorted(build_root.glob("*/output")):
+            for line in build_output.read_text(encoding="utf-8", errors="replace").splitlines():
+                match = re.search(r"rustc-link-lib=(?:(static|dylib|framework|verbatim)=)?([^:;\s]+)", line)
+                if match:
+                    requests.setdefault(match[2].lower(), set()).add(match[1] or "unspecified")
     for item in result:
-        # A deterministic aggregate digest binds the exact archive set by name/hash.
-        blob = "\n".join(f"{a['name']}:{a['sha256']}" for a in sorted(item["evidence"]["archives"], key=lambda x: x["name"]))
-        item["sha256"] = hashlib.sha256(blob.encode("utf-8")).hexdigest().upper()
-        if not item["notices"]:
-            item["license_review"] += " No installed copyright notice found."
+        port = item["id"].removeprefix("vcpkg:")
+        copyright_path = installed / triplet / "share" / port / "copyright"
+        if not copyright_path.resolve().is_relative_to(installed.resolve()):
+            raise ValueError("Notice resolves outside input root")
+        notice = copy_notice(copyright_path, notices, f"vcpkg-{port}-{item['version']}") if copyright_path.is_file() else None
+        item["notices"] = [notice] if notice else []
+        item["source_url"] = f"https://github.com/microsoft/vcpkg/tree/master/ports/{port}"
+        item["license_review"] = "Installed-state evidence only; source correspondence, obligations, final link closure and redistribution remain blocked."
+        if notice:
+            item["evidence"]["notice_sha256"] = sha256(copyright_path)
+        item["evidence"]["validation_scope"] = "Current installed files hashed with per-file stability checks; not an atomic snapshot or historical link receipt"
+        for archive in item["evidence"]["archives"]:
+            name = archive["name"]
+            archive["rustc_link_kinds"] = sorted({
+                kind for key in (Path(name).stem.lower(), name.lower())
+                for kind in requests.get(key, set())
+            })
+    warnings = []
     if not requests:
-        errors.append({"error": "no rustc-link-lib requests collected from target/release/build/*/output; run a native build before static-archive inventory"})
-    return result, errors
+        warnings.append({"error": "No saved Cargo link requests; installed archive inventory is not executable link-closure evidence"})
+    return result, warnings
 
 
 def pe_imports(exe: Path) -> list[str]:
@@ -278,6 +303,7 @@ def main() -> int:
     parser.add_argument("--repo", type=Path, default=REPO)
     parser.add_argument("--output-root", type=Path, help="Local ignored output directory; must not already contain runtime-manifest.local.json")
     parser.add_argument("--vcpkg-root", type=Path, default=Path(os.environ["VCPKG_ROOT"]) if os.environ.get("VCPKG_ROOT") else None)
+    parser.add_argument("--vcpkg-triplet", default="x64-windows-static-md")
     parser.add_argument("--cargo-registry", type=Path, action="append", default=[])
     parser.add_argument("--exe", type=Path)
     parser.add_argument("--pdfium-dir", type=Path)
@@ -289,7 +315,15 @@ def main() -> int:
     repo = args.repo.resolve()
     outdir = (args.output_root or (repo / "reports" / "windows-portable-local")).resolve()
     noticedir = outdir / "notices"
+    from vcpkg_inventory import ensure_output_separate
+    # Reject output/input overlap before creating directories or copying notices.
+    ensure_output_separate(args.vcpkg_root, outdir)
+    for directory in [*args.cargo_registry, args.pdfium_dir, args.tessdata_dir, args.redist_dir]:
+        if directory is not None:
+            ensure_output_separate(directory, outdir)
     outdir.mkdir(parents=True, exist_ok=True)
+    if not noticedir.resolve().is_relative_to(outdir):
+        raise ValueError("Notice directory resolves outside output root")
     manifest_path = outdir / "runtime-manifest.local.json"
     if manifest_path.exists():
         raise FileExistsError(f"Refusing to overwrite existing inventory: {manifest_path}")
@@ -301,7 +335,8 @@ def main() -> int:
         cargo_home = Path(os.environ.get("CARGO_HOME", str(Path.home() / ".cargo")))
         registry_roots = list((cargo_home / "registry" / "src").glob("*"))
     crate_items = crate_inventory(repo / "Cargo.lock", registry_roots, noticedir)
-    vcpkg_items, warnings = vcpkg_inventory(args.vcpkg_root.resolve(), outdir, noticedir)
+    vcpkg_items, warnings = vcpkg_inventory(args.vcpkg_root.resolve(), outdir, noticedir,
+                                           repo=repo, triplet=args.vcpkg_triplet)
     components: list[dict[str, Any]] = []
     for kind, directory, rel in [
         ("external:pdfium", args.pdfium_dir, "pdfium"),
@@ -326,13 +361,15 @@ def main() -> int:
             "purpose": "LOCAL maintainer inventory only; not a release manifest or distribution clearance",
             "repo": str(repo),
             "vcpkg_root": str(args.vcpkg_root.resolve()),
-            "vcpkg_triplet": "x64-windows-static-md",
+            "vcpkg_triplet": args.vcpkg_triplet,
+            "vcpkg_inventory_scope": "All installed packages and owned archives of selected triplet; saved Cargo link requests are annotations only",
             "pe_imports": imports,
             "warnings": warnings,
             "important_limit": "Cargo.lock may include optional/target-specific crates; build output is necessary but not sufficient to establish exact linker closure. Static component sha256 is a deterministic aggregate of exact local archive hashes; preserve per-archive hashes in evidence.",
         },
     }
-    manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    with manifest_path.open("x", encoding="utf-8") as stream:
+        stream.write(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n")
     print(f"Wrote {manifest_path}")
     print(f"Cargo registry components: {len(crate_items)}; vcpkg static ports: {len(vcpkg_items)}; PE imports: {len(imports)}; status: blocked")
     if warnings:
