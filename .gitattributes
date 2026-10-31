@@ -4,3 +4,7 @@
 # Keep the audited candidate evidence byte-identical to the local payload
 # manifest so its published SHA-256 is independent of core.autocrlf.
 /reports/WINDOWS_PORTABLE_CANDIDATE_MANIFEST.json -text
+
+# This public derivative has its own byte-level digest; do not rewrite newlines.
+/reports/vcpkg-inventory-refresh-20261031/VCPKG_INVENTORY_PUBLIC.json -text
+/reports/vcpkg-inventory-refresh-20261031/VCPKG_INVENTORY_PUBLIC.json.sha256 -text

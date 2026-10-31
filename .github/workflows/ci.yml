@@ -9,6 +9,25 @@ permissions:
   contents: read
 
 jobs:
+  python_inventory:
+    name: Python inventory checks
+    runs-on: windows-2022
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Syntax and source-only inventory regressions
+        shell: pwsh
+        run: |
+          python --version
+          python -c "import ast,pathlib; [ast.parse(p.read_text(encoding='utf-8'), filename=str(p)) for p in pathlib.Path('scripts').glob('*.py')]"
+          if ($LASTEXITCODE -ne 0) { throw 'Python inventory syntax check failed' }
+          python scripts/test_portable_inventory.py -v
+          if ($LASTEXITCODE -ne 0) { throw 'Portable inventory regressions failed' }
+          git diff --check
+          if ($LASTEXITCODE -ne 0) { throw 'Whitespace check failed' }
+
   rust:
     name: Windows source checks
     runs-on: windows-2022
