@@ -217,6 +217,20 @@ class ReceiptValidationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "core status"):
             self.validate()
 
+    def test_distinct_packages_may_share_an_abi_digest(self):
+        args = self.fixture.metadata()
+        core_records = [dict(record) for record in self.fixture.records]
+        core_records[1]["Abi"] = core_records[0]["Abi"]
+        args[0] = "\n\n".join("\n".join(f"{k}: {v}" for k, v in row.items()) for row in core_records)
+        args[3]["beta"]["abi_info"] = args[3]["alpha"]["abi_info"]
+        sbom = json.loads(args[3]["beta"]["spdx"])
+        sbom["packages"][1]["versionInfo"] = core_records[0]["Abi"]
+        args[3]["beta"]["spdx"] = json.dumps(sbom).encode()
+        rows = self.validate(args)
+        self.assertEqual(len(rows), 2)
+        self.assertEqual(rows[0]["evidence"]["installed_status"]["Abi"], rows[1]["evidence"]["installed_status"]["Abi"])
+        self.assertNotEqual(rows[0]["id"], rows[1]["id"])
+
     def test_missing_core_is_rejected(self):
         self.fixture.flush([self.fixture.records[1]])
         with self.assertRaises(ValueError):
