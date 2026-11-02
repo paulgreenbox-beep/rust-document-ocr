@@ -16,6 +16,12 @@ remains `distribution_status: blocked`. See the
 - Library identity is its full installed-relative path. Release and debug
   libraries with the same basename are separate records. Unsafe paths, ambiguous
   ownership, input/output overlap and unlisted archives are rejected.
+- Before any output creation, `main()` determines Cargo registry roots once:
+  explicit `--cargo-registry` entries take priority, otherwise the existing
+  `CARGO_HOME` or home `.cargo` discovery applies. Every effective root passes
+  the existing resolved-path containment check, and the same list is passed to
+  `crate_inventory()`. This is an ordering guarantee, not protection against all
+  concurrent filesystem substitutions.
 - ABI receipt bytes are SHA-256 checked against that package's status ABI.
   SPDX package/version/ABI and available recorded file hashes are compared.
   Missing evidence is `UNAVAILABLE` / `NOT CHECKED`, not a successful comparison.

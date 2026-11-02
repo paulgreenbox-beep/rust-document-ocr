@@ -315,13 +315,17 @@ def main() -> int:
     repo = args.repo.resolve()
     outdir = (args.output_root or (repo / "reports" / "windows-portable-local")).resolve()
     noticedir = outdir / "notices"
+    # Discover once, before writes; validate the same roots collection will use.
+    registry_roots = list(args.cargo_registry)
+    if not registry_roots:
+        cargo_home = Path(os.environ.get("CARGO_HOME", str(Path.home() / ".cargo")))
+        registry_roots = list((cargo_home / "registry" / "src").glob("*"))
     from vcpkg_inventory import ensure_output_separate
     # Reject output/input overlap before creating directories or copying notices.
     ensure_output_separate(args.vcpkg_root, outdir)
-    for directory in [*args.cargo_registry, args.pdfium_dir, args.tessdata_dir, args.redist_dir]:
+    for directory in [*registry_roots, args.pdfium_dir, args.tessdata_dir, args.redist_dir]:
         if directory is not None:
             ensure_output_separate(directory, outdir)
-    outdir.mkdir(parents=True, exist_ok=True)
     if not noticedir.resolve().is_relative_to(outdir):
         raise ValueError("Notice directory resolves outside output root")
     manifest_path = outdir / "runtime-manifest.local.json"
@@ -330,10 +334,7 @@ def main() -> int:
     if noticedir.exists():
         # Preserve prior evidence. Identical files are reused; nothing is removed.
         pass
-    registry_roots = list(args.cargo_registry)
-    if not registry_roots:
-        cargo_home = Path(os.environ.get("CARGO_HOME", str(Path.home() / ".cargo")))
-        registry_roots = list((cargo_home / "registry" / "src").glob("*"))
+    outdir.mkdir(parents=True, exist_ok=True)
     crate_items = crate_inventory(repo / "Cargo.lock", registry_roots, noticedir)
     vcpkg_items, warnings = vcpkg_inventory(args.vcpkg_root.resolve(), outdir, noticedir,
                                            repo=repo, triplet=args.vcpkg_triplet)

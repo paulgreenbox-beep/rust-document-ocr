@@ -2,8 +2,10 @@
 import importlib.util
 import hashlib
 import json
+import os
 import tempfile
 import unittest
+from contextlib import ExitStack, contextmanager
 from pathlib import Path
 from unittest.mock import patch
 import vcpkg_inventory as receipts
@@ -380,6 +382,152 @@ class ReceiptValidationTests(unittest.TestCase):
                 patch.object(inventory, "vcpkg_inventory", return_value=([], [])), self.assertRaises(FileExistsError):
             inventory.main()
         self.assertEqual(manifest.read_text(encoding="utf-8"), "preserve existing evidence")
+
+
+class CargoRegistryPreflightTests(unittest.TestCase):
+    """Exercise registry path selection and preflight through the real main()."""
+
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name)
+        self.repo = self.root / "repo"
+        self.repo.mkdir()
+        (self.repo / "Cargo.lock").write_text("version = 4\n", encoding="utf-8")
+        self.vcpkg_root = self.root / "vcpkg"
+        status = self.vcpkg_root / "installed" / "vcpkg" / "status"
+        status.parent.mkdir(parents=True)
+        status.write_text("Synthetic vcpkg fixture only.\n", encoding="utf-8")
+        self.fake_home = self.root / "home"
+
+    def make_registry(self, cargo_home, index_name):
+        registry = Path(cargo_home) / "registry" / "src" / index_name
+        crate = registry / "synthetic-crate"
+        crate.mkdir(parents=True)
+        (crate / "Cargo.toml").write_text('[package]\nname = "synthetic-crate"\nversion = "0.1.0"\n', encoding="utf-8")
+        return registry
+
+    def snapshot(self):
+        """Capture the owned fixture tree after setup, including file bytes."""
+        result = {}
+        for path in self.root.rglob("*"):
+            relative = path.relative_to(self.root).as_posix()
+            if path.is_symlink():
+                result[relative] = ("symlink", os.readlink(path))
+            elif path.is_dir():
+                result[relative] = ("directory",)
+            elif path.is_file():
+                result[relative] = ("file", path.read_bytes())
+        return result
+
+    @contextmanager
+    def patched_main(self, output, registry_args=(), cargo_home=None, home=None):
+        environment = dict(os.environ)
+        environment.pop("CARGO_HOME", None)
+        if cargo_home is not None:
+            environment["CARGO_HOME"] = str(cargo_home)
+        argv = ["collector", "--repo", str(self.repo), "--vcpkg-root", str(self.vcpkg_root),
+                "--output-root", str(output)]
+        for registry in registry_args:
+            argv.extend(("--cargo-registry", str(registry)))
+        preflight_calls = []
+        original_ensure = receipts.ensure_output_separate
+
+        def record_preflight(input_root, output_root):
+            preflight_calls.append((Path(input_root), Path(output_root)))
+            return original_ensure(input_root, output_root)
+
+        with ExitStack() as stack:
+            stack.enter_context(patch.dict(os.environ, environment, clear=True))
+            stack.enter_context(patch.object(Path, "home", return_value=home or self.fake_home))
+            stack.enter_context(patch("sys.argv", argv))
+            stack.enter_context(patch.object(receipts, "ensure_output_separate", side_effect=record_preflight))
+            crate_mock = stack.enter_context(patch.object(inventory, "crate_inventory", return_value=[]))
+            vcpkg_mock = stack.enter_context(patch.object(inventory, "vcpkg_inventory", return_value=([], [])))
+            yield {"crate": crate_mock, "vcpkg": vcpkg_mock, "preflight": preflight_calls}
+
+    def assert_rejected_without_writes(self, output, registry_args=(), cargo_home=None, home=None):
+        raw_output = Path(output)
+        output = raw_output.resolve()
+        output_preexisted = output.exists()
+        before = self.snapshot()
+        with self.patched_main(raw_output, registry_args, cargo_home, home) as calls:
+            with self.assertRaisesRegex(ValueError, "Output must be outside"):
+                inventory.main()
+            calls["crate"].assert_not_called()
+            calls["vcpkg"].assert_not_called()
+        self.assertFalse((output / "notices").exists())
+        self.assertFalse((output / "runtime-manifest.local.json").exists())
+        if not output_preexisted:
+            self.assertFalse(output.exists())
+        self.assertEqual(before, self.snapshot(), "Preflight rejection changed the synthetic fixture")
+
+    def assert_allowed_and_registry_preflight_matches(self, output, expected_registries,
+                                                       registry_args=(), cargo_home=None, home=None):
+        with self.patched_main(output, registry_args, cargo_home, home) as calls:
+            self.assertEqual(inventory.main(), 0)
+            calls["crate"].assert_called_once()
+            calls["vcpkg"].assert_called_once()
+            self.assertEqual(calls["crate"].call_args.args[1], expected_registries)
+            preflight_registries = [root for root, _ in calls["preflight"]
+                                    if root.resolve() != self.vcpkg_root.resolve()]
+            self.assertEqual(preflight_registries, expected_registries)
+        self.assertTrue((Path(output).resolve() / "runtime-manifest.local.json").is_file())
+
+    def test_cargo_home_registry_overlap_is_rejected_before_writes(self):
+        cargo_home = self.root / "cargo-home"
+        registry = self.make_registry(cargo_home, "synthetic-index")
+        output = registry / "collector-output"
+        self.assert_rejected_without_writes(output, cargo_home=cargo_home)
+
+    def test_home_cargo_registry_overlap_is_rejected_without_cargo_home(self):
+        registry = self.make_registry(self.fake_home / ".cargo", "home-index")
+        output = registry / "collector-output"
+        self.assert_rejected_without_writes(output, home=self.fake_home)
+
+    def test_explicit_registry_overlap_keeps_existing_protection(self):
+        registry = self.make_registry(self.root / "explicit-cargo-home", "explicit-index")
+        output = registry / "collector-output"
+        self.assert_rejected_without_writes(output, registry_args=(registry,))
+
+    def test_every_discovered_registry_is_checked(self):
+        cargo_home = self.root / "multi-cargo-home"
+        self.make_registry(cargo_home, "index-a")
+        self.make_registry(cargo_home, "index-b")
+        discovered = list((cargo_home / "registry" / "src").glob("*"))
+        self.assertEqual(len(discovered), 2)
+        output = discovered[1] / "collector-output"
+        self.assert_rejected_without_writes(output, cargo_home=cargo_home)
+
+    def test_safe_output_uses_the_same_registry_roots_for_preflight_and_collection(self):
+        cargo_home = self.root / "safe-cargo-home"
+        registry = self.make_registry(cargo_home, "safe-index")
+        output = self.root / "safe-output"
+        self.assert_allowed_and_registry_preflight_matches(
+            output, [registry], cargo_home=cargo_home)
+
+    def test_explicit_registry_takes_priority_over_cargo_home(self):
+        explicit = self.make_registry(self.root / "priority-explicit-home", "explicit-index")
+        cargo_home = self.root / "priority-cargo-home"
+        ignored_automatic = self.make_registry(cargo_home, "automatic-index")
+        output = ignored_automatic / "output-for-explicit-registry"
+        self.assert_allowed_and_registry_preflight_matches(
+            output, [explicit], registry_args=(explicit,), cargo_home=cargo_home)
+
+    def test_similar_prefix_sibling_is_not_treated_as_nested(self):
+        cargo_home = self.root / "prefix-cargo-home"
+        registry = self.make_registry(cargo_home, "synthetic-index")
+        output = registry.parent / "synthetic-index-extra"
+        self.assert_allowed_and_registry_preflight_matches(
+            output, [registry], cargo_home=cargo_home)
+
+    def test_equal_or_dotdot_normalized_registry_output_is_rejected(self):
+        cargo_home = self.root / "normalized-cargo-home"
+        registry = self.make_registry(cargo_home, "normalized-index")
+        normalized_inside = registry / "synthetic-crate" / ".." / "collector-output"
+        for output in (registry, normalized_inside):
+            with self.subTest(output=output):
+                self.assert_rejected_without_writes(output, cargo_home=cargo_home)
 
 
 def synthetic_projection_source():
