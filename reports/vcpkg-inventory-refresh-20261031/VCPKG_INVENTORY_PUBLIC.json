@@ -1,0 +1,670 @@
+{
+  "schema_version": 1,
+  "measurement_date": "2026-10-31",
+  "triplet": "x64-windows-static-md",
+  "derived_from_local_observation": true,
+  "historical_link_receipt": false,
+  "distribution_status": "blocked",
+  "source_local_manifest_sha256": "dedb8078c29714c0b3a56ca83ceb1f258479848319d9a47b5cca204eb87c811a",
+  "measurement_summary": {
+    "package_count": 18,
+    "release_library_count": 24,
+    "debug_library_count": 24,
+    "prior_payload_recheck_recorded": true,
+    "prior_payload_files_rechecked": 822
+  },
+  "historical_comparison_summary": {
+    "top_level_versions_matched": 18,
+    "top_level_versions_checked": 18,
+    "release_archive_hashes_matched": 24,
+    "release_archive_hashes_checked": 24,
+    "release_archive_sets_matched": 18,
+    "release_archive_sets_checked": 18,
+    "historical_installed_status_discrepancies": 17
+  },
+  "packages": [
+    {
+      "name": "bzip2",
+      "triplet": "x64-windows-static-md",
+      "version": "1.0.8#6",
+      "port_version": "6",
+      "abi": "58807a21ba667dae074073052ec71d0bd0e4f3ec860d50f3afc961facf225e3a",
+      "architecture": "x64-windows-static-md",
+      "license": "bzip2-1.0.6",
+      "release_libraries": [
+        {
+          "path": "x64-windows-static-md/lib/bz2.lib",
+          "size": 307784,
+          "sha256": "40ff6f5e38da7b24f465c2895e79647ac5623f81a293a827f07b37aa53bf85d8"
+        }
+      ],
+      "debug_libraries": [
+        {
+          "path": "x64-windows-static-md/debug/lib/bz2d.lib",
+          "size": 253400,
+          "sha256": "9c56b1e8895208b2f302f47f51c6b2ab1ef34da74e83d4a44b2d961c5fc05c61"
+        }
+      ],
+      "historical_comparison": {
+        "top_level_version_match": true,
+        "release_archive_hashes_match": true,
+        "release_archive_set_match": true,
+        "installed_status_mismatch_fields": [
+          "Version",
+          "Port-Version",
+          "Abi"
+        ]
+      }
+    },
+    {
+      "name": "curl",
+      "triplet": "x64-windows-static-md",
+      "version": "8.21.0#1",
+      "port_version": "1",
+      "abi": "09351670777a933ce7f953b8d9fba6368e9d559ccf7d52ddbdee5cf7be314315",
+      "architecture": "x64-windows-static-md",
+      "license": "BSD-3-Clause AND ISC AND curl",
+      "release_libraries": [
+        {
+          "path": "x64-windows-static-md/lib/libcurl.lib",
+          "size": 17882890,
+          "sha256": "120abbeae6c6c9c24b8852214ab037ac6936cea9cddf3b54692a2e27cf4c66b5"
+        }
+      ],
+      "debug_libraries": [
+        {
+          "path": "x64-windows-static-md/debug/lib/libcurl-d.lib",
+          "size": 15184226,
+          "sha256": "2cf471afd8d8f100dfb3ef2c159149b5de0153b187d10f973aef001849ae1fe5"
+        }
+      ],
+      "historical_comparison": {
+        "top_level_version_match": true,
+        "release_archive_hashes_match": true,
+        "release_archive_set_match": true,
+        "installed_status_mismatch_fields": [
+          "Version",
+          "Port-Version",
+          "Abi"
+        ]
+      }
+    },
+    {
+      "name": "giflib",
+      "triplet": "x64-windows-static-md",
+      "version": "6.1.3",
+      "port_version": null,
+      "abi": "899cf422e25442b84717e853be2d6f1a83dc326457b992c0ec22a11bd472143d",
+      "architecture": "x64-windows-static-md",
+      "license": "MIT",
+      "release_libraries": [
+        {
+          "path": "x64-windows-static-md/lib/gif.lib",
+          "size": 245514,
+          "sha256": "becfc7355a40b0c9eba51d20d90f7f25caf04b32e5b87e90b8003897b67ed62b"
+        }
+      ],
+      "debug_libraries": [
+        {
+          "path": "x64-windows-static-md/debug/lib/gif.lib",
+          "size": 162438,
+          "sha256": "0b7a9804d5f1732d5c0feeb019f3f0c3441dd23ba3691457707bec3b7beda818"
+        }
+      ],
+      "historical_comparison": {
+        "top_level_version_match": true,
+        "release_archive_hashes_match": true,
+        "release_archive_set_match": true,
+        "installed_status_mismatch_fields": [
+          "Version",
+          "Abi"
+        ]
+      }
+    },
+    {
+      "name": "leptonica",
+      "triplet": "x64-windows-static-md",
+      "version": "1.87.0",
+      "port_version": null,
+      "abi": "7bc49e95b8643eb13b5d2d167434e9b751a21fcd317ef921efdbae7295c822e4",
+      "architecture": "x64-windows-static-md",
+      "license": "LicenseRef-vcpkg-null",
+      "release_libraries": [
+        {
+          "path": "x64-windows-static-md/lib/leptonica-1.87.0.lib",
+          "size": 20414154,
+          "sha256": "6ded4e66e8d2864344ecb27f84c98e51caea545ce685cdca4882bfca3ecc750d"
+        }
+      ],
+      "debug_libraries": [
+        {
+          "path": "x64-windows-static-md/debug/lib/leptonica-1.87.0d.lib",
+          "size": 12790578,
+          "sha256": "3ae1bdd4d4b6be86b95cc7bf0f5e7d0f0780b953febcaaf74c2506a4402f2f64"
+        }
+      ],
+      "historical_comparison": {
+        "top_level_version_match": true,
+        "release_archive_hashes_match": true,
+        "release_archive_set_match": true,
+        "installed_status_mismatch_fields": [
+          "Version",
+          "Abi"
+        ]
+      }
+    },
+    {
+      "name": "libarchive",
+      "triplet": "x64-windows-static-md",
+      "version": "3.8.7",
+      "port_version": null,
+      "abi": "17f3752147aa6ce8d9f36d7bae4b115e8be7f1512d24e4e726bea5525141ee37",
+      "architecture": "x64-windows-static-md",
+      "license": "LicenseRef-vcpkg-null",
+      "release_libraries": [
+        {
+          "path": "x64-windows-static-md/lib/archive.lib",
+          "size": 13592570,
+          "sha256": "491f378d28102c378a76990f3a46701f730c4709e83051d5726e4dc39e156256"
+        }
+      ],
+      "debug_libraries": [
+        {
+          "path": "x64-windows-static-md/debug/lib/archive.lib",
+          "size": 11483090,
+          "sha256": "0f16880256edea4b16b60abab037fb3010f778f6cc75ff0d66368965359b7476"
+        }
+      ],
+      "historical_comparison": {
+        "top_level_version_match": true,
+        "release_archive_hashes_match": true,
+        "release_archive_set_match": true,
+        "installed_status_mismatch_fields": [
+          "Version",
+          "Abi"
+        ]
+      }
+    },
+    {
+      "name": "libde265",
+      "triplet": "x64-windows-static-md",
+      "version": "1.1.1",
+      "port_version": null,
+      "abi": "e252a7dcfe273fb4d4bc1517bbf134d26f7b53f0f5132bfa8d6252133d8f7e69",
+      "architecture": "x64-windows-static-md",
+      "license": "LGPL-3.0-only",
+      "release_libraries": [
+        {
+          "path": "x64-windows-static-md/lib/libde265.lib",
+          "size": 19605590,
+          "sha256": "31f871774382e4732dfcad572c43dec79543baad860615d76c455b5d26c5f14c"
+        }
+      ],
+      "debug_libraries": [
+        {
+          "path": "x64-windows-static-md/debug/lib/libde265.lib",
+          "size": 20364458,
+          "sha256": "80736d76c60535423359a0038fa2bff838a7b529f1b0e93875ea5b9ce76d20d9"
+        }
+      ],
+      "historical_comparison": {
+        "top_level_version_match": true,
+        "release_archive_hashes_match": true,
+        "release_archive_set_match": true,
+        "installed_status_mismatch_fields": [
+          "Version",
+          "Abi"
+        ]
+      }
+    },
+    {
+      "name": "libheif",
+      "triplet": "x64-windows-static-md",
+      "version": "1.23.1",
+      "port_version": null,
+      "abi": "2cfc5e1f0eb3a4e94ba47712f40087698ac5dea9ebf9cfabae85c3e1e4efbb4d",
+      "architecture": "x64-windows-static-md",
+      "license": "LGPL-3.0-only",
+      "release_libraries": [
+        {
+          "path": "x64-windows-static-md/lib/heif.lib",
+          "size": 195293736,
+          "sha256": "041f516be7f146b687226af6aefa8de485a941aa995390afe2b87e8c0fa4ff0f"
+        }
+      ],
+      "debug_libraries": [
+        {
+          "path": "x64-windows-static-md/debug/lib/heif.lib",
+          "size": 199608942,
+          "sha256": "8afedbae52be6b981cf5da3f5679ce3e7b49dcc50b5c8dec3aadb5498d7777ba"
+        }
+      ],
+      "historical_comparison": {
+        "top_level_version_match": true,
+        "release_archive_hashes_match": true,
+        "release_archive_set_match": true,
+        "installed_status_mismatch_fields": [
+          "Version",
+          "Abi"
+        ]
+      }
+    },
+    {
+      "name": "libjpeg-turbo",
+      "triplet": "x64-windows-static-md",
+      "version": "3.2.0",
+      "port_version": null,
+      "abi": "ff72b4d5059d8035ef7537f2f8d0d24806c6a32e9ca9d40bd8a387a3b6278fe6",
+      "architecture": "x64-windows-static-md",
+      "license": "BSD-3-Clause",
+      "release_libraries": [
+        {
+          "path": "x64-windows-static-md/lib/jpeg.lib",
+          "size": 5541788,
+          "sha256": "8431a022828630b1666c23af1b1ab269b8b18a197c45364ef65f82639c26cb11"
+        },
+        {
+          "path": "x64-windows-static-md/lib/turbojpeg.lib",
+          "size": 7906726,
+          "sha256": "56836629947352be27ea6f1d9c29d87d605bb15302c5471d2ec17d6e054177f1"
+        }
+      ],
+      "debug_libraries": [
+        {
+          "path": "x64-windows-static-md/debug/lib/jpeg.lib",
+          "size": 4771356,
+          "sha256": "07a18b107ac0cbb7474b7747baa84d8d35c669800f3accb6c9eaf2236c8b4e23"
+        },
+        {
+          "path": "x64-windows-static-md/debug/lib/turbojpeg.lib",
+          "size": 6631112,
+          "sha256": "5438782bc666eda421564e74288097d7682bd040d36dd5b5b1ae62606c4f5f24"
+        }
+      ],
+      "historical_comparison": {
+        "top_level_version_match": true,
+        "release_archive_hashes_match": true,
+        "release_archive_set_match": true,
+        "installed_status_mismatch_fields": [
+          "Version",
+          "Abi"
+        ]
+      }
+    },
+    {
+      "name": "liblzma",
+      "triplet": "x64-windows-static-md",
+      "version": "5.8.3",
+      "port_version": null,
+      "abi": "184f7fd5933fab246754017c7576ecd14d9ea6547711c365771a96c9f2ab48e1",
+      "architecture": "x64-windows-static-md",
+      "license": "LicenseRef-vcpkg-null",
+      "release_libraries": [
+        {
+          "path": "x64-windows-static-md/lib/lzma.lib",
+          "size": 3668376,
+          "sha256": "370367bdbc048bb67ab6e2397d5e6730434eb65c6bb7c04d1afb9e703c1cd9d0"
+        }
+      ],
+      "debug_libraries": [
+        {
+          "path": "x64-windows-static-md/debug/lib/lzma.lib",
+          "size": 3442178,
+          "sha256": "7e1a0df89cd6dfd7250f0a58f71fddaeb9e16c7456c4bce3158c4923b1a54e3b"
+        }
+      ],
+      "historical_comparison": {
+        "top_level_version_match": true,
+        "release_archive_hashes_match": true,
+        "release_archive_set_match": true,
+        "installed_status_mismatch_fields": [
+          "Version",
+          "Abi"
+        ]
+      }
+    },
+    {
+      "name": "libpng",
+      "triplet": "x64-windows-static-md",
+      "version": "1.6.58",
+      "port_version": null,
+      "abi": "f7004e27a59e9fe6e440a9188592c80e23768bb9f9e376955b1edb2c5aae0167",
+      "architecture": "x64-windows-static-md",
+      "license": "libpng-2.0",
+      "release_libraries": [
+        {
+          "path": "x64-windows-static-md/lib/libpng16.lib",
+          "size": 2452992,
+          "sha256": "4214865675f950da719cdda4632db3168383276d57f5019d27f316f6a0db0099"
+        }
+      ],
+      "debug_libraries": [
+        {
+          "path": "x64-windows-static-md/debug/lib/libpng16d.lib",
+          "size": 1956682,
+          "sha256": "1afabb31ab02c472bffb8e6be47aa9baacbc73106670f48c4d46541512ec2241"
+        }
+      ],
+      "historical_comparison": {
+        "top_level_version_match": true,
+        "release_archive_hashes_match": true,
+        "release_archive_set_match": true,
+        "installed_status_mismatch_fields": [
+          "Version",
+          "Abi"
+        ]
+      }
+    },
+    {
+      "name": "libwebp",
+      "triplet": "x64-windows-static-md",
+      "version": "1.6.0#2",
+      "port_version": "2",
+      "abi": "d28367325e39d5f4ff989ba85fd3ecc0933483467086900dfb5ab8d276b2aaff",
+      "architecture": "x64-windows-static-md",
+      "license": "BSD-3-Clause",
+      "release_libraries": [
+        {
+          "path": "x64-windows-static-md/lib/libsharpyuv.lib",
+          "size": 184200,
+          "sha256": "f31db5897349480bfb4d9eeb3d0fd480f3f0c806322d900f9c2835d21381ce53"
+        },
+        {
+          "path": "x64-windows-static-md/lib/libwebp.lib",
+          "size": 4006296,
+          "sha256": "b2e35744794e0ef42d0a40e3c9627d533b00b52593f93ee43bb953e68a333126"
+        },
+        {
+          "path": "x64-windows-static-md/lib/libwebpdecoder.lib",
+          "size": 1834746,
+          "sha256": "0aa8e55220993314c8a3e50998500a2528fa3adfec7a2c7ddce04111960b2ad5"
+        },
+        {
+          "path": "x64-windows-static-md/lib/libwebpdemux.lib",
+          "size": 137414,
+          "sha256": "a90f5952131ffcdd3467656ae5a0443d949995e78e9c406b2dd3fc57c4589215"
+        },
+        {
+          "path": "x64-windows-static-md/lib/libwebpmux.lib",
+          "size": 376068,
+          "sha256": "1dfcf4b0d3d846c1d74babe79d98b762fc5681be7549262d9d645ead9ade51fc"
+        }
+      ],
+      "debug_libraries": [
+        {
+          "path": "x64-windows-static-md/debug/lib/libsharpyuv.lib",
+          "size": 130658,
+          "sha256": "ff3137358d4292a322988606081b28507fa68b04d1f040e2fb8219a510edf79f"
+        },
+        {
+          "path": "x64-windows-static-md/debug/lib/libwebp.lib",
+          "size": 2966618,
+          "sha256": "e688b4fcfc57be9ad87a9e53a29dc7fa9007fdfb0676d3e79176b4bdff7b03c1"
+        },
+        {
+          "path": "x64-windows-static-md/debug/lib/libwebpdecoder.lib",
+          "size": 1398958,
+          "sha256": "fd1cee2bf27ecd0aac28135e1b2b68d751f263cd829f11bad8b7d47b6f60aa47"
+        },
+        {
+          "path": "x64-windows-static-md/debug/lib/libwebpdemux.lib",
+          "size": 102596,
+          "sha256": "d12a503023824b59922f8a1482692733a261abc362f479f368f991838c1f54e8"
+        },
+        {
+          "path": "x64-windows-static-md/debug/lib/libwebpmux.lib",
+          "size": 301542,
+          "sha256": "ce5d6c82d1d6721c4e8ebc129ec88dbecf9fdc34741387daaf1fd798f895114f"
+        }
+      ],
+      "historical_comparison": {
+        "top_level_version_match": true,
+        "release_archive_hashes_match": true,
+        "release_archive_set_match": true,
+        "installed_status_mismatch_fields": [
+          "Version",
+          "Port-Version",
+          "Abi"
+        ]
+      }
+    },
+    {
+      "name": "lz4",
+      "triplet": "x64-windows-static-md",
+      "version": "1.10.0",
+      "port_version": null,
+      "abi": "cc0a782ffb7a430415c9b7902f0b50540e146b7bef75c60598ead86236a9c164",
+      "architecture": "x64-windows-static-md",
+      "license": "BSD-2-Clause",
+      "release_libraries": [
+        {
+          "path": "x64-windows-static-md/lib/lz4.lib",
+          "size": 1111886,
+          "sha256": "a2d9a02609d1f4f51a7ba356d9babaf4c725ce37a605e31240d6c3e83d22a7cd"
+        }
+      ],
+      "debug_libraries": [
+        {
+          "path": "x64-windows-static-md/debug/lib/lz4d.lib",
+          "size": 408612,
+          "sha256": "f2482c3102b76a72fafc06ac5a86130a652f81ed06669d2d5239206fedaa4535"
+        }
+      ],
+      "historical_comparison": {
+        "top_level_version_match": true,
+        "release_archive_hashes_match": true,
+        "release_archive_set_match": true,
+        "installed_status_mismatch_fields": [
+          "Version",
+          "Abi"
+        ]
+      }
+    },
+    {
+      "name": "openjpeg",
+      "triplet": "x64-windows-static-md",
+      "version": "2.5.4",
+      "port_version": null,
+      "abi": "02216b1ed07323cabb91e460c0db5d32305bbb94ae24a7bd4aa12a36df1578b0",
+      "architecture": "x64-windows-static-md",
+      "license": "BSD-2-Clause",
+      "release_libraries": [
+        {
+          "path": "x64-windows-static-md/lib/openjp2.lib",
+          "size": 2602716,
+          "sha256": "36e7e643f412f0e853031561992448d2d547b0b6a323bf3fd6a64ddde6206a61"
+        }
+      ],
+      "debug_libraries": [
+        {
+          "path": "x64-windows-static-md/debug/lib/openjp2.lib",
+          "size": 2192964,
+          "sha256": "9d066d2f970c361d5d75bc0fbf8ad3cadd26e510722811f09b2613c5a79eb3aa"
+        }
+      ],
+      "historical_comparison": {
+        "top_level_version_match": true,
+        "release_archive_hashes_match": true,
+        "release_archive_set_match": true,
+        "installed_status_mismatch_fields": [
+          "Version",
+          "Abi"
+        ]
+      }
+    },
+    {
+      "name": "openssl",
+      "triplet": "x64-windows-static-md",
+      "version": "3.6.3",
+      "port_version": null,
+      "abi": "ef85bbf83d0c4f2b7460b2f878521547fee5640dff9576837f3915d5d2cb6da0",
+      "architecture": "x64-windows-static-md",
+      "license": "Apache-2.0",
+      "release_libraries": [
+        {
+          "path": "x64-windows-static-md/lib/libcrypto.lib",
+          "size": 64101308,
+          "sha256": "e676e66dd1c334e6c85df5cf4cdfb79d418de444b22e5aaaf656b68916d34718"
+        },
+        {
+          "path": "x64-windows-static-md/lib/libssl.lib",
+          "size": 13410640,
+          "sha256": "7aea7c79fee7a16816e2fecfa4b3f6e48700ed642428d226dbf2ebac5607dea9"
+        }
+      ],
+      "debug_libraries": [
+        {
+          "path": "x64-windows-static-md/debug/lib/libcrypto.lib",
+          "size": 59394252,
+          "sha256": "b8e02cf9874b32fdc4be5c57b29ae7ab5c05bd496b6e40cde4570526a62019eb"
+        },
+        {
+          "path": "x64-windows-static-md/debug/lib/libssl.lib",
+          "size": 12857388,
+          "sha256": "c999bde57aba08480426fc67daede546dd16fc161971ba78ce8b014c28e21412"
+        }
+      ],
+      "historical_comparison": {
+        "top_level_version_match": true,
+        "release_archive_hashes_match": true,
+        "release_archive_set_match": true,
+        "installed_status_mismatch_fields": [
+          "Version",
+          "Abi"
+        ]
+      }
+    },
+    {
+      "name": "tesseract",
+      "triplet": "x64-windows-static-md",
+      "version": "5.5.2",
+      "port_version": null,
+      "abi": "5b322540875a2c88e7c839cb026e619b349e075a46f6e3b8eb9d272056f3b22a",
+      "architecture": "x64-windows-static-md",
+      "license": "Apache-2.0",
+      "release_libraries": [
+        {
+          "path": "x64-windows-static-md/lib/tesseract55.lib",
+          "size": 179678302,
+          "sha256": "0c8c61940968056758e002ca59aff8c1dff73d330099ab6db7854760097c314d"
+        }
+      ],
+      "debug_libraries": [
+        {
+          "path": "x64-windows-static-md/debug/lib/tesseract55d.lib",
+          "size": 195691732,
+          "sha256": "8a7f3287a6ab92e583669414da6b7a11d8b7d9a3935b4fc85b314cf2485cb98c"
+        }
+      ],
+      "historical_comparison": {
+        "top_level_version_match": true,
+        "release_archive_hashes_match": true,
+        "release_archive_set_match": true,
+        "installed_status_mismatch_fields": [
+          "Version",
+          "Abi"
+        ]
+      }
+    },
+    {
+      "name": "tiff",
+      "triplet": "x64-windows-static-md",
+      "version": "4.7.2",
+      "port_version": null,
+      "abi": "c3250d38ce624ec854e15446fdafbf9e0ceedd96dd132681a36e7096c5dbd298",
+      "architecture": "x64-windows-static-md",
+      "license": "libtiff",
+      "release_libraries": [
+        {
+          "path": "x64-windows-static-md/lib/tiff.lib",
+          "size": 5439152,
+          "sha256": "28c3a26f87dd8d8bb5e964f1c511078db65e2480c1118f133e137e2b2b1a7c14"
+        }
+      ],
+      "debug_libraries": [
+        {
+          "path": "x64-windows-static-md/debug/lib/tiffd.lib",
+          "size": 4705112,
+          "sha256": "b8e85fbf9fb974d190123be64fc6b3bd835825960f2f758ac2f2f6d2615e801c"
+        }
+      ],
+      "historical_comparison": {
+        "top_level_version_match": true,
+        "release_archive_hashes_match": true,
+        "release_archive_set_match": true,
+        "installed_status_mismatch_fields": [
+          "Version",
+          "Abi"
+        ]
+      }
+    },
+    {
+      "name": "zlib",
+      "triplet": "x64-windows-static-md",
+      "version": "1.3.2#1",
+      "port_version": "1",
+      "abi": "9bf095983f41352ab1efa14945e8a253556c354f9b1567f9755bfbeb3fa0af33",
+      "architecture": "x64-windows-static-md",
+      "license": "Zlib",
+      "release_libraries": [
+        {
+          "path": "x64-windows-static-md/lib/zs.lib",
+          "size": 489134,
+          "sha256": "37aee2cc4b247a8f98c7672f830ba1e2c357ed6313f27d12f566f6d3827f6525"
+        }
+      ],
+      "debug_libraries": [
+        {
+          "path": "x64-windows-static-md/debug/lib/zsd.lib",
+          "size": 390438,
+          "sha256": "0001c0b7653c18a08cbeb4257e7d562851bd87d75a7d47f0f385d7d1a40a69e3"
+        }
+      ],
+      "historical_comparison": {
+        "top_level_version_match": true,
+        "release_archive_hashes_match": true,
+        "release_archive_set_match": true,
+        "installed_status_mismatch_fields": [
+          "Version",
+          "Port-Version",
+          "Abi"
+        ]
+      }
+    },
+    {
+      "name": "zstd",
+      "triplet": "x64-windows-static-md",
+      "version": "1.5.7",
+      "port_version": null,
+      "abi": "4d011091ebf44a070090f99e8c89edccb1e4400b9bd785bfb967a22755237ba0",
+      "architecture": "x64-windows-static-md",
+      "license": "(BSD-3-Clause OR GPL-2.0-only)",
+      "release_libraries": [
+        {
+          "path": "x64-windows-static-md/lib/zstd.lib",
+          "size": 7130610,
+          "sha256": "10d1426a5a43e31c1d2d37e1722c425d0ec825c5ed137e750c00f856b0d7a155"
+        }
+      ],
+      "debug_libraries": [
+        {
+          "path": "x64-windows-static-md/debug/lib/zstd.lib",
+          "size": 4323862,
+          "sha256": "19bc6e692cac29ba89b5aedbf1ecc86b4e2279d01e4342df3704d6ec90417eea"
+        }
+      ],
+      "historical_comparison": {
+        "top_level_version_match": true,
+        "release_archive_hashes_match": true,
+        "release_archive_set_match": true,
+        "installed_status_mismatch_fields": []
+      }
+    }
+  ],
+  "limitations": [
+    "This is a derivative of a local observation, not a restored historical linker receipt.",
+    "The source observation records a bounded payload-hash recheck; this projection did not re-read or re-hash real binaries.",
+    "Matching installed-library measurements do not establish which archive members were linked into or retained by the executable.",
+    "SPDX license strings are preserved as source metadata only; they are not a legal conclusion or redistribution approval."
+  ]
+}
