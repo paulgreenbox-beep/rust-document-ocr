@@ -63,12 +63,20 @@ does not replace it or create a new runtime result.
   separator. Review a synthetic end-to-end cell assignment regression before
   claiming refined ownership is preserved through export. Cross-grid seam
   duplicates are reported, not prevented by the metric.
-- `scripts/build-windows-portable.ps1` records a baseline manifest hash, but
-  `scripts/smoke-windows-portable.ps1` accepts the comparison directory separately
-  without checking its exact contents against that manifest. Bind the approved
-  baseline files before reopening ZIP publication.
-- The ZIP branch writes the final archive name before the extracted-copy smoke.
-  A later failure can leave that name behind. Use a provisional output and
-  promote it only after verification in a future packaging change.
 
-No release gate, source code, binary or payload file was changed by this review.
+## Packager follow-up
+
+Two packager findings were addressed in a separate source-only change:
+
+- A ZIP requires an approved versioned baseline manifest. Its hash stays bound
+  to the clean-Windows receipt and to both smoke comparisons; the comparator
+  receives only a checked snapshot of the exact eight approved files.
+- The final ZIP name is assigned without overwrite only after validating the
+  provisional archive, comparing the extracted tree to the staged hashes and
+  repeating smoke with the bound baseline.
+
+See [the current packaging contract](../PORTABLE_WINDOWS.md#accepted-synthetic-baseline).
+These changes do not qualify the tested RC1 for binary release. No licensing
+condition or clean-environment receipt requirement was removed. The EXE,
+existing package and historical receipts are unchanged. Windows Sandbox and
+separate clean Windows x64 remain **NOT RUN — DEFERRED BY OWNER**.
