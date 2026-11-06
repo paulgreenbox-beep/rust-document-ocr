@@ -44,6 +44,9 @@ API, not a CLI endpoint or network service.
 
 ## Build and run
 
+See [positioned PDF text and table recovery](docs/PRACTICAL_OCR.md) for the
+practical corrections, API compatibility and synthetic regression coverage.
+
 For the separately gated Windows portable candidate, see
 [PORTABLE_WINDOWS.md](docs/PORTABLE_WINDOWS.md). This source repository does
 not imply that a redistributable binary ZIP has been cleared or published.

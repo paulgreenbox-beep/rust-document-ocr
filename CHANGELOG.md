@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.0 — Windows portable release candidate (unreleased)
+## 0.1.0 — Windows practical RC1 (unreleased)
 
 - Add offline Windows x64 native release packaging, PE import-closure inspection,
   hash manifests, local smoke and an opt-in pre-provisioned runner workflow.
@@ -12,7 +12,11 @@
   the compiled-in development tree.
 - Require license reviews, accepted semantic regression controls and genuine
   clean-Windows evidence before ZIP/publication acceptance.
+- Preserve the native page text while assigning positioned glyphs to confirmed
+  grid cells. Recover sparse closed rows and keep adjacent frames separate.
+- Preserve cell reading order and suppress blank shifted rules before cell OCR.
+  Add synthetic regressions for these cases and custom page sources.
 
-OCR routing, thresholds, segmentation, table geometry, model contents, JSON v1
-and DOCX/XLSX contracts are unchanged. No binary GitHub Release is implied by
-this changelog; see the release report for actual gates and blockers.
+Corrected cell text and grid geometry can differ from older outputs. Model
+contents, JSON v1 and DOCX/XLSX serializers are unchanged. No binary GitHub
+Release is implied; review the portable and component licensing gates.

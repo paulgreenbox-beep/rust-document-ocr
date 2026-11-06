@@ -14,6 +14,10 @@ PDFium and native DLLs belong beside the executable. English and Russian models
 belong in `tessdata` beside it. No Cargo, Rust, vcpkg or global PATH changes are needed.
 An explicitly set `TESSDATA_PREFIX` takes precedence over the portable models;
 remove that variable for the current session if it points to an unrelated install.
+Page OCR uses the requested languages (for example `--languages rus+eng`). An
+optional `eng_technical_eg79_v1.traineddata` in that same tessdata directory can
+be used for selected technical cells; it is not a page-language replacement.
+The source repository does not supply or authorize distribution of that model.
 The package manifest records licensing decisions separately for each component;
 the whole package is not MIT-only.
 Windows supplies the system UCRT; non-system VC runtime DLLs must be included

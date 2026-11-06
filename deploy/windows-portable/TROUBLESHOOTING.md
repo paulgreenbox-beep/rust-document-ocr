@@ -7,6 +7,9 @@
 - Keep `eng.traineddata` and `rus.traineddata` in the adjacent `tessdata` folder.
   Explicit `--tessdata-path` overrides `TESSDATA_PREFIX`, which overrides the
   adjacent directory. Invalid explicit paths intentionally fail.
+- Optional technical-cell recognition uses the versioned EG79 model only when
+  it is present in the selected tessdata directory. Do not substitute weights
+  from an unrelated installation or infer equivalent results without it.
 - Use Windows x64. DLL architecture and PDFium API (7881) must match the build.
 - Use a fresh output directory with an existing writable parent.
 - A local validation candidate is not approved for redistribution. Review
