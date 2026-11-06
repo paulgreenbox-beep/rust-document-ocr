@@ -5,7 +5,7 @@
 
 use image::{imageops, GrayImage, Luma};
 
-use crate::dto::Word;
+use crate::dto::{BoundingBox, Word};
 use crate::page_analysis::{NativeTextLayer, NativeTextLayout, PageOrientation};
 
 /// A single rendered page returned by a [`PageSource`].
@@ -205,6 +205,20 @@ pub trait PageSource {
         Ok(None)
     }
 
+    /// Returns positioned native words without joining glyphs across confirmed
+    /// grid-cell boundaries. Coordinates use the same rendered-page pixels as
+    /// `native_words_for_rendered_page`. The default preserves existing custom
+    /// sources; PDF sources can apply boundaries before forming word unions.
+    fn native_words_for_grid_cells(
+        &self,
+        page_num: u32,
+        width: u32,
+        height: u32,
+        _cell_bounds: &[BoundingBox],
+    ) -> Result<Option<Vec<Word>>, Box<dyn std::error::Error>> {
+        self.native_words_for_rendered_page(page_num, width, height)
+    }
+
     /// Renders a bounded grayscale image for the ruled-grid routing preflight.
     ///
     /// Production PDF sources may override this to render directly at the
@@ -309,6 +323,46 @@ impl PageSource for StubPageSource {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn existing_custom_source_words_remain_available_to_grid_callers() {
+        struct ExistingSource;
+
+        impl PageSource for ExistingSource {
+            fn total_pages(&self) -> Result<u32, Box<dyn std::error::Error>> {
+                Ok(1)
+            }
+
+            fn render_page(
+                &mut self,
+                page_num: u32,
+            ) -> Result<RenderedPage, Box<dyn std::error::Error>> {
+                StubPageSource::single(80, 60, 255).render_page(page_num)
+            }
+
+            fn native_words_for_rendered_page(
+                &self,
+                page_num: u32,
+                width: u32,
+                height: u32,
+            ) -> Result<Option<Vec<Word>>, Box<dyn std::error::Error>> {
+                assert_eq!((page_num, width, height), (1, 80, 60));
+                Ok(Some(vec![Word::new(
+                    "ABC",
+                    BoundingBox::new(10.0, 20.0, 35.0, 32.0),
+                    1.0,
+                )]))
+            }
+        }
+
+        let words = ExistingSource
+            .native_words_for_grid_cells(1, 80, 60, &[BoundingBox::new(0.0, 0.0, 40.0, 60.0)])
+            .unwrap()
+            .unwrap();
+        assert_eq!(words.len(), 1);
+        assert_eq!(words[0].text, "ABC");
+        assert_eq!(words[0].bbox, BoundingBox::new(10.0, 20.0, 35.0, 32.0));
+    }
 
     #[test]
     fn stub_returns_correct_total() {

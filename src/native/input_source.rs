@@ -7,7 +7,7 @@
 use std::path::{Path, PathBuf};
 
 use crate::{
-    dto::Word,
+    dto::{BoundingBox, Word},
     input_format::{detect_input_format, InputFormat, InputLimits, InputSourceError},
     page_analysis::{NativeTextLayer, NativeTextLayout, PageOrientation},
     page_source::{PageSource, RenderedPage, RenderedPageRegion},
@@ -271,6 +271,21 @@ impl PageSource for NativePageSource {
     ) -> Result<Option<Vec<Word>>, Box<dyn std::error::Error>> {
         match self {
             Self::Pdf(source) => source.native_words_for_rendered_page(page_num, width, height),
+            _ => Ok(None),
+        }
+    }
+
+    fn native_words_for_grid_cells(
+        &self,
+        page_num: u32,
+        width: u32,
+        height: u32,
+        cell_bounds: &[BoundingBox],
+    ) -> Result<Option<Vec<Word>>, Box<dyn std::error::Error>> {
+        match self {
+            Self::Pdf(source) => {
+                source.native_words_for_grid_cells(page_num, width, height, cell_bounds)
+            }
             _ => Ok(None),
         }
     }

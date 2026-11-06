@@ -614,28 +614,6 @@ fn prepare_page<S: PageSource>(
                 Ok(rendered) => {
                     let (width, height) = rendered.image.dimensions();
                     let stage_started = Instant::now();
-                    let native_words =
-                        match source.native_words_for_rendered_page(page_number, width, height) {
-                            Ok(Some(words)) => words,
-                            Ok(None) => {
-                                warnings.push(PipelineWarning::NativeWordGeometryUnavailable {
-                                page_number,
-                                message:
-                                    "page source does not expose coordinate-bearing native words"
-                                        .to_string(),
-                            });
-                                Vec::new()
-                            }
-                            Err(error) => {
-                                warnings.push(PipelineWarning::NativeWordGeometryUnavailable {
-                                    page_number,
-                                    message: error.to_string(),
-                                });
-                                Vec::new()
-                            }
-                        };
-                    timings.native_text_extraction_ms += elapsed_ms(stage_started);
-                    let stage_started = Instant::now();
                     let grid_candidates = match detect_table_grids_safely(&rendered.image) {
                         Ok(grids) => grids,
                         Err(message) => {
@@ -647,6 +625,33 @@ fn prepare_page<S: PageSource>(
                         }
                     };
                     timings.grid_detection_ms += elapsed_ms(stage_started);
+                    let cell_bounds = native_grid_cell_bounds(&grid_candidates);
+                    let stage_started = Instant::now();
+                    let native_words = match source.native_words_for_grid_cells(
+                        page_number,
+                        width,
+                        height,
+                        &cell_bounds,
+                    ) {
+                        Ok(Some(words)) => words,
+                        Ok(None) => {
+                            warnings.push(PipelineWarning::NativeWordGeometryUnavailable {
+                                page_number,
+                                message:
+                                    "page source does not expose coordinate-bearing native words"
+                                        .to_string(),
+                            });
+                            Vec::new()
+                        }
+                        Err(error) => {
+                            warnings.push(PipelineWarning::NativeWordGeometryUnavailable {
+                                page_number,
+                                message: error.to_string(),
+                            });
+                            Vec::new()
+                        }
+                    };
+                    timings.native_text_extraction_ms += elapsed_ms(stage_started);
                     let cell_ocr_regions = if enable_cell_ocr_fallback {
                         let thumbnail_pixels = usize::try_from(rendered.image.width())
                             .ok()
@@ -808,6 +813,14 @@ fn finish_prepared_page<O: OcrEngine>(
     Ok(processed)
 }
 
+fn native_grid_cell_bounds(grids: &[TableGrid]) -> Vec<BoundingBox> {
+    grids
+        .iter()
+        .flat_map(|grid| &grid.cells)
+        .filter_map(|cell| cell.bbox.clone())
+        .collect()
+}
+
 fn finish_prepared_native_page<O: OcrEngine>(
     mut prepared: PreparedPage,
     layer: NativeTextLayer,
@@ -911,12 +924,12 @@ fn finish_prepared_native_page<O: OcrEngine>(
         });
     }
 
-    let assignment = page_word_assignment_metrics(&native_words, &grid_candidates);
+    let assignment = native_page_word_assignment_metrics(&native_words, &grid_candidates);
     let mut matrices = Vec::with_capacity(grid_candidates.len());
     let mut fallback_confidences = Vec::new();
     for (grid_index, mut grid) in grid_candidates.into_iter().enumerate() {
         let stage_started = Instant::now();
-        let mut metrics = grid.assign_words(&native_words);
+        let mut metrics = grid.assign_native_words(&native_words);
         prepared.timings.assignment_ms += elapsed_ms(stage_started);
         if config.enable_cell_ocr_fallback {
             let fallback =
@@ -1656,31 +1669,36 @@ where
             .expect("usable native text layer must exist");
         if let Some((rendered, grid_candidates)) = native_grid_render {
             let (page_width, page_height) = rendered.image.dimensions();
+            let cell_bounds = native_grid_cell_bounds(&grid_candidates);
             let render_size = RenderSize {
                 width: page_width,
                 height: page_height,
                 dpi: rendered.dpi.round().clamp(0.0, f64::from(u32::MAX)) as u32,
             };
             let stage_started = Instant::now();
-            let native_words =
-                match source.native_words_for_rendered_page(page_num, page_width, page_height) {
-                    Ok(Some(words)) => words,
-                    Ok(None) => {
-                        warnings.push(PipelineWarning::NativeWordGeometryUnavailable {
-                            page_number: page_num,
-                            message: "page source does not expose coordinate-bearing native words"
-                                .to_string(),
-                        });
-                        Vec::new()
-                    }
-                    Err(error) => {
-                        warnings.push(PipelineWarning::NativeWordGeometryUnavailable {
-                            page_number: page_num,
-                            message: error.to_string(),
-                        });
-                        Vec::new()
-                    }
-                };
+            let native_words = match source.native_words_for_grid_cells(
+                page_num,
+                page_width,
+                page_height,
+                &cell_bounds,
+            ) {
+                Ok(Some(words)) => words,
+                Ok(None) => {
+                    warnings.push(PipelineWarning::NativeWordGeometryUnavailable {
+                        page_number: page_num,
+                        message: "page source does not expose coordinate-bearing native words"
+                            .to_string(),
+                    });
+                    Vec::new()
+                }
+                Err(error) => {
+                    warnings.push(PipelineWarning::NativeWordGeometryUnavailable {
+                        page_number: page_num,
+                        message: error.to_string(),
+                    });
+                    Vec::new()
+                }
+            };
             timings.native_text_extraction_ms += elapsed_ms(stage_started);
 
             if grid_candidates.is_empty() {
@@ -1740,12 +1758,12 @@ where
                 return Ok((page, processing, warnings));
             }
 
-            let assignment = page_word_assignment_metrics(&native_words, &grid_candidates);
+            let assignment = native_page_word_assignment_metrics(&native_words, &grid_candidates);
             let mut matrices = Vec::with_capacity(grid_candidates.len());
             let mut fallback_confidences = Vec::new();
             for mut grid in grid_candidates {
                 let stage_started = Instant::now();
-                let mut metrics = grid.assign_words(&native_words);
+                let mut metrics = grid.assign_native_words(&native_words);
                 timings.assignment_ms += elapsed_ms(stage_started);
                 if enable_cell_ocr_fallback {
                     report_stage_started(progress, OcrProgressStage::Ocr, page_num, total_pages);
@@ -2114,7 +2132,7 @@ fn prepare_grid_cell_ocr_regions<S: PageSource>(
 
     for (grid_index, grid) in grid_candidates.iter().enumerate() {
         let mut assigned = grid.clone();
-        let metrics = assigned.assign_words(native_words);
+        let metrics = assigned.assign_native_words(native_words);
         let has_unresolved_cells = assigned.cells.iter().any(|cell| {
             cell.text.trim().is_empty()
                 && cell.bbox.as_ref().is_some_and(|bbox| {
@@ -3423,6 +3441,8 @@ fn erase_boundary_grid_lines(image: &mut GrayImage, threshold: u8) {
         }
     }
 
+    mark_shifted_horizontal_grid_rules(image, threshold, &mut erase_rows);
+
     for (x, erase) in erase_columns.into_iter().enumerate() {
         if erase {
             for y in 0..height {
@@ -3434,6 +3454,48 @@ fn erase_boundary_grid_lines(image: &mut GrayImage, threshold: u8) {
         if erase {
             for x in 0..width {
                 image.put_pixel(x, y as u32, image::Luma([255]));
+            }
+        }
+    }
+}
+
+/// Canonical grid axes can lie a few pixels outside the observed rule. Recover
+/// only thin, almost full-width strokes near an edge; never erase the whole
+/// search band or treat a short interior dash/underscore as a frame.
+fn mark_shifted_horizontal_grid_rules(image: &GrayImage, threshold: u8, erase_rows: &mut [bool]) {
+    let (width, height) = image.dimensions();
+    if width == 0 || height == 0 {
+        return;
+    }
+    let edge_band = (height / 4).max(1);
+    let max_thickness = (height / 12).max(1);
+    let is_long_rule = |y| {
+        let mut run = 0u32;
+        for x in 0..width {
+            if image.get_pixel(x, y)[0] <= threshold {
+                run += 1;
+                if u64::from(run) * 10 >= u64::from(width) * 9 {
+                    return true;
+                }
+            } else {
+                run = 0;
+            }
+        }
+        false
+    };
+    let mut run_start = None;
+    for y in 0..=height {
+        if y < height && is_long_rule(y) {
+            run_start.get_or_insert(y);
+        } else if let Some(start) = run_start.take() {
+            if y - start <= max_thickness
+                && (y <= edge_band || start >= height.saturating_sub(edge_band))
+            {
+                // Include just the adjacent antialiased fringe, as in the
+                // existing boundary-rule pass, rather than blanking a band.
+                for row in start.saturating_sub(1)..=y.min(height - 1) {
+                    erase_rows[row as usize] = true;
+                }
             }
         }
     }
@@ -3794,10 +3856,29 @@ pub(crate) fn page_word_assignment_metrics(
     words: &[crate::dto::Word],
     grids: &[TableGrid],
 ) -> PageWordAssignmentMetrics {
+    word_assignment_metrics_with_membership(words, grids, false)
+}
+
+fn native_page_word_assignment_metrics(
+    words: &[crate::dto::Word],
+    grids: &[TableGrid],
+) -> PageWordAssignmentMetrics {
+    word_assignment_metrics_with_membership(words, grids, true)
+}
+
+fn word_assignment_metrics_with_membership(
+    words: &[crate::dto::Word],
+    grids: &[TableGrid],
+    require_native_center: bool,
+) -> PageWordAssignmentMetrics {
     let mut assignment_counts = vec![0_u32; words.len()];
     for (index, word) in words.iter().enumerate() {
         for grid in grids {
-            if word_is_assignable_to_grid(word, grid) {
+            if if require_native_center {
+                grid.native_word_is_assignable(word)
+            } else {
+                word_is_assignable_to_grid(word, grid)
+            } {
                 assignment_counts[index] = assignment_counts[index].saturating_add(1);
             }
         }
@@ -4032,6 +4113,26 @@ mod tests {
             intersections,
             confidence,
         }
+    }
+
+    #[test]
+    fn native_page_metrics_report_cross_grid_seam_duplicates() {
+        let grids = vec![
+            grid_fixture(BoundingBox::new(20.0, 20.0, 120.0, 100.0), 2, 2, 1.0),
+            grid_fixture(BoundingBox::new(45.0, 100.0, 85.0, 180.0), 2, 2, 1.0),
+        ];
+        let words = vec![crate::dto::Word::new(
+            "seam",
+            BoundingBox::new(50.0, 95.0, 60.0, 105.0),
+            1.0,
+        )];
+        // Per-grid assignment is unique, not a global ownership guarantee.
+        // Keep this boundary ambiguity visible instead of silently reporting 0.
+        let metrics = super::native_page_word_assignment_metrics(&words, &grids);
+        assert_eq!(metrics.recognized_words, 1);
+        assert_eq!(metrics.assigned_words, 1);
+        assert_eq!(metrics.words_outside_tables, 0);
+        assert_eq!(metrics.duplicate_assignments, 1);
     }
 
     #[derive(Debug, thiserror::Error)]
@@ -5575,6 +5676,94 @@ mod tests {
                 .unwrap()
                 .is_none()
         );
+    }
+
+    #[test]
+    fn cell_ocr_crop_rejects_shifted_thin_horizontal_rules_at_multiple_scales() {
+        for scale in [1, 3] {
+            for bottom_edge in [false, true] {
+                let (width, height) = (138 * scale, 33 * scale);
+                let mut image = GrayImage::from_pixel(width, height, Luma([255]));
+                let start = if bottom_edge {
+                    height - 6 * scale
+                } else {
+                    4 * scale
+                };
+                for y in start..start + 2 * scale {
+                    for x in 0..width {
+                        image.put_pixel(x, y, Luma([0]));
+                    }
+                }
+                let bbox = BoundingBox::new(0.0, 0.0, f64::from(width), f64::from(height));
+                let mut crop = informative_cell_crop(&image, &bbox).unwrap();
+                super::erase_boundary_grid_lines(&mut crop, 128);
+                assert!(crop.pixels().all(|pixel| pixel[0] == 255));
+                assert!(
+                    prepare_cell_ocr_crop(&image, &bbox, DEFAULT_MAX_PIXELS, 100 * scale)
+                        .unwrap()
+                        .is_none(),
+                    "a shifted blank-cell rule must not become OCR input: scale={scale}, bottom={bottom_edge}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn cell_ocr_crop_keeps_real_glyph_beside_shifted_horizontal_rule() {
+        for scale in [1, 3] {
+            let (width, height) = (138 * scale, 33 * scale);
+            let mut image = GrayImage::from_pixel(width, height, Luma([255]));
+            for y in 4 * scale..6 * scale {
+                for x in 0..width {
+                    image.put_pixel(x, y, Luma([0]));
+                }
+            }
+            // A small interior digit-like glyph must survive rule removal.
+            for y in 14 * scale..22 * scale {
+                for x in 65 * scale..67 * scale {
+                    image.put_pixel(x, y, Luma([0]));
+                }
+            }
+            for y in 20 * scale..22 * scale {
+                for x in 63 * scale..69 * scale {
+                    image.put_pixel(x, y, Luma([0]));
+                }
+            }
+            let bbox = BoundingBox::new(0.0, 0.0, f64::from(width), f64::from(height));
+            let mut clean = image.clone();
+            super::erase_boundary_grid_lines(&mut clean, 128);
+            assert_eq!(clean.get_pixel(65 * scale, 17 * scale)[0], 0);
+            let prepared = prepare_cell_ocr_crop(&image, &bbox, DEFAULT_MAX_PIXELS, 100 * scale)
+                .unwrap()
+                .expect("a real interior glyph must still receive OCR");
+            assert!(prepared.image.pixels().any(|pixel| pixel[0] < 128));
+        }
+    }
+
+    #[test]
+    fn shifted_rule_cleanup_preserves_short_lines_and_interior_vertical_glyphs() {
+        for scale in [1, 3] {
+            let mut image = GrayImage::from_pixel(120 * scale, 48 * scale, Luma([255]));
+            // Short dash/underscore strokes, including one near the edge.
+            for (x0, x1, y0) in [(20, 40, 20), (50, 70, 30), (60, 80, 7)] {
+                for y in y0 * scale..(y0 + 2) * scale {
+                    for x in x0 * scale..x1 * scale {
+                        image.put_pixel(x, y, Luma([0]));
+                    }
+                }
+            }
+            // Interior I/1/l-like strokes are not vertical frame rules.
+            for x0 in [85, 93, 101] {
+                for y in 16 * scale..33 * scale {
+                    for x in x0 * scale..(x0 + 2) * scale {
+                        image.put_pixel(x, y, Luma([0]));
+                    }
+                }
+            }
+            let original = image.clone();
+            super::erase_boundary_grid_lines(&mut image, 128);
+            assert_eq!(image, original);
+        }
     }
 
     #[test]
