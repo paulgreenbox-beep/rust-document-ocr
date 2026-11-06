@@ -88,6 +88,11 @@ This controlled-PATH check is **not** a clean Windows VM. The developer machine
 may have system-installed runtimes. A real clean Windows x64 receipt remains a
 separate publication prerequisite.
 
+For Practical RC1, both Windows Sandbox and separate clean Windows validation
+are **NOT RUN — DEFERRED BY OWNER**. See the [current RC1 decision](PRACTICAL_RC1.md#current-owner-decision-for-rc1).
+This limits the evidence to the existing local validation and does not change
+the ZIP gate below.
+
 The generated `verify.ps1` checks payload hashes and unexpected files. It is
 not a signature or a license approval. Applications need Windows 10/11 x64
 system DLLs/UCRT and the app-local redistributables identified by the PE closure;
