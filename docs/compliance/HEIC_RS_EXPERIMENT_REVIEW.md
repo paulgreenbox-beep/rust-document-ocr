@@ -6,6 +6,16 @@ The existing RC1 remains **WINDOWS PORTABLE RELEASE — BLOCKED: LICENSING**.
 
 ## Decoder decision
 
+### Latest consumer adapter experiment
+
+Root `heic-rs-input` is now an explicit opt-in full-pipeline adapter; default
+`native` remains libheif. The small synthetic A/B and local source/native tests
+are recorded in the [pipeline report](../../tools/heic-rs-evaluation/PIPELINE_HEIC_RS_RESEARCH.md).
+No production promotion or release executable was made. The native dependency
+graph remains selected; **full-app LGPL removal is not established**. Current
+release rights/notice, patent and deferred-host gates remain unchanged.
+The earlier decoder-only decision below retains its original limited scope.
+
 ### Current derivative addendum (2026-11-07)
 
 The isolated local0.1.4-ocr.1 derivative now has tested complete raw-SPS

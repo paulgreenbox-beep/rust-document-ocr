@@ -8,7 +8,7 @@ changes, decoder observations and release approval.
 | --- | --- | --- |
 | PR #6 review/integration | REVIEWED / INTEGRATED INTO RC BRANCH | Merged only into release/practical-rc1; post-integration 50 PowerShell checks and both CI jobs passed |
 | PR #5 source review | FIXED, READY FOR REVIEW | Actual generated-PDF owner displacement reproduced and fixed; PR stays open/draft, no main merge |
-| HEIC-RS implementation | BOUNDED LOCAL DERIVATIVE TESTED; ADAPTER HELD | Research-only0.1.4-ocr.1 enforces raw HEVC aggregate preflight; OCR dependency/features remain unchanged |
+| HEIC-RS implementation | OPT-IN ADAPTER AND PIPELINE A/B TESTED; PROMOTION HELD | Explicit heic-rs-input uses bounded0.1.4-ocr.1; native alone remains libheif, default workers4 unchanged |
 | HEIC compatibility | NAMED EXTENDED CASES PASS; BROAD COVERAGE INCOMPLETE | Six old fixtures unchanged; real Main10/alpha/rotations/mirrors compared with libheif; colour differences remain explicit |
 | Actual removal of libheif/libde265 | NOT REMOVED FROM OCR | No replacement full OCR EXE was built; the current native configuration still uses them |
 | Source/native regression | PASS at PR #5 scope | 238 source tests, 352 native tests, two further separate-process PDFium tests; no claim of a new 40-PDF binary qualification |
@@ -20,6 +20,31 @@ changes, decoder observations and release approval.
 | Separate clean Windows x64 | NOT RUN — DEFERRED BY OWNER | No VM operation; developer-host tests do not substitute |
 
 ## 1. RC integration and source review
+
+### Latest consumer experiment: opt-in full OCR pipeline
+
+An experimental `heic-rs-input` feature now routes HEIF into the bounded pure
+decoder without native fallback; the unchanged `native` feature retains the
+existing decoder. The new adapter preserves RenderedPage and schema-v1/export
+contracts, white compositing, frame warnings and caller budgets. No PDF/routing,
+GridDetector, Tesseract, assignment, installed OCR or RC1 change was made.
+
+Two separately retained debug executables completed a repeated11-input A/B:
+three known-source text HEICs, two synthetic PDF controls and six format-only
+cases. Candidate11/11 succeed; baseline10/11 succeed (retained white16 native
+security rejection); no timeout. Form tokenF1 improves0.943396 to0.980392;
+note1.0 and receipt0.925 stay unchanged. Receipt retains1grid/12filled cells;
+both PDFs match full non-timing JSON and compared exports. Confidence/colour
+differences are retained, not hidden. These are not a broad corpus or speedup
+claim. Native357 and candidate369 tests pass, plus two separately initialized
+PDFium controls per feature; three diagnostic tests remain NOT RUN. See the
+[full report](tools/heic-rs-evaluation/PIPELINE_HEIC_RS_RESEARCH.md) for commands,
+measurements, scope/limitations and source/runtime/debug-EXE hashes.
+
+The native dependency graph remains selected in this first integration; no
+LGPL-removal/linker-closure or new release executable claim follows. Primary-
+linked premultiplied alpha is explicitly rejected. Historical decoder-only
+receipts and the narrative below are not rewritten into consumer acceptance.
 
 ### Current experiment addendum: raw-buffer gate and extended formats
 

@@ -1,5 +1,10 @@
 # Isolated heic-rs evaluation
 
+Latest consumer experiment: [opt-in full OCR pipeline A/B](PIPELINE_HEIC_RS_RESEARCH.md)
+and [pipeline receipt](pipeline-evaluation.json). Root `heic-rs-input` is now an
+explicit research adapter; `native` alone and installed OCR/RC1 are unchanged.
+The earlier decoder-only reports below retain their original phase scope.
+
 ## Current bounded derivative (2026-11-07)
 
 The current candidate is **local research derivative `0.1.4-ocr.1`**, not the

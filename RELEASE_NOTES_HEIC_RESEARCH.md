@@ -3,6 +3,23 @@
 This is an experimental source delivery in [draft PR #7](https://github.com/paulgreenbox-beep/rust-document-ocr/pull/7),
 not release notes for a distributable Windows RC2.
 
+## Latest consumer integration (experimental only)
+
+Opt-in `heic-rs-input` now feeds the existing full OCR pipeline via RenderedPage;
+`native` alone retains libheif. No native fallback or pipeline algorithm change.
+The repeated11-input A/B succeeds on all11 candidate cases, with the unchanged
+baseline white16 rejection retained. Form source-tokenF1 improves94.34% to98.04%;
+note100% and receipt92.5% remain unchanged, with receipt1grid/12filled cells.
+Both synthetic PDF controls match non-timing results. Native357/candidate369
+tests and two separate PDFium controls per feature pass. Debug timings are not
+a speedup benchmark, and this is not a broad accuracy or release qualification.
+See the [consumer report](tools/heic-rs-evaluation/PIPELINE_HEIC_RS_RESEARCH.md).
+
+Production default, installed OCR, RC1, model files, DB and services remain
+unchanged. This opt-in still retains the native dependency graph; static LGPL
+obligations are not proven removed. All release/deferred-environment gates below
+continue to apply. The older phase summaries below retain historical scope.
+
 ## Latest research addendum: bounded local derivative
 
 The isolated tool now uses local `heic-rs0.1.4-ocr.1`, retaining the verified

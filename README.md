@@ -7,8 +7,10 @@ This documentation does not claim a stable `1.0` release.
 The `experiment/heic-rs-rc2` branch contains an isolated decoder evaluation,
 not a promoted RC2. The existing HEIF backend remains enabled for native OCR;
 the isolated derivative now has tested raw-picture/aggregate preallocation
-guards and Main10/alpha/transform checks, but full format/OCR qualification
-is incomplete. See the
+guards and Main10/alpha/transform checks. An opt-in `heic-rs-input` full-pipeline
+adapter and small synthetic A/B corpus are available only in this experiment;
+`native` alone still selects libheif. Broad format/OCR qualification is incomplete.
+See the [pipeline A/B report](tools/heic-rs-evaluation/PIPELINE_HEIC_RS_RESEARCH.md), the
 [progress report](RC1_TO_RC2_PROGRESS_REPORT.md) and
 [research release notes](RELEASE_NOTES_HEIC_RESEARCH.md).
 Windows Sandbox and separate clean Windows x64 are each

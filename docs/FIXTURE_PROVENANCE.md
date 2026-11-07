@@ -21,6 +21,17 @@ OCR output examples are recorded from actual CLI runs. They demonstrate the
 schema and execution path, not recognition accuracy on real-world documents.
 Runtime-dependent timing fields may differ between runs.
 
+## Research-only text HEIC fixtures
+
+The experimental `tools/heic-rs-evaluation/fixtures/ocr-public` directory retains
+three unmodified synthetic HEICs and their source SVGs from
+Cloud2BR/OCR-IMG2PDF-Converter commit
+`33db9cd8021e703d5100380538d3b8a8400cbe79`. Original Apache-2.0 LICENSE and
+upstream synthetic-fixture README bytes, Git blob identities and SHA-256 are
+included there. See [provenance](../tools/heic-rs-evaluation/fixtures/ocr-public/PROVENANCE.md).
+No font/encoder/runtime binary or customer data is included. Source SVG text
+supports the named synthetic token comparisons, not broad OCR qualification.
+
 The versions used for generation are pinned in `examples/requirements-generate.txt`.
 The two PDFs were visually inspected after rendering. Standard Helvetica is
 referenced, but no font program is embedded in either distributed PDF.
