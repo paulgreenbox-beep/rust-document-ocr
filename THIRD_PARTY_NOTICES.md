@@ -68,6 +68,13 @@ does not grant third-party HEVC patent rights. This isolated source experiment
 does not remove libheif/libde265 from the production OCR or approve any binary
 distribution.
 
+The research pipeline A/B additionally includes unmodified synthetic HEIC/SVG
+fixtures from Cloud2BR/OCR-IMG2PDF-Converter at commit
+`33db9cd8021e703d5100380538d3b8a8400cbe79`, under its Apache-2.0 repository
+license. Original LICENSE/README bytes, source SVGs and file hashes accompany
+them in `tools/heic-rs-evaluation/fixtures/ocr-public`. No encoder, fonts,
+customer input or model weights are included with these fixtures.
+
 Surya, GOT-OCR, and ABBYY are not dependencies or assets in this source release. The project's MIT license grants no rights in their code, services, checkpoints, or model weights.
 
 | System or artifact | Primary-source terms reviewed | Source-release decision |

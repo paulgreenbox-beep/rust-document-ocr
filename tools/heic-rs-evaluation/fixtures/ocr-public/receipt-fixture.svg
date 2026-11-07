@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="1400" viewBox="0 0 720 1400" role="img" aria-label="Synthetic receipt fixture">
+  <defs>
+    <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fffdf8"/>
+      <stop offset="100%" stop-color="#f2eadc"/>
+    </linearGradient>
+  </defs>
+  <rect width="720" height="1400" fill="url(#paper)"/>
+  <rect x="40" y="40" width="640" height="1320" rx="22" fill="#fffaf0" stroke="#d2c5b0"/>
+  <text x="360" y="120" text-anchor="middle" font-family="Arial, sans-serif" font-size="40" font-weight="700" fill="#2d241c">DEMO MARKET</text>
+  <text x="360" y="162" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" fill="#5d5248">Synthetic testing fixture</text>
+  <g font-family="Courier New, monospace" font-size="24" fill="#2f2925">
+    <text x="88" y="240">1  COFFEE BEANS         12.90</text>
+    <text x="88" y="290">2  OAT MILK              4.80</text>
+    <text x="88" y="340">1  NOTEBOOK              8.25</text>
+    <text x="88" y="390">3  PENCILS               3.75</text>
+    <text x="88" y="470">SUBTOTAL               29.70</text>
+    <text x="88" y="520">TAX                     2.37</text>
+    <text x="88" y="570">TOTAL                  32.07</text>
+  </g>
+  <line x1="88" y1="620" x2="632" y2="620" stroke="#8b7c68" stroke-dasharray="8 8"/>
+  <g font-family="Arial, sans-serif" fill="#51463d">
+    <text x="88" y="700" font-size="26" font-weight="700">CARD</text>
+    <text x="88" y="740" font-size="22">Auth: 004219</text>
+    <text x="88" y="780" font-size="22">Ref: TEST-RECEIPT-01</text>
+    <text x="88" y="860" font-size="28" font-weight="700">THANK YOU</text>
+  </g>
+  <g stroke="#d9cebc" stroke-width="2">
+    <line x1="88" y1="930" x2="632" y2="930"/>
+    <line x1="88" y1="980" x2="632" y2="980"/>
+    <line x1="88" y1="1030" x2="632" y2="1030"/>
+    <line x1="88" y1="1080" x2="632" y2="1080"/>
+    <line x1="88" y1="1130" x2="632" y2="1130"/>
+  </g>
+</svg>

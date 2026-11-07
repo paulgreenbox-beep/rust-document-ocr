@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1080" viewBox="0 0 1080 1080" role="img" aria-label="Synthetic note fixture">
+  <rect width="1080" height="1080" fill="#e7d7ad"/>
+  <rect x="130" y="110" width="820" height="860" rx="18" fill="#fff7d8" stroke="#c9b77c" stroke-width="4"/>
+  <text x="185" y="220" font-family="Arial, sans-serif" font-size="52" font-weight="700" fill="#5d4a1f">Meeting Notes</text>
+  <g stroke="#d9cc9d" stroke-width="3">
+    <line x1="180" y1="300" x2="900" y2="300"/>
+    <line x1="180" y1="390" x2="900" y2="390"/>
+    <line x1="180" y1="480" x2="900" y2="480"/>
+    <line x1="180" y1="570" x2="900" y2="570"/>
+    <line x1="180" y1="660" x2="900" y2="660"/>
+    <line x1="180" y1="750" x2="900" y2="750"/>
+  </g>
+  <g font-family="Comic Sans MS, Arial, sans-serif" font-size="34" fill="#5e4a33">
+    <text x="190" y="286">- ship GitHub Pages demo</text>
+    <text x="190" y="376">- add original/scanned toggle</text>
+    <text x="190" y="466">- create generic test fixtures</text>
+    <text x="190" y="556">- confirm multi-page export</text>
+    <text x="190" y="646">- keep everything local</text>
+  </g>
+  <circle cx="850" cy="860" r="42" fill="#d4724d" opacity="0.8"/>
+  <circle cx="760" cy="860" r="42" fill="#5f8d4e" opacity="0.8"/>
+</svg>

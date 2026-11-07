@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "repository": "https://github.com/Cloud2BR/OCR-IMG2PDF-Converter",
+  "commit": "33db9cd8021e703d5100380538d3b8a8400cbe79",
+  "license": "Apache-2.0 (upstream repository LICENSE retained as UPSTREAM_LICENSE.txt)",
+  "upstream_directory": "test-fixtures/images",
+  "renames": {
+    "UPSTREAM_LICENSE.txt": "LICENSE",
+    "UPSTREAM_README.md": "test-fixtures/README.md"
+  },
+  "files": [
+    {
+      "path": "form-fixture.heic",
+      "size": 29178,
+      "git_blob": "4d6ccece2b30e1e95d2712a08d46662f6f18378a",
+      "sha256": "a164547455de1798edd93609084aa898354496eb58a45a0bfe7f49940f8a8a24"
+    },
+    {
+      "path": "form-fixture.svg",
+      "size": 2218,
+      "git_blob": "2259d0529c8bdc6f32aabc056ecbadf6b9d28d27",
+      "sha256": "1494ec97fc247566b88a6d3bfbc3e920f5016d1d4b5e6d24d8d12824fe9566ba"
+    },
+    {
+      "path": "note-fixture.heic",
+      "size": 29089,
+      "git_blob": "6866a0b07d69d837c15631b13d569fe9a839042f",
+      "sha256": "1a2bce7b210f469ffedcfb6eb69afc70caefa9c815c6461995e1749a34fe0ee7"
+    },
+    {
+      "path": "note-fixture.svg",
+      "size": 1291,
+      "git_blob": "f972352da64890ae368793acc05ac2bb376be89b",
+      "sha256": "54bfdb9a5a9d1d9737b4a638fdc766958c4fcaf90b0a8791afe25c4668edcb05"
+    },
+    {
+      "path": "receipt-fixture.heic",
+      "size": 23766,
+      "git_blob": "e2856489a50c1def3d85bf245eb845d42ec3f8a7",
+      "sha256": "cc6d17df966abd926f0f72c853713e71138a8a24f1f722ae1e6bcfaf06da336b"
+    },
+    {
+      "path": "receipt-fixture.svg",
+      "size": 1990,
+      "git_blob": "16e94c8ed36ebab20a667db8627931e0b0841c16",
+      "sha256": "9dcafc3e4dab507ea20576076cccc7feac272e3c0b922a04362b8396cef2185a"
+    },
+    {
+      "path": "UPSTREAM_LICENSE.txt",
+      "size": 11357,
+      "git_blob": "261eeb9e9f8b2b4b0d119366dda99c6fd7d35c64",
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+    },
+    {
+      "path": "UPSTREAM_README.md",
+      "size": 1154,
+      "git_blob": "c749532e6c27bfa2f8e02e79a707636a04c64a32",
+      "sha256": "ee292f094e9e3cd283bcbddbc318562cbef43c72d68721fe91bd5bedfe1d22a5"
+    }
+  ]
+}
