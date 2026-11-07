@@ -4,7 +4,11 @@ Rust Document OCR is a local, CPU-first document pipeline written in Rust. The
 Cargo package and library crate are named `ocr-pipeline`, version `0.1.0`.
 This documentation does not claim a stable `1.0` release.
 
-The `experiment/heic-rs-rc2` branch contains an isolated decoder evaluation,
+The `experiment/heic-rs-pure-native-link` branch separates common native OCR
+from the two HEIC decoder choices. `--no-default-features --features heic-rs-input`
+enables the full pipeline without selecting libheif; `native` retains libheif.
+See the [exact-artifact linker and regression report](HEIC_PURE_NATIVE_LINK_REPORT.md).
+This continues an isolated decoder evaluation,
 not a promoted RC2. The existing HEIF backend remains enabled for native OCR;
 the isolated derivative now has tested raw-picture/aggregate preallocation
 guards and Main10/alpha/transform checks. An opt-in `heic-rs-input` full-pipeline

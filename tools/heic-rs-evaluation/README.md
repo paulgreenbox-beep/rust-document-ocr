@@ -1,5 +1,11 @@
 # Isolated heic-rs evaluation
 
+Current root-feature work: [pure native link and release regression](../../HEIC_PURE_NATIVE_LINK_REPORT.md),
+[sanitized evidence](pure-native-link-evidence.json),
+and [local-only raw link analyzer](inspect-link-evidence.py).
+`native` remains legacy; `heic-rs-input` independently enables full OCR.
+Raw link receipts contain local paths and must not be uploaded.
+
 Latest consumer experiment: [opt-in full OCR pipeline A/B](PIPELINE_HEIC_RS_RESEARCH.md)
 and [pipeline receipt](pipeline-evaluation.json). Root `heic-rs-input` is now an
 explicit research adapter; `native` alone and installed OCR/RC1 are unchanged.
