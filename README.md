@@ -26,6 +26,29 @@ PDF text where available, runs Tesseract when OCR is needed, detects table
 geometry, and exports JSON, DOCX, and XLSX files. It is a command-line program
 and Rust library; it does not provide an HTTP service or hosted API.
 
+## Key OCR capabilities / Основные возможности
+
+- Preserve usable native PDF text independently of extracted table cells.
+- Recognize scanned pages and supported images with Tesseract (`rus+eng` by default).
+- Detect supported drawing title-block regions using project-specific grid,
+  lower-right geometry and label rules; retain them separately as `title_block`.
+- Reconstruct ruled tables and some consistently aligned borderless layouts;
+  assign positioned native/OCR words to cells, retaining geometry and confidence
+  in JSON/API where available.
+- Process selected PDF regions and use the optional EG79 technical-cell model
+  for bounded specialized rechecks—not as a universal stamp or page-language model.
+- Export JSON, DOCX and XLSX; keep title blocks separate from ordinary data tables.
+- Read PDF, raster images, multipage TIFF and DjVu; HEIC uses the explicitly
+  selected backend, with the pure Rust replacement still experimental.
+
+This is document-structure logic beyond a Tesseract interface, not guaranteed
+recognition of every drawing, GOST form, stamp requisite, table or technical code.
+See [FEATURES.md](FEATURES.md) for concrete source/test links and limitations,
+[Windows candidate notes](docs/release/WINDOWS_PURE_HEIC_CANDIDATE.md) and the
+[EG79/code rights review](docs/compliance/TECHNICAL_OCR_AND_EG79_RIGHTS.md).
+EG79 remains part of the proposed full technical OCR package; its weights are
+not in this source repository and redistribution rights remain open.
+
 ## Current scope
 
 - The CPU pipeline has a bounded page-worker pool. Its default is four workers;
