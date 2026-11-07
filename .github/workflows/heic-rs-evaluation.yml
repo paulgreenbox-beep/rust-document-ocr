@@ -23,6 +23,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec
         with:
           toolchain: 1.97.1
+          components: rustfmt
       - name: Check and test the isolated published decoder
         run: |
           cargo fmt --manifest-path tools/heic-rs-evaluation/Cargo.toml --check
