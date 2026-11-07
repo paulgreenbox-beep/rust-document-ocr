@@ -77,6 +77,13 @@ function Assert-PortablePureRuntime($Manifest) {
     # This preserves the model; it confers no redistribution permission.
 }
 
+function Assert-PortablePureStagedPayload([string]$PackageRoot,$Manifest,[string]$ExeHash) {
+    Assert-PortableHash (Join-Path $PackageRoot 'ocr-pipeline.exe') $ExeHash 'staged pure executable'
+    foreach ($component in $Manifest.components) { foreach ($file in $component.files) {
+        Assert-PortableHash (Join-Path $PackageRoot $file.path) $file.sha256 'staged runtime payload'
+    } }
+}
+
 function Assert-PortablePureLinkEvidence($Link,[string]$ExeHash,[string]$MapHash) {
     if ($Link.schema_version -isnot [long] -and $Link.schema_version -isnot [int] -or $Link.schema_version -ne 1 -or $Link.exe_sha256 -ne $ExeHash -or $Link.map_sha256 -ne $MapHash -or $Link.link_exit -isnot [long] -and $Link.link_exit -isnot [int] -or $Link.link_exit -ne 0) { throw 'Link evidence identity/exit mismatch' }
     foreach ($field in @('explicit_old_inputs','map_old_hits','verbose_old_hits')) {
@@ -128,5 +135,8 @@ function Get-PortablePureAuthorization {
     if (![IO.Path]::IsPathFullyQualified($r.exe_path)) { throw 'Authorized executable path must be absolute' }
     if ($r.exe_sha256 -notmatch '^[a-fA-F0-9]{64}$') { throw 'Invalid executable hash' }
     if ($VerifyExecutable) { Assert-PortableHash $r.exe_path $r.exe_sha256 'pure executable' }
+    # Callers must package this exact hash-validated snapshot, not a separate
+    # earlier read. An input cannot supply/override this reserved property.
+    $r | Add-Member -NotePropertyName VerifiedRuntimeManifest -NotePropertyValue $runtime
     return $r
 }

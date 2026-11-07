@@ -24,7 +24,11 @@ $dest=[IO.Path]::GetFullPath($Destination)
 $approved=[IO.Path]::GetFullPath($ApprovedOutputRoot).TrimEnd('\')
 if (!$dest.StartsWith($approved+'\',[StringComparison]::OrdinalIgnoreCase) -or $dest.StartsWith($repo+'\',[StringComparison]::OrdinalIgnoreCase) -or $dest -eq $repo) { throw 'Destination must be outside sources, strictly below ApprovedOutputRoot' }
 if (Test-Path -LiteralPath $dest) { throw 'Destination exists; refusing overwrite' }
-$m=if ($BuildProfile -eq 'pure-heic') { Read-PortableStrictJson $RuntimeManifest } else { Get-Content -LiteralPath $RuntimeManifest -Raw | ConvertFrom-Json }
+$pureAuthorization=$null
+$m=if ($BuildProfile -eq 'pure-heic') {
+    $pureAuthorization=Get-PortablePureAuthorization -Repo $repo -ReceiptPath $BuildReceipt -ExpectedReceiptSha256 $ExpectedBuildReceiptSha256 -RuntimeManifest $RuntimeManifest -VerifyExecutable:$SkipBuild
+    $pureAuthorization.VerifiedRuntimeManifest
+} else { Get-Content -LiteralPath $RuntimeManifest -Raw | ConvertFrom-Json }
 if ($m.schema_version -ne 1) { throw 'Unsupported runtime manifest schema' }
 if (!($m.PSObject.Properties.Name -contains 'static_components') -or @($m.static_components).Count -eq 0) { throw 'Static component inventory is mandatory (Cargo + native static libraries)' }
 foreach ($c in @($m.components)+@($m.static_components)) {
@@ -58,7 +62,6 @@ foreach ($c in $m.components) { foreach ($f in $c.files) {
     if ($seen.ContainsKey($key)) { throw "Duplicate payload path: $($f.path)" }; $seen[$key]=$true
     if ($f.sha256 -notmatch '^[a-fA-F0-9]{64}$' -or (Get-FileHash -LiteralPath $f.source -Algorithm SHA256).Hash -ne $f.sha256) { throw "Runtime hash mismatch: $($f.path)" }
 } }
-$pureAuthorization=$null
 if ($BuildProfile -eq 'pure-heic') {
     # Preflight all owner-authorized inputs before invoking Cargo or creating output.
     # New binaries need independently captured/reviewed linker evidence and a new
@@ -97,6 +100,9 @@ try {
         New-Item -ItemType Directory -Path (Split-Path $to -Parent) -Force | Out-Null
         Copy-Item -LiteralPath $f.source -Destination $to
     } }
+    if ($pureAuthorization) {
+        Assert-PortablePureStagedPayload $dest $m $pureAuthorization.exe_sha256
+    }
     foreach ($required in @('pdfium.dll','tessdata/eng.traineddata','tessdata/rus.traineddata')) { if (!(Test-Path -LiteralPath (Join-Path $dest $required))) { throw "Missing required payload: $required" } }
     foreach ($c in @($m.components)+@($m.static_components)) { foreach ($n in $c.notices) { if (!(Test-Path -LiteralPath (Join-Path $dest $n) -PathType Leaf)) { throw "Missing notice: $n" } } }
     New-Item -ItemType Directory -Path (Join-Path $dest 'licenses'),(Join-Path $dest 'examples') -Force | Out-Null

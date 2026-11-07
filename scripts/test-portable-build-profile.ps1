@@ -156,6 +156,27 @@ try {
     New-Item -ItemType Directory -Path (Join-Path $repo 'docs') | Out-Null
     Move-Item -LiteralPath (Join-Path $repo 'new-build-input.rs') -Destination (Join-Path $repo 'docs/fixture.txt')
     Check 'packaging-only changes allow original source' { Validate }
+    # The packager must consume the verified snapshot, not an unchecked early
+    # parse; copied bytes must match that snapshot before executing any smoke.
+    $receipt.features=@('heic-rs-input'); Save-All
+    Check 'verified runtime snapshot survives later input replacement' {
+        $binding=Validate
+        Write-Json $manifestPath @{schema_version=1;components=@()}
+        if (@($binding.VerifiedRuntimeManifest.components).Count -ne 1) { throw 'Lost verified runtime snapshot' }
+    }
+    Save-All
+    $stage=Join-Path $work 'synthetic-staged-payload'
+    New-Item -ItemType Directory -Path (Join-Path $stage 'tessdata') | Out-Null
+    $stagedExe=Join-Path $stage 'ocr-pipeline.exe'
+    $stagedModel=Join-Path $stage 'tessdata/eng_technical_eg79_v1.traineddata'
+    Copy-Item -LiteralPath $exe -Destination $stagedExe
+    Copy-Item -LiteralPath $model -Destination $stagedModel
+    Check 'valid staged bytes (never executed)' { Assert-PortablePureStagedPayload $stage $manifest (Hash $exe) }
+    [IO.File]::AppendAllText($stagedExe,'changed after source verification')
+    Check 'staged executable replacement rejected' { Assert-PortablePureStagedPayload $stage $manifest (Hash $exe) } 'staged pure executable'
+    Copy-Item -LiteralPath $exe -Destination $stagedExe
+    [IO.File]::AppendAllText($stagedModel,'changed after source verification')
+    Check 'staged EG79 replacement rejected' { Assert-PortablePureStagedPayload $stage $manifest (Hash $exe) } 'staged runtime payload'
     # Exercise the production entry point without granting any rights or ever
     # invoking Cargo: profile authorization failures precede all output/build.
     $guardManifest=@{schema_version=1;distribution_status='blocked';components=@(@{id='technical-cell-model-eg79';version='synthetic';source_url='urn:synthetic';license='UNRESOLVED';distribution_status='blocked';license_review='synthetic test only';notices=@();files=@(@{path='tessdata/eng_technical_eg79_v1.traineddata';source=$model;sha256=(Hash $model)})});static_components=@(@{id='synthetic-static';version='1';source_url='urn:synthetic';license='UNRESOLVED';distribution_status='blocked';license_review='synthetic test only';notices=@();sha256=('0'*64)})}
