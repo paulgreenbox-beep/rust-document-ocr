@@ -125,6 +125,73 @@ not a signature or a license approval. Applications need Windows 10/11 x64
 system DLLs/UCRT and the app-local redistributables identified by the PE closure;
 they do not need Cargo, Rust, vcpkg, Visual Studio or global PATH edits.
 
+## Pure-HEIC profile (owner-reviewed artifact reuse)
+
+Legacy invocations keep the default `-BuildProfile legacy-native`. The explicit
+`-BuildProfile pure-heic` selects this fixed build command, never legacy native:
+
+```powershell
+cargo build --release --offline --locked --no-default-features --features heic-rs-input --target x86_64-pc-windows-msvc --bin ocr-pipeline -j 1
+```
+
+The pure profile requires a **versioned, owner-reviewed authorization** and its
+independently supplied trusted `-ExpectedBuildReceiptSha256`, both for reuse and
+for a normal rebuild. It does not mint new static-link evidence automatically.
+Use `-SkipBuild` to package the exact already reviewed EXE without recompiling:
+
+```powershell
+./scripts/build-windows-portable.ps1 `
+  -BuildProfile pure-heic -SkipBuild `
+  -BuildReceipt '<absolute-authorized-receipt.json>' `
+  -ExpectedBuildReceiptSha256 '<trusted-64-hex-hash>' `
+  -RuntimeManifest '<absolute-runtime-inventory.json>' `
+  -ApprovedOutputRoot '<absolute-local-validation-root>' `
+  -Destination '<fresh-child-directory>'
+```
+
+These placeholders are not executable paths or approval receipts. Supply the
+accepted baseline pair and maintainer Python as above to run semantic comparison.
+Do not derive the expected authorization hash from an arbitrary incoming receipt
+and call that authentication. The binding is an unsigned owner attestation, not
+a signature, legal grant or proof against a dishonest author of all inputs.
+
+Authorization schema v1 (`receipt_kind=portable-pure-heic-authorization`) binds:
+
+- `build_profile=pure-heic`, source commit/tree, lockfile hash, exactly
+  `features=[heic-rs-input]`, no default features, Windows x64 MSVC, release,
+  offline and locked;
+- absolute `exe_path` and exact `exe_sha256`;
+- `runtime_manifest_sha256`, plus the retained EG79 component and actual
+  `tessdata/eng_technical_eg79_v1.traineddata` payload hash;
+- `original_build_receipt`, `link_evidence`, and `link_map`, each with path/hash.
+
+The existing original receipt is never rewritten. Its source, command, features,
+target/profile and artifact hashes must agree. Link evidence must contain
+nonempty responses/archives and successful hash-bound symbol scans, no old HEIF
+inputs/symbols/map/verbose/import/literal findings, and the heic-rs input. The
+actual saved map is hashed too. Nine unavailable temporary Rust objects in the
+PR #8 evidence stay a stated limitation, not a complete SBOM claim.
+
+The source commit must exist and be an ancestor. Current Cargo/build/Rust/vendor/
+asset inputs must not differ. Only documented packaging/docs/verification paths
+and the one standalone technical-capability integration test may change; the
+test is not part of `--bin ocr-pipeline`. Unknown changed/untracked inputs fail
+closed. JSON is strictly decoded and hash-checked from the same byte snapshot;
+duplicate/case-ambiguous keys are rejected. A legacy receipt cannot be relabelled
+pure just by adding its EXE hash.
+
+Without `-SkipBuild`, the pure command above runs only after preflight. Its output
+must still match the independently reviewed authorization. A fresh/different
+binary requires new external linker qualification and a new trusted receipt;
+the packager will not approve it merely because Cargo succeeded. This normal
+rebuild path is command-contract tested; the current release work reuses the
+unchanged qualified EXE rather than claiming a new normal-build experiment.
+
+All previous runtime/hash/PE/baseline/transactional-archive and real clean-Windows
+gates remain in force. EG79 is not silently omitted if rights remain unresolved.
+Pure HEIC removes neither PDFium/MSVC/model/patent review nor the global
+**BLOCKED: LICENSING** state. No public runtime archive is produced by this work.
+
 ## ZIP/public release gate
 
 `-CreateZip` requires verified global and per-component rights, a semantic

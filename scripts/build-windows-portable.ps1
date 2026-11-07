@@ -5,7 +5,9 @@ param(
     [Parameter(Mandatory)][string]$ApprovedOutputRoot,
     [switch]$CreateZip,
     [switch]$SkipBuild,
+    [ValidateSet('legacy-native','pure-heic')][string]$BuildProfile='legacy-native',
     [string]$BuildReceipt,
+    [string]$ExpectedBuildReceiptSha256,
     [string]$CleanEnvironmentReceipt,
     [string]$BaselineManifest,
     [string]$BaselineRoot,
@@ -17,11 +19,16 @@ $repo=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 . (Join-Path $PSScriptRoot 'portable-pe.ps1')
 . (Join-Path $PSScriptRoot 'portable-baseline.ps1')
 . (Join-Path $PSScriptRoot 'portable-archive.ps1')
+. (Join-Path $PSScriptRoot 'portable-build-profile.ps1')
 $dest=[IO.Path]::GetFullPath($Destination)
 $approved=[IO.Path]::GetFullPath($ApprovedOutputRoot).TrimEnd('\')
 if (!$dest.StartsWith($approved+'\',[StringComparison]::OrdinalIgnoreCase) -or $dest.StartsWith($repo+'\',[StringComparison]::OrdinalIgnoreCase) -or $dest -eq $repo) { throw 'Destination must be outside sources, strictly below ApprovedOutputRoot' }
 if (Test-Path -LiteralPath $dest) { throw 'Destination exists; refusing overwrite' }
-$m=Get-Content -LiteralPath $RuntimeManifest -Raw | ConvertFrom-Json
+$pureAuthorization=$null
+$m=if ($BuildProfile -eq 'pure-heic') {
+    $pureAuthorization=Get-PortablePureAuthorization -Repo $repo -ReceiptPath $BuildReceipt -ExpectedReceiptSha256 $ExpectedBuildReceiptSha256 -RuntimeManifest $RuntimeManifest -VerifyExecutable:$SkipBuild
+    $pureAuthorization.VerifiedRuntimeManifest
+} else { Get-Content -LiteralPath $RuntimeManifest -Raw | ConvertFrom-Json }
 if ($m.schema_version -ne 1) { throw 'Unsupported runtime manifest schema' }
 if (!($m.PSObject.Properties.Name -contains 'static_components') -or @($m.static_components).Count -eq 0) { throw 'Static component inventory is mandatory (Cargo + native static libraries)' }
 foreach ($c in @($m.components)+@($m.static_components)) {
@@ -55,16 +62,32 @@ foreach ($c in $m.components) { foreach ($f in $c.files) {
     if ($seen.ContainsKey($key)) { throw "Duplicate payload path: $($f.path)" }; $seen[$key]=$true
     if ($f.sha256 -notmatch '^[a-fA-F0-9]{64}$' -or (Get-FileHash -LiteralPath $f.source -Algorithm SHA256).Hash -ne $f.sha256) { throw "Runtime hash mismatch: $($f.path)" }
 } }
+if ($BuildProfile -eq 'pure-heic') {
+    # Preflight all owner-authorized inputs before invoking Cargo or creating output.
+    # New binaries need independently captured/reviewed linker evidence and a new
+    # trusted authorization; this packager does not invent static-link proof.
+    $pureAuthorization=Get-PortablePureAuthorization -Repo $repo -ReceiptPath $BuildReceipt -ExpectedReceiptSha256 $ExpectedBuildReceiptSha256 -RuntimeManifest $RuntimeManifest -VerifyExecutable:$SkipBuild
+}
 Push-Location $repo
 try {
-    if (!$SkipBuild) { & cargo build --release --offline --locked --features native --bin ocr-pipeline -j 1; if ($LASTEXITCODE) { throw 'Native release build failed' } }
-    $exe=Join-Path $repo 'target/release/ocr-pipeline.exe'
+    if (!$SkipBuild) {
+        $cargoArgs=@(Get-PortableProfileCargoArguments $BuildProfile)
+        & cargo @cargoArgs
+        if ($LASTEXITCODE) { throw "$BuildProfile release build failed" }
+    }
+    $exe=if ($BuildProfile -eq 'pure-heic') {
+        if ($SkipBuild) { $pureAuthorization.exe_path } else { Join-Path $repo 'target/x86_64-pc-windows-msvc/release/ocr-pipeline.exe' }
+    } else { Join-Path $repo 'target/release/ocr-pipeline.exe' }
     if (!(Test-Path -LiteralPath $exe)) { throw 'Native executable missing' }
+    if ($BuildProfile -eq 'pure-heic') {
+        Assert-PortableHash $exe $pureAuthorization.exe_sha256 'built pure executable'
+        $pureAuthorization=Get-PortablePureAuthorization -Repo $repo -ReceiptPath $BuildReceipt -ExpectedReceiptSha256 $ExpectedBuildReceiptSha256 -RuntimeManifest $RuntimeManifest
+    }
     if ($CreateZip) {
         $clean=Get-Content -LiteralPath $CleanEnvironmentReceipt -Raw | ConvertFrom-Json
         if ($clean.status -ne 'PASS' -or $clean.environment -ne 'clean-windows-x64' -or $clean.exe_sha256 -ne (Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash -or $clean.baseline_sha256 -ne $baselineSha -or $clean.runtime_manifest_sha256 -ne (Get-FileHash -LiteralPath $RuntimeManifest -Algorithm SHA256).Hash) { throw 'Clean Windows receipt must bind exact executable, runtime inventory and accepted baseline' }
     }
-    if ($SkipBuild) {
+    if ($SkipBuild -and $BuildProfile -eq 'legacy-native') {
         if (!$BuildReceipt) { throw 'SkipBuild requires a hash-bound native build receipt' }
         $receipt=Get-Content -LiteralPath $BuildReceipt -Raw | ConvertFrom-Json
         if (!$receipt.native -or !$receipt.locked -or !$receipt.offline -or $receipt.sha256 -ne (Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash) { throw 'Invalid native build receipt' }
@@ -77,6 +100,9 @@ try {
         New-Item -ItemType Directory -Path (Split-Path $to -Parent) -Force | Out-Null
         Copy-Item -LiteralPath $f.source -Destination $to
     } }
+    if ($pureAuthorization) {
+        Assert-PortablePureStagedPayload $dest $m $pureAuthorization.exe_sha256
+    }
     foreach ($required in @('pdfium.dll','tessdata/eng.traineddata','tessdata/rus.traineddata')) { if (!(Test-Path -LiteralPath (Join-Path $dest $required))) { throw "Missing required payload: $required" } }
     foreach ($c in @($m.components)+@($m.static_components)) { foreach ($n in $c.notices) { if (!(Test-Path -LiteralPath (Join-Path $dest $n) -PathType Leaf)) { throw "Missing notice: $n" } } }
     New-Item -ItemType Directory -Path (Join-Path $dest 'licenses'),(Join-Path $dest 'examples') -Force | Out-Null
@@ -108,6 +134,7 @@ try {
     if ($LASTEXITCODE) { throw 'Cannot record git dirty status' }
     $toolchain=@{rustc_version='NOT_RECORDED';cargo_version='NOT_RECORDED';source='No toolchain version receipt supplied; no version is inferred from an installed executable.'}
     $toolReceiptPath=$BuildReceipt
+    if ($pureAuthorization) { $toolReceiptPath=$pureAuthorization.original_build_receipt.path }
     if ($toolReceiptPath) {
         $toolReceipt=Get-Content -LiteralPath $toolReceiptPath -Raw | ConvertFrom-Json
         foreach ($name in @('rustc_version','cargo_version')) {
@@ -129,6 +156,20 @@ try {
     $provenance=@{git_head=$head;git_dirty=($dirtyEntries.Count -gt 0);cargo_lock_sha256=(Get-FileHash -LiteralPath (Join-Path $repo 'Cargo.lock') -Algorithm SHA256).Hash;runtime_inventory_sha256=(Get-FileHash -LiteralPath $RuntimeManifest -Algorithm SHA256).Hash;baseline_manifest_sha256=$baselineSha;source_files=$sourceFiles;source_snapshot_scope='Packaging-time source snapshot; does not by itself attest which sources produced a reused executable.';toolchain=$toolchain}
     $out=@{schema_version=1;version=$version;distribution_status=$m.distribution_status;components=$publicComponents;static_components=$m.static_components;files=$files;pe_imports=$closure;dynamic_dependencies=@('pdfium.dll');caveat='PE closure cannot prove statically linked third-party contents or arbitrary runtime LoadLibrary names; component review and real smoke remain mandatory.';build=@{native=$true;offline=$true;locked=$true;reused_build=[bool]$SkipBuild};smoke='NOT RUN'}
     $out.provenance=$provenance
+    $out.build.build_profile=$BuildProfile
+    $out.build.features=@(if ($BuildProfile -eq 'pure-heic') { 'heic-rs-input' } else { 'native' })
+    $out.build.no_default_features=($BuildProfile -eq 'pure-heic')
+    if ($pureAuthorization) {
+        $out.build.target=$pureAuthorization.target
+        $out.build.profile=$pureAuthorization.profile
+        $out.provenance.compiled_source_commit=$pureAuthorization.source_commit
+        $out.provenance.compiled_source_tree=$pureAuthorization.git_tree
+        $out.provenance.build_authorization_sha256=$ExpectedBuildReceiptSha256
+        $out.provenance.original_build_receipt_sha256=$pureAuthorization.original_build_receipt.sha256
+        $out.provenance.link_evidence_sha256=$pureAuthorization.link_evidence.sha256
+        $out.provenance.link_map_sha256=$pureAuthorization.link_map.sha256
+        $out.provenance.source_snapshot_scope='Compiled inputs match owner-authorized source tree; packaging-only paths may differ. Unsigned receipts require a trusted externally supplied authorization hash.'
+    }
     $out | ConvertTo-Json -Depth 30 | Set-Content -LiteralPath (Join-Path $dest 'release-manifest.json') -Encoding utf8
     $smokeArgs=@{BaselineManifest=$BaselineManifest;BaselineRoot=$BaselineRoot;PythonPath=$PythonPath;ExpectedBaselineManifestSha256=$baselineSha;RequireVersionedBaseline=[bool]$CreateZip}
     $smokeScript=Join-Path $PSScriptRoot 'smoke-windows-portable.ps1'
