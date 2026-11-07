@@ -1,5 +1,40 @@
 # Isolated heic-rs evaluation
 
+## Current bounded derivative (2026-11-07)
+
+The current candidate is **local research derivative `0.1.4-ocr.1`**, not the
+published 0.1.4 crate. The caller's pixel budget is now checked against all
+requested raw HEVC picture/tile/alpha occurrences before Geometry/Picture
+buffers or parallel dispatch. This is a raw-luma-site/output-pixel budget,
+**not an exact heap-byte/RSS cap**. Explicit `max_pixels=None` opts out of
+caller ceilings and is not qualified for untrusted inputs.
+
+Genuine Main10, auxiliary alpha, rotations 90/180/270 and both mirror axes
+are tested. An independently reproduced upstream `imir` axis bug is corrected
+only in the local derivative. Six original fixtures remain byte-identical to
+the unmodified decoder. Numerical differences against libheif are retained.
+
+See [current results and commands](BOUNDED_HEIC_RESEARCH.md),
+[bounded receipt](bounded-evaluation.json),
+[current pixel metrics](bounded-pixel-metrics.json),
+[original source identities](vendor-upstream-manifest.json),
+[review diff](vendor-patch.diff), [patch notes](vendor/heic-rs/PATCH_NOTES.md)
+and [extended fixture provenance](provenance_extended.md).
+
+The default selected normal graph is only this std-enabled pure Rust decoder;
+no Rayon/native library is selected. Optional `upstream-reference` links the
+unmodified registry 0.1.4 separately; optional `native-reference` links the
+existing libheif baseline for research A/B. Neither changes the root OCR
+manifest/features/backend. **Production adapter and RC2 promotion remain held**:
+this is not full HEIF/OCR equivalence, a hostile-input memory proof or release
+qualification. No working OCR or RC1 runtime was changed.
+
+## Historical unmodified phase (through commit `2d6d26c`)
+
+The following original observations and `evaluation.json`/`pixel-metrics.json`
+are retained as historical evidence. Their unqualified preallocation outcome
+and NOT RUN format list describe that phase, not the patched candidate above.
+
 Disposition: **HOLD: PREALLOCATION GATE UNQUALIFIED** for the current
 pipeline contract. This is an experimental decoder observation package, not a
 production adapter, RC2 binary, OCR acceptance run, or redistribution approval.

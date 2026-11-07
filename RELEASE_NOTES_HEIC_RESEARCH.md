@@ -3,6 +3,29 @@
 This is an experimental source delivery in [draft PR #7](https://github.com/paulgreenbox-beep/rust-document-ocr/pull/7),
 not release notes for a distributable Windows RC2.
 
+## Latest research addendum: bounded local derivative
+
+The isolated tool now uses local `heic-rs0.1.4-ocr.1`, retaining the verified
+published source and notices. Complete raw HEVC primary/grid/alpha preflight
+and per-codec checks run before image-buffer allocation; checked sums cannot
+wrap, and strict=false cannot bypass the budget. The budget is luma sites/
+output pixels, not an exact heap-byte cap; explicit None opts out.
+
+Real Main10, alpha128, rotations90/180/270 and both mirrors are tested against
+independent reference pixels/mappings. An upstream imir axis defect was
+reproduced and corrected locally; each mirror's MAE fell64.144148 to0.160366
+against libheif1.23.1. Original six fixture arrays remain byte-identical to the
+unmodified decoder. RGB16 delta20 and strip-edge max188 are retained, not
+declared general equivalence. The native white16 failure also remains recorded.
+
+Final local isolated checks passed:83std-only vendor tests,10parallel resource
+tests, no-std compile,11+6pure/upstream and13+7native/upstream evaluator tests,
+formatting and scoped Clippy. See the [current bounded report](tools/heic-rs-evaluation/BOUNDED_HEIC_RESEARCH.md)
+and its new receipts. These are overlapping source/decoder suites, not a new
+OCR binary, release or clean-Windows qualification. No production replacement.
+
+## Initial unmodified-crate phase (retained historical summary)
+
 - PR #6's fail-closed packaging fixes were reviewed and merged only into the
   RC branch. Rights, verified baseline, integrity and real clean-receipt gates
   remain in place.

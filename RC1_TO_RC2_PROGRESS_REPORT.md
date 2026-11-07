@@ -8,8 +8,8 @@ changes, decoder observations and release approval.
 | --- | --- | --- |
 | PR #6 review/integration | REVIEWED / INTEGRATED INTO RC BRANCH | Merged only into release/practical-rc1; post-integration 50 PowerShell checks and both CI jobs passed |
 | PR #5 source review | FIXED, READY FOR REVIEW | Actual generated-PDF owner displacement reproduced and fixed; PR stays open/draft, no main merge |
-| HEIC-RS implementation | ISOLATED EVALUATOR IMPLEMENTED; ADAPTER HELD | Published 0.1.4 tested without changing the OCR dependency/feature configuration |
-| HEIC compatibility | PARTIAL FORMAT SUPPORT | Six 8-bit fixtures decode; comparison with Apple PNGs and the old decoder is recorded; required wider corpus is not qualified |
+| HEIC-RS implementation | BOUNDED LOCAL DERIVATIVE TESTED; ADAPTER HELD | Research-only0.1.4-ocr.1 enforces raw HEVC aggregate preflight; OCR dependency/features remain unchanged |
+| HEIC compatibility | NAMED EXTENDED CASES PASS; BROAD COVERAGE INCOMPLETE | Six old fixtures unchanged; real Main10/alpha/rotations/mirrors compared with libheif; colour differences remain explicit |
 | Actual removal of libheif/libde265 | NOT REMOVED FROM OCR | No replacement full OCR EXE was built; the current native configuration still uses them |
 | Source/native regression | PASS at PR #5 scope | 238 source tests, 352 native tests, two further separate-process PDFium tests; no claim of a new 40-PDF binary qualification |
 | PDFium licensing | INCOMPLETE | Notice packet/evidence retained; actual retained runtime/font/NOTICE scope and owner approval remain open |
@@ -20,6 +20,37 @@ changes, decoder observations and release approval.
 | Separate clean Windows x64 | NOT RUN — DEFERRED BY OWNER | No VM operation; developer-host tests do not substitute |
 
 ## 1. RC integration and source review
+
+### Current experiment addendum: raw-buffer gate and extended formats
+
+The subsequent isolated derivative is documented in
+[BOUNDED_HEIC_RESEARCH.md](tools/heic-rs-evaluation/BOUNDED_HEIC_RESEARCH.md).
+The old evaluation receipt remains historical, not rewritten. Serial complete
+primary/grid/alpha preflight now rejects raw-SPS aggregate excess before pool
+dispatch and image buffers; per-codec checks provide a second boundary. This is
+a raw-luma-site/output-pixel policy, not an exact byte/RSS ceiling or a complete
+hostile-input proof. Explicit None still opts out of caller ceilings.
+
+Actual current local verification: std-only vendor83PASS; parallel resource
+subset10PASS; no-std compilePASS; pure/upstream11unit+6extendedPASS; native/
+upstream13unit+7extendedPASS; formatting and scoped ClippyPASS (all exit0).
+These overlapping suites must not be added together as unique test cases.
+Optional native A/B uses existing libheif1.23.1 with unchanged security limits;
+the two independent frozen PNGs use separately identified1.23.2.
+
+The new genuine Main10/auxiliary alpha/irot90/180/270/imir fixtures are synthetic.
+A real imir axis bug in published0.1.4 was independently reproduced and fixed
+only in the local derivative: each mirror's native MAE64.144148/max255 became
+MAE0.160366/max3. Independent geometry is byte-exact; six original fixture
+arrays are unchanged versus unmodified0.1.4. Main10 RGB16 still differs by20
+levels and strip boundaries by up to188 in8-bit channels. The old native
+white16 security error is retained (native old-corpus success5/6, not6/6).
+
+No root OCR/adapter/worker/routing change, OCR build, deployment or RC1 artifact
+change was made. Full OCR equivalence, malformed-input coverage and release
+rights remain open; pure decoder tests do not prove removal of static LGPL
+components from the actual OCR EXE. The original narrative below describes the
+initial unmodified-crate phase; this addendum advances only its named gates.
 
 - [PR #6](https://github.com/paulgreenbox-beep/rust-document-ocr/pull/6),
   reviewed head `43bd90d7d653cc3d02d77edc3c0e62a125f23f7f`.
@@ -142,9 +173,10 @@ Its original 546-file staged package, manifest and historical receipts remain
 unchanged. No working ONLYOFFICE OCR, DB, service, retained backup, models or
 PDFium DLL were modified. No public ZIP, tag, release or main merge was made.
 
-Next: review the source ownership fix; obtain a decoder with a tested limit
-before raw SPS/plane allocation (including conformance cropping and aggregate
-tiles), complete the missing format/text corpus, then implement the opt-in
+Next: review the source ownership fix and the now-tested local raw-SPS limit
+patch (including conformance cropping and aggregate primary/alpha tiles),
+broaden malformed/sequence/chroma/combined-transform and fine-font coverage,
+then separately consider implementing the opt-in
 adapter and build a separately receipted full EXE with actual linker/PE
 verification. If that succeeds, run limited synthetic PDF/table checks and
 then the available 40-PDF control set. Only afterwards reconsider RC2 and the

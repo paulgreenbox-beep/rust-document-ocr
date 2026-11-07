@@ -1,0 +1,283 @@
+{
+  "schema_version": 1,
+  "units": "MAE/max are absolute channel levels, not percentages. RGB/RGBA8 and RGB16 units are not interchangeable.",
+  "measurements": [
+    {
+      "kind": "METRICS",
+      "measurement": {
+        "fixture": "checker-1024",
+        "width": 1024,
+        "height": 1024,
+        "candidate_min": 0,
+        "candidate_max": 255,
+        "reference_min": 0,
+        "reference_max": 255,
+        "mean_absolute_error": 0,
+        "max_absolute_difference": 0
+      }
+    },
+    {
+      "kind": "METRICS",
+      "measurement": {
+        "fixture": "checker-64",
+        "width": 64,
+        "height": 64,
+        "candidate_min": 0,
+        "candidate_max": 255,
+        "reference_min": 0,
+        "reference_max": 255,
+        "mean_absolute_error": 0,
+        "max_absolute_difference": 0
+      }
+    },
+    {
+      "kind": "METRICS",
+      "measurement": {
+        "fixture": "flat-64",
+        "width": 64,
+        "height": 64,
+        "candidate_min": 30,
+        "candidate_max": 199,
+        "reference_min": 31,
+        "reference_max": 198,
+        "mean_absolute_error": 0.669514974,
+        "max_absolute_difference": 2
+      }
+    },
+    {
+      "kind": "METRICS",
+      "measurement": {
+        "fixture": "flat-white-16",
+        "width": 16,
+        "height": 16,
+        "candidate_min": 255,
+        "candidate_max": 255,
+        "reference_min": 255,
+        "reference_max": 255,
+        "mean_absolute_error": 0,
+        "max_absolute_difference": 0
+      }
+    },
+    {
+      "kind": "METRICS",
+      "measurement": {
+        "fixture": "gradient-512",
+        "width": 512,
+        "height": 512,
+        "candidate_min": 0,
+        "candidate_max": 255,
+        "reference_min": 0,
+        "reference_max": 255,
+        "mean_absolute_error": 0.700551351,
+        "max_absolute_difference": 5
+      }
+    },
+    {
+      "kind": "NATIVE_METRICS",
+      "measurement": {
+        "fixture": "flat-64",
+        "libheif": "1.23.1",
+        "handle_width": 64,
+        "handle_height": 64,
+        "decoded_width": 64,
+        "decoded_height": 64,
+        "native_min": 30,
+        "native_max": 199,
+        "native_reference_mae": 0.664306641,
+        "native_reference_max_difference": 2,
+        "pure_native_mae": 0.005208333,
+        "pure_native_max_difference": 2
+      }
+    },
+    {
+      "kind": "NATIVE_METRICS",
+      "measurement": {
+        "fixture": "checker-64",
+        "libheif": "1.23.1",
+        "handle_width": 64,
+        "handle_height": 64,
+        "decoded_width": 64,
+        "decoded_height": 64,
+        "native_min": 0,
+        "native_max": 255,
+        "native_reference_mae": 0,
+        "native_reference_max_difference": 0,
+        "pure_native_mae": 0,
+        "pure_native_max_difference": 0
+      }
+    },
+    {
+      "kind": "NATIVE_METRICS",
+      "measurement": {
+        "fixture": "rgb-strips-96",
+        "libheif": "1.23.1",
+        "handle_width": 96,
+        "handle_height": 32,
+        "decoded_width": 96,
+        "decoded_height": 32,
+        "native_min": 0,
+        "native_max": 255,
+        "native_reference_mae": 2.729166667,
+        "native_reference_max_difference": 186,
+        "pure_native_mae": 1.979166667,
+        "pure_native_max_difference": 188
+      }
+    },
+    {
+      "kind": "NATIVE_METRICS",
+      "measurement": {
+        "fixture": "gradient-512",
+        "libheif": "1.23.1",
+        "handle_width": 512,
+        "handle_height": 512,
+        "decoded_width": 512,
+        "decoded_height": 512,
+        "native_min": 0,
+        "native_max": 255,
+        "native_reference_mae": 0.534222921,
+        "native_reference_max_difference": 5,
+        "pure_native_mae": 0.213821411,
+        "pure_native_max_difference": 3
+      }
+    },
+    {
+      "kind": "NATIVE_METRICS",
+      "measurement": {
+        "fixture": "checker-1024",
+        "libheif": "1.23.1",
+        "handle_width": 1024,
+        "handle_height": 1024,
+        "decoded_width": 1024,
+        "decoded_height": 1024,
+        "native_min": 0,
+        "native_max": 255,
+        "native_reference_mae": 0,
+        "native_reference_max_difference": 0,
+        "pure_native_mae": 0,
+        "pure_native_max_difference": 0
+      }
+    },
+    {
+      "kind": "METRICS",
+      "measurement": {
+        "fixture": "rgb-strips-96",
+        "width": 96,
+        "height": 32,
+        "candidate_min": 0,
+        "candidate_max": 255,
+        "reference_min": 0,
+        "reference_max": 254,
+        "mean_absolute_error": 0.784722222,
+        "max_absolute_difference": 2
+      }
+    },
+    {
+      "kind": "EXTENDED_NATIVE",
+      "measurement": {
+        "fixture": "irot90",
+        "libheif": "1.23.1",
+        "width": 32,
+        "height": 96,
+        "mae": 1.484375,
+        "max_difference": 188
+      }
+    },
+    {
+      "kind": "EXTENDED_NATIVE",
+      "measurement": {
+        "fixture": "irot180",
+        "libheif": "1.23.1",
+        "width": 96,
+        "height": 32,
+        "mae": 1.484375,
+        "max_difference": 188
+      }
+    },
+    {
+      "kind": "EXTENDED_NATIVE",
+      "measurement": {
+        "fixture": "irot270",
+        "libheif": "1.23.1",
+        "width": 32,
+        "height": 96,
+        "mae": 1.484375,
+        "max_difference": 188
+      }
+    },
+    {
+      "kind": "EXTENDED_NATIVE",
+      "measurement": {
+        "fixture": "imir0",
+        "libheif": "1.23.1",
+        "width": 512,
+        "height": 512,
+        "mae": 0.160366058,
+        "max_difference": 3
+      }
+    },
+    {
+      "kind": "EXTENDED_NATIVE",
+      "measurement": {
+        "fixture": "imir1",
+        "libheif": "1.23.1",
+        "width": 512,
+        "height": 512,
+        "mae": 0.160366058,
+        "max_difference": 3
+      }
+    },
+    {
+      "kind": "EXTENDED_NATIVE",
+      "measurement": {
+        "fixture": "main10",
+        "libheif": "1.23.1",
+        "width": 64,
+        "height": 64,
+        "mae": 0.75,
+        "max_difference": 1
+      }
+    },
+    {
+      "kind": "EXTENDED_NATIVE",
+      "measurement": {
+        "fixture": "alpha128",
+        "libheif": "1.23.1",
+        "width": 64,
+        "height": 64,
+        "mae": 0.00390625,
+        "max_difference": 2
+      }
+    }
+  ],
+  "cli_reference": {
+    "libheif": "1.23.2",
+    "main10": {
+      "channels": 12288,
+      "candidate": 33516,
+      "reference": 33536,
+      "layout": "RGB16",
+      "mean_absolute_error": 20,
+      "max_absolute_difference": 20
+    },
+    "alpha": {
+      "layout": "RGBA8",
+      "alpha_candidate": 128,
+      "alpha_reference": 128,
+      "mean_absolute_error": 0.00390625,
+      "max_absolute_difference": 2
+    }
+  },
+  "mirror_defect": {
+    "unmodified_before": {
+      "mean_absolute_error": 64.144147873,
+      "max_absolute_difference": 255
+    },
+    "local_after": {
+      "mean_absolute_error": 0.160366058,
+      "max_absolute_difference": 3
+    },
+    "reference": "libheif1.23.1 RGBA8; each mirror axis; exact same frozen fixtures",
+    "geometry": "Local result byte-exact to independent index mappings; upstream-reference reproduces wrong axis"
+  },
+  "quality_disposition": "No full pixel equivalence or production OCR quality acceptance. Strip boundary delta188 retained; original white16 native decode error retained."
+}

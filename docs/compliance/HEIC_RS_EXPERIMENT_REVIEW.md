@@ -6,6 +6,30 @@ The existing RC1 remains **WINDOWS PORTABLE RELEASE — BLOCKED: LICENSING**.
 
 ## Decoder decision
 
+### Current derivative addendum (2026-11-07)
+
+The isolated local0.1.4-ocr.1 derivative now has tested complete raw-SPS
+primary/grid/alpha accounting before dispatch and HEVC image buffers, with
+per-codec checks. This advances the initial preallocation gap at that stated
+algorithmic scope. It is not an exact heap-byte cap; metadata/input costs,
+thread policy and explicit None opt-out remain separate. The registry cache,
+root OCR Cargo/features/backend and RC1 runtime were not modified.
+
+Genuine Main10/alpha/nonzero rotations/both mirrors now have frozen synthetic
+fixtures and independent libheif comparisons. A reversed imir axis defect was
+reproduced and corrected only in the local derivative. Colour differences and
+the unchanged native white16 security rejection are retained. See the
+[new bounded report and receipts](../../tools/heic-rs-evaluation/BOUNDED_HEIC_RESEARCH.md).
+These named cases do not settle general HEIF/OCR equivalence, hostile-input
+resource safety or patents. Original MIT/Apache-2.0/NOTICE material and dated
+modification notices accompany the vendored source.
+
+No actual full-app linker/removal evidence or new EXE is produced. The existing
+RC1's libheif/libde265 obligations remain applicable. Production-adapter/RC2
+promotion stays held pending separate source, format, OCR and rights review.
+
+### Initial unmodified-crate decision (historical)
+
 Published heic-rs 0.1.4 has MIT OR Apache-2.0 licensing, registry SHA-256
 `8883c3bfa6b4ff19a40e52a6dc051c5612cbe21bf408fc6d4875e8dfd777cb66`
 and packaged source commit `999470f514c8e9a1a7c37ea44ba70cc32b1308fe`.
