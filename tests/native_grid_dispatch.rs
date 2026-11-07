@@ -1,4 +1,4 @@
-#![cfg(feature = "native")]
+#![cfg(feature = "native-common")]
 
 mod common;
 

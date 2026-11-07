@@ -1,22 +1,22 @@
 //! Render-only PDFium probe. It intentionally does not write output or invoke OCR.
 
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 use clap::{Parser, ValueEnum};
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 use pdfium_render::prelude::*;
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 use std::io::Write;
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 use std::path::PathBuf;
 
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 #[derive(Clone, Debug, ValueEnum)]
 enum Variant {
     Default,
     Width800,
     Gray,
 }
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 #[derive(Parser)]
 struct Args {
     #[arg(long)]
@@ -24,12 +24,12 @@ struct Args {
     #[arg(long, value_enum)]
     variant: Variant,
 }
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 fn stage(name: &str) {
     eprintln!("stage={name}");
     let _ = std::io::stderr().flush();
 }
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
     stage("bind_pdfium");
@@ -56,7 +56,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("rendered={}x{}", bitmap.width(), bitmap.height());
     Ok(())
 }
-#[cfg(not(feature = "native"))]
+#[cfg(not(feature = "native-common"))]
 fn main() {
     eprintln!("pdf_render_probe requires native");
 }

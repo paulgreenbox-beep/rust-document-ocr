@@ -177,7 +177,7 @@ fn cli_parallelism_zero_rejects_without_creating_output_dir() {
 }
 
 #[test]
-#[cfg(not(feature = "native"))]
+#[cfg(not(feature = "native-common"))]
 fn cli_valid_input_without_native_feature_reports_native_error() {
     let bin = ocr_pipeline_bin();
     let workdir = tempdir().expect("create tempdir");

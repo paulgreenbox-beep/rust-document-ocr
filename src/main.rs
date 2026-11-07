@@ -5,16 +5,16 @@ use std::process::ExitCode;
 use clap::Parser;
 use ocr_pipeline::config::Config;
 
-#[cfg(any(feature = "native", test))]
+#[cfg(any(feature = "native-common", test))]
 use std::ffi::OsString;
-#[cfg(any(feature = "native", test))]
+#[cfg(any(feature = "native-common", test))]
 use std::path::{Path, PathBuf};
-#[cfg(any(feature = "native", test))]
+#[cfg(any(feature = "native-common", test))]
 use std::sync::{
     atomic::{AtomicU64, Ordering},
     Mutex,
 };
-#[cfg(any(feature = "native", test))]
+#[cfg(any(feature = "native-common", test))]
 use std::{
     fs::{File, OpenOptions},
     io::{BufWriter, Write},
@@ -65,7 +65,7 @@ struct Cli {
 }
 
 #[cfg_attr(
-    not(feature = "native"),
+    not(feature = "native-common"),
     expect(
         unused_variables,
         reason = "Preserve the accepted OCR baseline during source-only publication."
@@ -96,7 +96,7 @@ fn main() -> ExitCode {
         return ExitCode::from(1);
     }
 
-    #[cfg(not(feature = "native"))]
+    #[cfg(not(feature = "native-common"))]
     {
         eprintln!("ERROR: This CLI requires the 'native' feature to process real documents.");
         eprintln!("Build with: cargo build --release --features native");
@@ -127,7 +127,7 @@ fn main() -> ExitCode {
         return ExitCode::from(1);
     }
 
-    #[cfg(feature = "native")]
+    #[cfg(feature = "native-common")]
     {
         return run_native_main(&config, progress_jsonl.as_deref());
     }
@@ -225,7 +225,7 @@ fn main() -> ExitCode {
     }
 }
 
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 fn run_native_main(config: &Config, progress_jsonl: Option<&Path>) -> ExitCode {
     use ocr_pipeline::{
         export_legacy_document_json, export_ocr_result_docx, export_ocr_result_json,
@@ -386,18 +386,18 @@ fn run_native_main(config: &Config, progress_jsonl: Option<&Path>) -> ExitCode {
     ExitCode::SUCCESS
 }
 
-#[cfg(any(feature = "native", test))]
+#[cfg(any(feature = "native-common", test))]
 struct ProgressWriter<W> {
     writer: W,
     first_error: Option<std::io::Error>,
 }
 
-#[cfg(any(feature = "native", test))]
+#[cfg(any(feature = "native-common", test))]
 struct JsonlProgressReporter<W = BufWriter<File>> {
     state: Mutex<ProgressWriter<W>>,
 }
 
-#[cfg(any(feature = "native", test))]
+#[cfg(any(feature = "native-common", test))]
 impl JsonlProgressReporter<BufWriter<File>> {
     fn create(path: &Path) -> std::io::Result<Self> {
         let file = OpenOptions::new().write(true).create_new(true).open(path)?;
@@ -405,7 +405,7 @@ impl JsonlProgressReporter<BufWriter<File>> {
     }
 }
 
-#[cfg(any(feature = "native", test))]
+#[cfg(any(feature = "native-common", test))]
 impl<W: Write + Send> JsonlProgressReporter<W> {
     fn from_writer(writer: W) -> Self {
         Self {
@@ -427,7 +427,7 @@ impl<W: Write + Send> JsonlProgressReporter<W> {
     }
 }
 
-#[cfg(any(feature = "native", test))]
+#[cfg(any(feature = "native-common", test))]
 impl<W: Write + Send> ocr_pipeline::OcrProgressReporter for JsonlProgressReporter<W> {
     fn report(&self, event: &ocr_pipeline::OcrProgressEvent) {
         let mut state = self
@@ -455,7 +455,7 @@ impl<W: Write + Send> ocr_pipeline::OcrProgressReporter for JsonlProgressReporte
     }
 }
 
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 #[allow(dead_code)]
 fn run_native(
     config: &Config,
@@ -537,17 +537,17 @@ fn run_native(
 // already exist; OutputTransaction::create does NOT create it.
 // ---------------------------------------------------------------------------
 
-#[cfg(any(feature = "native", test))]
+#[cfg(any(feature = "native-common", test))]
 static STAGING_COUNTER: AtomicU64 = AtomicU64::new(0);
 
-#[cfg(any(feature = "native", test))]
+#[cfg(any(feature = "native-common", test))]
 struct OutputTransaction {
     final_dir: PathBuf,
     staging_dir: PathBuf,
     committed: bool,
 }
 
-#[cfg(any(feature = "native", test))]
+#[cfg(any(feature = "native-common", test))]
 impl OutputTransaction {
     /// Reserve a staging directory next to `final_dir` without creating
     /// `final_dir` itself. Returns an error if `final_dir` already exists
@@ -622,7 +622,7 @@ impl OutputTransaction {
     }
 }
 
-#[cfg(any(feature = "native", test))]
+#[cfg(any(feature = "native-common", test))]
 fn output_parent(final_dir: &Path) -> std::io::Result<&Path> {
     if final_dir.file_name().is_none() {
         return Err(std::io::Error::new(
@@ -637,7 +637,7 @@ fn output_parent(final_dir: &Path) -> std::io::Result<&Path> {
 }
 
 /// Read-only early validation; staging and commit repeat the same checks.
-#[cfg(any(feature = "native", test))]
+#[cfg(any(feature = "native-common", test))]
 fn preflight_output_path(final_dir: &Path) -> std::io::Result<()> {
     match std::fs::symlink_metadata(final_dir) {
         Ok(_) => {

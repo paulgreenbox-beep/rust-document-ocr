@@ -4,17 +4,17 @@
 //! OCR output directories and only writes the PNG explicitly requested by the
 //! operator.
 
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 use std::path::PathBuf;
 
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 use clap::Parser;
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 use image::ImageFormat;
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 use ocr_pipeline::{OcrEngine, PageSource, PdfiumPageSource, TesseractOcrEngine};
 
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 #[derive(Debug, Parser)]
 struct Args {
     #[arg(long)]
@@ -27,7 +27,7 @@ struct Args {
     language: String,
 }
 
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
     eprintln!("stage=open_pdf");
@@ -62,7 +62,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-#[cfg(not(feature = "native"))]
+#[cfg(not(feature = "native-common"))]
 fn main() {
     eprintln!("ocr_render_debug requires the 'native' feature");
 }

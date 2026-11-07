@@ -13,7 +13,7 @@ use crate::api::{
     ClassificationEvidence, ColumnRoleAssignment, GridKind, OcrError, OcrOptions, SemanticTableType,
 };
 use crate::page_analysis::{NativeTextQuality, PageOrientation, PageStageTimings, ProcessingMode};
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 use crate::table_semantics::classify_table;
 
 /// Schema version emitted by [`RegionResult`].
@@ -43,12 +43,12 @@ impl NormalizedRect {
         }
     }
 
-    #[cfg(any(feature = "native", test))]
+    #[cfg(any(feature = "native-common", test))]
     fn right(self) -> f32 {
         self.x + self.width
     }
 
-    #[cfg(any(feature = "native", test))]
+    #[cfg(any(feature = "native-common", test))]
     fn bottom(self) -> f32 {
         self.y + self.height
     }
@@ -199,13 +199,13 @@ pub fn export_region_result_json(result: &RegionResult, output: &Path) -> Result
 
 /// Tracks OCR lifecycle for one region. A region can issue multiple requests,
 /// but mutable native page state must be reset just once before its first OCR.
-#[cfg(any(feature = "native", test))]
+#[cfg(any(feature = "native-common", test))]
 #[derive(Default)]
 struct RegionOcrLifecycle {
     page_started: bool,
 }
 
-#[cfg(any(feature = "native", test))]
+#[cfg(any(feature = "native-common", test))]
 impl RegionOcrLifecycle {
     fn begin_before_first_request<E: crate::ocr::OcrEngine>(
         &mut self,
@@ -226,7 +226,7 @@ impl RegionOcrLifecycle {
 
 /// Processes exactly one selected region without invoking the document
 /// pipeline or full-document exporters.
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 pub fn process_region(
     input: impl AsRef<Path>,
     request: RegionRequest,
@@ -685,7 +685,7 @@ pub fn process_region(
     })
 }
 
-#[cfg(any(feature = "native", test))]
+#[cfg(any(feature = "native-common", test))]
 fn region_cell_warning(
     table_index: usize,
     failure: &crate::pipeline::CellOcrFailure,
@@ -698,7 +698,7 @@ fn region_cell_warning(
     }
 }
 
-#[cfg(not(feature = "native"))]
+#[cfg(not(feature = "native-common"))]
 pub fn process_region(
     _input: impl AsRef<Path>,
     _request: RegionRequest,
@@ -707,7 +707,7 @@ pub fn process_region(
     Err(OcrError::NativeFeatureRequired)
 }
 
-#[cfg(any(feature = "native", test))]
+#[cfg(any(feature = "native-common", test))]
 fn validate_and_clip_rect(requested: NormalizedRect) -> Result<(NormalizedRect, bool), OcrError> {
     let components = [requested.x, requested.y, requested.width, requested.height];
     if components.iter().any(|value| !value.is_finite()) {
@@ -747,7 +747,7 @@ fn validate_and_clip_rect(requested: NormalizedRect) -> Result<(NormalizedRect, 
     Ok((effective, clipped))
 }
 
-#[cfg(any(feature = "native", test))]
+#[cfg(any(feature = "native-common", test))]
 fn ensure_minimum_pixel_extent(
     rect: NormalizedRect,
     full_width: u32,
@@ -770,7 +770,7 @@ fn ensure_minimum_pixel_extent(
     Ok(())
 }
 
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 fn region_native_text_quality(text: &str) -> NativeTextQuality {
     use crate::page_analysis::{analyze_native_text, NativeTextLayer};
 
@@ -788,7 +788,7 @@ fn region_native_text_quality(text: &str) -> NativeTextQuality {
     quality
 }
 
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 fn full_pixel_word_to_region_word(
     word: crate::dto::Word,
     full_width: u32,
@@ -804,7 +804,7 @@ fn full_pixel_word_to_region_word(
     })
 }
 
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 fn region_word_to_local_word(
     word: &RegionWord,
     effective: NormalizedRect,
@@ -829,7 +829,7 @@ fn region_word_to_local_word(
     )
 }
 
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 fn local_word_to_region_word(
     word: crate::dto::Word,
     effective: NormalizedRect,
@@ -843,7 +843,7 @@ fn local_word_to_region_word(
     }
 }
 
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 fn legacy_bbox_to_normalized(
     bbox: &crate::dto::BoundingBox,
     width: u32,
@@ -858,7 +858,7 @@ fn legacy_bbox_to_normalized(
     NormalizedRect::new(x0, y0, (x1 - x0).max(0.0), (y1 - y0).max(0.0))
 }
 
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 fn local_bbox_to_normalized(
     bbox: &crate::dto::BoundingBox,
     effective: NormalizedRect,
@@ -874,7 +874,7 @@ fn local_bbox_to_normalized(
     }
 }
 
-#[cfg(any(feature = "native", test))]
+#[cfg(any(feature = "native-common", test))]
 fn intersect_rect(a: NormalizedRect, b: NormalizedRect) -> Option<NormalizedRect> {
     let x0 = a.x.max(b.x);
     let y0 = a.y.max(b.y);
@@ -883,7 +883,7 @@ fn intersect_rect(a: NormalizedRect, b: NormalizedRect) -> Option<NormalizedRect
     (x1 > x0 && y1 > y0).then(|| NormalizedRect::new(x0, y0, x1 - x0, y1 - y0))
 }
 
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 fn region_table_from_grid(
     grid: &crate::table_grid::TableGrid,
     kind: GridKind,
@@ -898,7 +898,7 @@ fn region_table_from_grid(
     region_table_from_matrix(&matrix, kind, effective, dimensions)
 }
 
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 fn region_table_from_matrix(
     matrix: &crate::dto::TableMatrix,
     kind: GridKind,
@@ -949,7 +949,7 @@ fn region_table_from_matrix(
     }
 }
 
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 fn word_is_assignable_to_matrix(word: &crate::dto::Word, matrix: &crate::dto::TableMatrix) -> bool {
     let center_x = (word.bbox.x0 + word.bbox.x1) / 2.0;
     let center_y = (word.bbox.y0 + word.bbox.y1) / 2.0;
@@ -964,14 +964,14 @@ fn word_is_assignable_to_matrix(word: &crate::dto::Word, matrix: &crate::dto::Ta
     })
 }
 
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 fn bbox_intersection_area(left: &crate::dto::BoundingBox, right: &crate::dto::BoundingBox) -> f64 {
     let width = (left.x1.min(right.x1) - left.x0.max(right.x0)).max(0.0);
     let height = (left.y1.min(right.y1) - left.y0.max(right.y0)).max(0.0);
     width * height
 }
 
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 fn translate_grid_to_page_pixels(
     grid: &mut crate::table_grid::TableGrid,
     offset_x: u32,
@@ -985,7 +985,7 @@ fn translate_grid_to_page_pixels(
     grid.bbox.y1 += dy;
 }
 
-#[cfg(any(feature = "native", test))]
+#[cfg(any(feature = "native-common", test))]
 fn words_to_text(words: &[RegionWord]) -> String {
     if words.is_empty() {
         return String::new();
@@ -1034,7 +1034,7 @@ fn words_to_text(words: &[RegionWord]) -> String {
         .join("\n")
 }
 
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 fn elapsed_ms(started: std::time::Instant) -> f64 {
     started.elapsed().as_secs_f64() * 1_000.0
 }

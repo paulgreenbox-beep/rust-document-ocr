@@ -2,7 +2,7 @@
 //!
 //! All adapters and the pipeline live in submodules. The default build
 //! compiles without any native PDF/OCR library. Real adapters are
-//! feature-gated behind `native`.
+//! feature-gated behind `native-common`; `native` additionally selects libheif.
 
 pub mod api;
 pub mod borderless_table;
@@ -12,7 +12,7 @@ pub mod dto;
 pub mod export_docx;
 pub mod export_json;
 pub mod export_xlsx;
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 pub mod input_format;
 pub mod language;
 pub mod ocr;
@@ -28,16 +28,16 @@ pub mod region;
 pub mod table_grid;
 pub mod table_semantics;
 
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 pub mod native;
 
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 pub use native::pdfium_source::PdfiumPageSource;
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 pub use native::raster_source::RasterImagePageSource;
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 pub use native::tesseract_engine::TesseractOcrEngine;
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 pub use native::tiff_source::TiffPageSource;
 
 pub use api::{

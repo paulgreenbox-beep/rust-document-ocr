@@ -13,7 +13,7 @@ use heic_rs::meta::iref::RefKind;
 use heic_rs::{DecodeOptions, PixelLayout};
 use image::GrayImage;
 
-use super::heif_source::{HeifSourceError, HeifSourceLimits, HeifSourceWarning};
+use super::heif_types::{HeifSourceError, HeifSourceLimits, HeifSourceWarning};
 use crate::page_source::{PageSource, RenderedPage};
 
 /// One cached, transformed primary image; nominal DPI does not resample it.

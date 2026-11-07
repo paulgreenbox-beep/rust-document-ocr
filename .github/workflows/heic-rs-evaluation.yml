@@ -2,7 +2,7 @@ name: HEIC-RS isolated observations (not release qualification)
 
 on:
   push:
-    branches: [experiment/heic-rs-rc2]
+    branches: [experiment/heic-rs-rc2, experiment/heic-rs-pure-native-link]
   pull_request:
     paths:
       - 'tools/heic-rs-evaluation/**'

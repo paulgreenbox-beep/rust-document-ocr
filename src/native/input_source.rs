@@ -15,17 +15,19 @@ use crate::{
 
 use super::{
     djvu_source::{DjVuLimits, DjVuPageSource, DjVuSourceError},
-    heif_source::{HeifSourceError, HeifSourceLimits, HeifSourceWarning},
     pdfium_source::PdfiumPageSource,
     raster_source::RasterImagePageSource,
     tiff_source::TiffPageSource,
 };
 
+#[cfg(any(feature = "heif-input", feature = "heic-rs-input"))]
+use super::heif_types::{HeifSourceError, HeifSourceLimits, HeifSourceWarning};
+
 // The opt-in research build deliberately has no native decoder fallback.
 // Without this feature, the established native source remains unchanged.
 #[cfg(feature = "heic-rs-input")]
 use super::heic_rs_source::HeicRsPageSource as HeifPageSource;
-#[cfg(not(feature = "heic-rs-input"))]
+#[cfg(all(feature = "heif-input", not(feature = "heic-rs-input")))]
 use super::heif_source::HeifPageSource;
 
 /// A non-fatal source-level condition that embedding hosts can serialize.
@@ -63,6 +65,7 @@ pub enum NativePageSource {
     Pdf(PdfiumPageSource),
     Raster(RasterImagePageSource),
     Tiff(TiffPageSource),
+    #[cfg(any(feature = "heif-input", feature = "heic-rs-input"))]
     Heif(HeifPageSource),
     Djvu(DjVuPageSource),
 }
@@ -83,6 +86,7 @@ impl OpenedPageSource {
         limits: InputLimits,
     ) -> Result<Self, NativeInputError> {
         let format = detect_input_format(path, limits)?;
+        #[allow(unused_mut)] // HEIF warnings require mutation only with a decoder enabled.
         let mut warnings = Vec::new();
         let source = match format {
             InputFormat::Pdf => NativePageSource::Pdf(
@@ -98,6 +102,7 @@ impl OpenedPageSource {
             InputFormat::Tiff => {
                 NativePageSource::Tiff(TiffPageSource::open(path, nominal_dpi, limits)?)
             }
+            #[cfg(any(feature = "heif-input", feature = "heic-rs-input"))]
             InputFormat::Heif => {
                 let source = HeifPageSource::open_with_limits(
                     path,
@@ -122,6 +127,13 @@ impl OpenedPageSource {
                     }
                 }
                 NativePageSource::Heif(source)
+            }
+            #[cfg(not(any(feature = "heif-input", feature = "heic-rs-input")))]
+            InputFormat::Heif => {
+                return Err(InputSourceError::UnsupportedInputFormat {
+                    path: path.to_path_buf(),
+                }
+                .into());
             }
             InputFormat::Djvu => {
                 let djvu_limits = DjVuLimits::new(
@@ -151,6 +163,7 @@ impl PageSource for NativePageSource {
             Self::Pdf(source) => source.total_pages(),
             Self::Raster(source) => source.total_pages(),
             Self::Tiff(source) => source.total_pages(),
+            #[cfg(any(feature = "heif-input", feature = "heic-rs-input"))]
             Self::Heif(source) => source.total_pages(),
             Self::Djvu(source) => source.total_pages(),
         }
@@ -161,6 +174,7 @@ impl PageSource for NativePageSource {
             Self::Pdf(source) => source.render_page(page_num),
             Self::Raster(source) => source.render_page(page_num),
             Self::Tiff(source) => source.render_page(page_num),
+            #[cfg(any(feature = "heif-input", feature = "heic-rs-input"))]
             Self::Heif(source) => source.render_page(page_num),
             Self::Djvu(source) => source.render_page(page_num),
         }
@@ -175,6 +189,7 @@ impl PageSource for NativePageSource {
             Self::Pdf(source) => source.render_page_with_max_pixels(page_num, max_pixels),
             Self::Raster(source) => source.render_page_with_max_pixels(page_num, max_pixels),
             Self::Tiff(source) => source.render_page_with_max_pixels(page_num, max_pixels),
+            #[cfg(any(feature = "heif-input", feature = "heic-rs-input"))]
             Self::Heif(source) => source.render_page_with_max_pixels(page_num, max_pixels),
             Self::Djvu(source) => source.render_page_with_max_pixels(page_num, max_pixels),
         }
@@ -189,6 +204,7 @@ impl PageSource for NativePageSource {
             Self::Pdf(source) => source.render_page_at_dpi(page_num, target_dpi),
             Self::Raster(source) => source.render_page_at_dpi(page_num, target_dpi),
             Self::Tiff(source) => source.render_page_at_dpi(page_num, target_dpi),
+            #[cfg(any(feature = "heif-input", feature = "heic-rs-input"))]
             Self::Heif(source) => source.render_page_at_dpi(page_num, target_dpi),
             Self::Djvu(source) => source.render_page_at_dpi(page_num, target_dpi),
         }
@@ -210,6 +226,7 @@ impl PageSource for NativePageSource {
             Self::Tiff(source) => {
                 source.render_page_at_dpi_with_max_pixels(page_num, target_dpi, max_pixels)
             }
+            #[cfg(any(feature = "heif-input", feature = "heic-rs-input"))]
             Self::Heif(source) => {
                 source.render_page_at_dpi_with_max_pixels(page_num, target_dpi, max_pixels)
             }
@@ -265,6 +282,7 @@ impl PageSource for NativePageSource {
             Self::Pdf(source) => source.page_orientation_from_metadata(page_num),
             Self::Raster(source) => source.page_orientation_from_metadata(page_num),
             Self::Tiff(source) => source.page_orientation_from_metadata(page_num),
+            #[cfg(any(feature = "heif-input", feature = "heic-rs-input"))]
             Self::Heif(source) => source.page_orientation_from_metadata(page_num),
             Self::Djvu(source) => source.page_orientation_from_metadata(page_num),
         }
@@ -321,12 +339,14 @@ impl PageSource for NativePageSource {
             Self::Pdf(source) => source.render_table_thumbnail(page_num, max_dimension),
             Self::Raster(source) => source.render_table_thumbnail(page_num, max_dimension),
             Self::Tiff(source) => source.render_table_thumbnail(page_num, max_dimension),
+            #[cfg(any(feature = "heif-input", feature = "heic-rs-input"))]
             Self::Heif(source) => source.render_table_thumbnail(page_num, max_dimension),
             Self::Djvu(source) => source.render_table_thumbnail(page_num, max_dimension),
         }
     }
 }
 
+#[cfg(any(feature = "heif-input", feature = "heic-rs-input"))]
 fn map_heif_error(path: &Path, error: HeifSourceError) -> InputSourceError {
     let detail = error.to_string();
     match error {
@@ -424,6 +444,7 @@ pub(crate) fn map_djvu_error(path: &Path, error: DjVuSourceError) -> InputSource
 mod tests {
     use super::*;
 
+    #[cfg(any(feature = "heif-input", feature = "heic-rs-input"))]
     #[test]
     fn heif_additional_frames_map_to_a_stable_warning() {
         let warning = HeifSourceWarning::AdditionalTopLevelImagesIgnored {

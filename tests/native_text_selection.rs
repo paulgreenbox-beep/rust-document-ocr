@@ -4,7 +4,7 @@
 //! high-level binding allows only one initialization per process, while the
 //! library unit tests also exercise direct rendering.
 
-#![cfg(feature = "native")]
+#![cfg(feature = "native-common")]
 
 use std::{
     path::{Path, PathBuf},

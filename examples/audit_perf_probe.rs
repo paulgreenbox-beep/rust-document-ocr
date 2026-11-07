@@ -6,12 +6,12 @@
 //!
 //! Run with `cargo run --offline --locked --features native --example audit_perf_probe`.
 
-#[cfg(not(feature = "native"))]
+#[cfg(not(feature = "native-common"))]
 fn main() {
     println!(r#"{{"status":"native_feature_required"}}"#);
 }
 
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 fn main() {
     match run() {
         Ok(report) => println!("{report}"),
@@ -22,7 +22,7 @@ fn main() {
     }
 }
 
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 fn run() -> Result<serde_json::Value, &'static str> {
     use std::{path::PathBuf, time::Instant};
 
@@ -206,7 +206,7 @@ fn run() -> Result<serde_json::Value, &'static str> {
     }))
 }
 
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 fn encode_png(image: &image::GrayImage) -> Result<Vec<u8>, image::ImageError> {
     use std::io::Cursor;
 
@@ -216,7 +216,7 @@ fn encode_png(image: &image::GrayImage) -> Result<Vec<u8>, image::ImageError> {
     Ok(cursor.into_inner())
 }
 
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 fn encode_png_borrowed(image: &image::GrayImage) -> Result<Vec<u8>, image::ImageError> {
     use image::ImageEncoder;
     use std::io::Cursor;
@@ -231,7 +231,7 @@ fn encode_png_borrowed(image: &image::GrayImage) -> Result<Vec<u8>, image::Image
     Ok(cursor.into_inner())
 }
 
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 fn synthetic_text_image(width: u32, height: u32) -> image::GrayImage {
     let mut image = image::GrayImage::from_pixel(width, height, image::Luma([255]));
     let scale = (width / 250).clamp(3, 10);
@@ -259,7 +259,7 @@ fn synthetic_text_image(width: u32, height: u32) -> image::GrayImage {
     image
 }
 
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 fn draw_text(image: &mut image::GrayImage, x: u32, y: u32, text: &str, scale: u32) {
     for (index, character) in text.chars().enumerate() {
         let Some(rows) = glyph(character) else {
@@ -283,7 +283,7 @@ fn draw_text(image: &mut image::GrayImage, x: u32, y: u32, text: &str, scale: u3
     }
 }
 
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 fn glyph(character: char) -> Option<[u8; 7]> {
     Some(match character {
         'T' => [31, 4, 4, 4, 4, 4, 4],
@@ -296,7 +296,7 @@ fn glyph(character: char) -> Option<[u8; 7]> {
     })
 }
 
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 fn draw_line(image: &mut image::GrayImage, x0: u32, y0: u32, x1: u32, y1: u32) {
     if x0 == x1 {
         for y in y0..=y1 {
@@ -309,7 +309,7 @@ fn draw_line(image: &mut image::GrayImage, x0: u32, y0: u32, x1: u32, y1: u32) {
     }
 }
 
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 fn selected_worker_counts() -> Result<Vec<usize>, &'static str> {
     let Some(value) = std::env::var_os("OCR_AUDIT_WORKERS") else {
         return Ok(vec![1, 2, 4, 8, 16]);
@@ -323,7 +323,7 @@ fn selected_worker_counts() -> Result<Vec<usize>, &'static str> {
     }
 }
 
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 fn worker_scaling(
     pixels: u32,
     worker_counts: &[usize],
@@ -370,7 +370,7 @@ fn worker_scaling(
     Ok(results)
 }
 
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 fn measure(count: usize, warmups: usize, mut operation: impl FnMut()) -> Vec<f64> {
     for _ in 0..warmups {
         operation();
@@ -385,7 +385,7 @@ fn measure(count: usize, warmups: usize, mut operation: impl FnMut()) -> Vec<f64
     samples
 }
 
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 fn summary(mut samples: Vec<f64>) -> serde_json::Value {
     samples.sort_by(f64::total_cmp);
     let percentile = |fraction: f64| {
