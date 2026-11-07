@@ -48,6 +48,7 @@ try {
     Expect-Rejection { & (Join-Path $repo 'deploy/windows-portable/verify.ps1') -Root $payload } 'manifest path traversal'
     & (Join-Path $PSScriptRoot 'test-portable-baseline.ps1') -WorkRoot $work
     & (Join-Path $PSScriptRoot 'test-portable-archive.ps1') -WorkRoot $work
+    & (Join-Path $PSScriptRoot 'test-portable-build-profile.ps1') -WorkRoot $work
     Write-Output 'Portable source-only checks PASS (not native OCR acceptance)'
 } finally {
     # Deliberately retain owned synthetic test evidence; no recursive deletion.
