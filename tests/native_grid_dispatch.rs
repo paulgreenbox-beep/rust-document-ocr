@@ -43,4 +43,13 @@ fn production_source_wrapper_forwards_grid_boundaries_before_word_union() {
         source.native_text_for_page(1).unwrap().unwrap().text,
         original
     );
+    let owned = source
+        .native_words_with_grid_owners(1, 800, 600, &cells)
+        .unwrap()
+        .unwrap();
+    assert_eq!(
+        serde_json::to_value(owned.words).unwrap(),
+        serde_json::to_value(words).unwrap()
+    );
+    assert_eq!(owned.cell_owners.unwrap(), vec![Some(0), Some(1)]);
 }

@@ -124,14 +124,25 @@ impl TableGrid {
     /// Intersection area wins; a word-centre fallback handles tiny or
     /// anti-aliased OCR boxes that only touch a cell edge.
     pub fn assign_words(&mut self, words: &[Word]) -> TableAssignmentMetrics {
-        self.assign_words_with_membership(words, false)
+        self.assign_words_with_membership(words, false, None)
     }
 
     /// Native words have source ink geometry. A small font-box/descender
     /// overlap must not pull an outside caption into an adjacent item cell.
     /// The raster OCR assignment policy remains unchanged.
     pub(crate) fn assign_native_words(&mut self, words: &[Word]) -> TableAssignmentMetrics {
-        self.assign_words_with_membership(words, true)
+        self.assign_words_with_membership(words, true, None)
+    }
+
+    /// Source-bound local cell indices are authoritative even if integer ink
+    /// projection moves a centre across a raster seam. None means outside.
+    pub(crate) fn assign_native_words_with_owners(
+        &mut self,
+        words: &[Word],
+        owners: &[Option<usize>],
+    ) -> TableAssignmentMetrics {
+        assert_eq!(words.len(), owners.len());
+        self.assign_words_with_membership(words, true, Some(owners))
     }
 
     pub(crate) fn native_word_is_assignable(&self, word: &Word) -> bool {
@@ -148,6 +159,7 @@ impl TableGrid {
         &mut self,
         words: &[Word],
         require_center: bool,
+        owners: Option<&[Option<usize>]>,
     ) -> TableAssignmentMetrics {
         for cell in &mut self.cells {
             cell.text.clear();
@@ -168,11 +180,22 @@ impl TableGrid {
             detector_confidence: self.confidence,
         };
 
-        for word in words {
-            if !boxes_overlap(&word.bbox, &self.bbox) {
+        for (word_index, word) in words.iter().enumerate() {
+            let bound_owner = owners.and_then(|owners| owners[word_index]);
+            if bound_owner.is_none() && !boxes_overlap(&word.bbox, &self.bbox) {
                 continue;
             }
             metrics.ocr_words_total += 1;
+
+            if owners.is_some() {
+                if let Some(index) = bound_owner.filter(|index| *index < assigned.len()) {
+                    assigned[index].push(word);
+                    metrics.words_assigned += 1;
+                } else {
+                    metrics.words_unassigned += 1;
+                }
+                continue;
+            }
 
             let mut best: Option<(usize, f64)> = None;
             let (center_x, center_y) = box_center(&word.bbox);
