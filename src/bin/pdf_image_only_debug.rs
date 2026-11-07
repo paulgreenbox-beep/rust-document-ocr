@@ -3,21 +3,21 @@
 //! The output deliberately has no inherited PDF objects: no text layer,
 //! annotations, forms, attachments, or source-page resources are copied.
 
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 use std::fs::{self, File};
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 use std::io::{BufWriter, Cursor, Write};
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 use std::path::PathBuf;
 
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 use clap::Parser;
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 use image::{DynamicImage, ImageFormat};
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 use ocr_pipeline::{PageSource, PdfiumPageSource};
 
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 #[derive(Debug, Parser)]
 struct Args {
     #[arg(long)]
@@ -26,7 +26,7 @@ struct Args {
     dpi: u32,
 }
 
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
     let parent = args
@@ -122,14 +122,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 struct PdfWriter<W: Write> {
     output: W,
     offsets: Vec<u64>,
     position: u64,
 }
 
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 impl<W: Write> PdfWriter<W> {
     fn new(output: W) -> Self {
         Self {
@@ -188,7 +188,7 @@ impl<W: Write> PdfWriter<W> {
     }
 }
 
-#[cfg(not(feature = "native"))]
+#[cfg(not(feature = "native-common"))]
 fn main() {
     eprintln!("pdf_image_only_debug requires the 'native' feature");
 }

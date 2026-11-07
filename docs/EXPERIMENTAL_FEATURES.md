@@ -4,6 +4,20 @@ This page separates implemented options with narrower validation boundaries
 from the normal CPU OCR path. No feature listed here changes the default
 language from `rus+eng` or makes the system an accuracy-certified service.
 
+## HEIC decoder features
+
+`native-common` enables PDFium, Tesseract/Leptonica and the common raster/WebP/
+DjVu stack. `native` retains the libheif backend. `heic-rs-input` independently
+enables the common stack plus patched local `heic-rs 0.1.4-ocr.1`, without
+libheif. Select `--no-default-features --features heic-rs-input` for that research
+build. Both enabled: heic-rs has explicit dispatch priority and no fallback;
+Cargo still includes the legacy dependency. A mixed build is not removal proof.
+
+Common-only builds reject HEIF rather than silently switching engines.
+Diagnostic features are separate. See the [feature/link/regression report](../HEIC_PURE_NATIVE_LINK_REPORT.md)
+for exact binary identity, selected dependency list, local tests and limits.
+This is not a promoted RC2 or permission to redistribute binaries.
+
 ## Opt-in language routing
 
 The default `configured` route uses the languages supplied to Tesseract.

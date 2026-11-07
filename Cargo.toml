@@ -8,13 +8,13 @@ default-run = "ocr-pipeline"
 
 [features]
 default = []
-native = [
+native = ["native-common", "heif-input"]
+native-common = [
     "dep:pdfium-render",
     "dep:leptess",
     "dep:libloading",
     "raster-input",
     "webp-input",
-    "heif-input",
     "djvu-input",
 ]
 raster-input = [
@@ -25,13 +25,12 @@ raster-input = [
 ]
 webp-input = ["image/webp"]
 heif-input = ["dep:libheif-rs"]
-# Research-only opt-in override of the HEIF source. `native` alone remains
-# unchanged. This first A/B integration does not remove the native dependency
-# graph or claim a distributable LGPL-free executable.
-heic-rs-input = ["native", "dep:heic-rs"]
+# Research-only HEIF decoder; when both decoders are enabled this takes
+# precedence, without fallback. `native` alone retains the libheif decoder.
+heic-rs-input = ["native-common", "dep:heic-rs"]
 djvu-input = ["dep:djvu-rs"]
 pdfium-c-probe = ["dep:libloading"]
-native-diagnostics = ["native"]
+native-diagnostics = ["native-common"]
 table-grid-review = []
 
 [dependencies]
@@ -94,7 +93,7 @@ required-features = ["table-grid-review"]
 [[example]]
 name = "integrate_ocr"
 path = "examples/integrate_ocr.rs"
-required-features = ["native"]
+required-features = ["native-common"]
 
 [[example]]
 name = "generate_djvu_fixture"

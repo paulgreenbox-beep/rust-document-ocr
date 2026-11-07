@@ -14,19 +14,19 @@ use crate::dto::{
 };
 use crate::export_docx::{export_docx_with_options, DocxExportOptions};
 use crate::export_xlsx::{export_xlsx_with_options, XlsxExportOptions};
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 use crate::page_source::PageSource;
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 use crate::pipeline::{Pipeline, PipelineOutcome, PipelineWarning};
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 use crate::preprocessing::DEFAULT_MAX_PIXELS;
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 use crate::progress::{OcrProgressEvent, OcrProgressReporter, OcrProgressStage};
 use crate::table_semantics::classify_table;
 pub use crate::table_semantics::{
     ClassificationEvidence, ColumnRole, ColumnRoleAssignment, EvidenceKind, SemanticTableType,
 };
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 use crate::{
     input_format::{InputLimits, InputSourceError},
     native::{
@@ -361,7 +361,7 @@ impl OcrResult {
         }
     }
 
-    #[cfg(feature = "native")]
+    #[cfg(feature = "native-common")]
     fn from_pipeline_outcome(outcome: PipelineOutcome, warnings: Vec<OcrWarning>) -> Self {
         let PipelineOutcome {
             document,
@@ -701,16 +701,16 @@ impl OcrError {
 /// Processes a supported document entirely in-process, without invoking the
 /// CLI. Format selection is based on the input signature, not its extension.
 ///
-/// The `native` feature must be enabled. The returned document and all title
+/// The `native-common` feature must be enabled. The returned document and all title
 /// blocks remain in memory; callers choose which projections to export.
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 pub fn process_document(input: &Path, options: &OcrOptions) -> Result<OcrResult, OcrError> {
     process_document_with_progress(input, options, None)
 }
 
 /// Processes a document and optionally emits transport-independent progress
 /// records. The schema-v1 result remains unchanged; progress is additive.
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 pub fn process_document_with_progress(
     input: &Path,
     options: &OcrOptions,
@@ -799,12 +799,12 @@ pub fn process_document_with_progress(
 
 /// Stub-build form of [`process_document`]. It keeps the public signature
 /// stable while making the missing native capability explicit.
-#[cfg(not(feature = "native"))]
+#[cfg(not(feature = "native-common"))]
 pub fn process_document(_input: &Path, _options: &OcrOptions) -> Result<OcrResult, OcrError> {
     Err(OcrError::NativeFeatureRequired)
 }
 /// Stub-build counterpart of [`process_document_with_progress`].
-#[cfg(not(feature = "native"))]
+#[cfg(not(feature = "native-common"))]
 pub fn process_document_with_progress(
     _input: &Path,
     _options: &OcrOptions,
@@ -883,7 +883,7 @@ pub fn export_ocr_result_docx(
     })
 }
 
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 pub(crate) fn validate_options(input: &Path, options: &OcrOptions) -> Result<(), OcrError> {
     if !input.is_file() {
         return Err(OcrError::InvalidOptions(format!(
@@ -985,7 +985,7 @@ fn finite_non_negative_u32(value: f64) -> u32 {
     }
 }
 
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 fn ocr_warning_from_pipeline(warning: PipelineWarning) -> Result<OcrWarning, OcrDiagnostic> {
     Ok(match warning {
         PipelineWarning::CellOcrFallbackFailed {
@@ -1048,7 +1048,7 @@ fn ocr_warning_from_pipeline(warning: PipelineWarning) -> Result<OcrWarning, Ocr
     })
 }
 
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 fn ocr_warning_from_input_source(warning: InputSourceWarning) -> OcrWarning {
     match warning {
         InputSourceWarning::AdditionalImageFramesIgnored {
@@ -1063,7 +1063,7 @@ fn ocr_warning_from_input_source(warning: InputSourceWarning) -> OcrWarning {
     }
 }
 
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 fn ocr_error_from_native_input(error: NativeInputError) -> OcrError {
     match error {
         NativeInputError::PdfOpenFailed { path, detail } => {
@@ -1115,7 +1115,7 @@ fn ocr_error_from_native_input(error: NativeInputError) -> OcrError {
     }
 }
 
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 fn ocr_error_from_pipeline(input: &Path, error: Box<dyn std::error::Error>) -> OcrError {
     let error = match error.downcast::<InputSourceError>() {
         Ok(source_error) => {
@@ -1142,7 +1142,7 @@ mod tests {
         GridKind, OcrOptions, OcrResult, SemanticTableType, TableCell, TableMode,
         OCR_RESULT_SCHEMA_VERSION,
     };
-    #[cfg(feature = "native")]
+    #[cfg(feature = "native-common")]
     use super::{ocr_error_from_pipeline, OcrError};
     use crate::dto::{
         BoundingBox as LegacyBoundingBox, DocumentResult, PageKind, PageResult, TableMatrix,
@@ -1177,7 +1177,7 @@ mod tests {
         assert_eq!(OCR_RESULT_SCHEMA_VERSION, 1);
     }
 
-    #[cfg(feature = "native")]
+    #[cfg(feature = "native-common")]
     #[test]
     fn pipeline_cell_failure_maps_to_typed_diagnostic_without_loss() {
         let cell_warning = crate::pipeline::PipelineWarning::CellOcrFallbackFailed {
@@ -1511,7 +1511,7 @@ mod tests {
         }
     }
 
-    #[cfg(feature = "native")]
+    #[cfg(feature = "native-common")]
     #[test]
     fn render_time_input_errors_keep_their_stable_public_code() {
         let error = crate::input_format::InputSourceError::ImageDecodeFailed {

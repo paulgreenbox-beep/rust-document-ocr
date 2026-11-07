@@ -58,7 +58,10 @@ transcription or document-wide accuracy.
 
 The validated target is Windows x64. A PDF run needs a PDFium DLL matching API
 revision 7881. OCR needs the Tesseract runtime and traineddata for each
-requested language. HEIF processing also needs its native codec runtime.
+requested language. Legacy `native`/`heif-input` selects libheif; the optional
+`heic-rs-input` configuration enables the common pipeline with the local Rust
+HEIC decoder instead. Mixed selection prioritizes heic-rs but does not remove
+the additive legacy dependency. See the exact-artifact research link report.
 These binaries and language/model files are not part of this source package.
 
 The engine is CPU-only. It has no GPU backend, multi-document service queue,

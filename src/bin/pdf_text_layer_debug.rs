@@ -3,15 +3,15 @@
 //! This utility intentionally does not render pages and does not initialize
 //! Tesseract. It writes only the explicitly requested UTF-8 text report.
 
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 use std::path::PathBuf;
 
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 use clap::Parser;
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 use pdfium_render::prelude::*;
 
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 #[derive(Debug, Parser)]
 struct Args {
     #[arg(long)]
@@ -20,7 +20,7 @@ struct Args {
     text_output: PathBuf,
 }
 
-#[cfg(feature = "native")]
+#[cfg(feature = "native-common")]
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
     eprintln!("stage=bind_pdfium");
@@ -68,7 +68,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-#[cfg(not(feature = "native"))]
+#[cfg(not(feature = "native-common"))]
 fn main() {
     eprintln!("pdf_text_layer_debug requires the 'native' feature");
 }

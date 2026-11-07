@@ -1,0 +1,2895 @@
+{
+  "schema_version": 1,
+  "scope": "Bounded exact-artifact Windows research evidence; NOT distribution approval",
+  "feature_matrix_source": "5e63d7e85bd16d793c25363b3aeb4922e218d0c5",
+  "cargo_lock_sha256": "890b2dfb70b4049c3feb72892d231ddc28730896701e4d88d4136761de080376",
+  "target": "x86_64-pc-windows-msvc",
+  "matrix_compilation": {
+    "source-only": "PASS",
+    "legacy-native": "PASS",
+    "pure-heic-rs": "PASS",
+    "mixed": "PASS",
+    "all-features": "PASS",
+    "common-only": "PASS"
+  },
+  "pure_root_features": [
+    "djvu-input",
+    "heic-rs-input",
+    "native-common",
+    "raster-input",
+    "webp-input"
+  ],
+  "pure_selected_packages": [
+    {
+      "features": [],
+      "version": "1.0.2",
+      "name": "adler"
+    },
+    {
+      "features": [],
+      "version": "2.0.1",
+      "name": "adler2"
+    },
+    {
+      "features": [
+        "default",
+        "std"
+      ],
+      "version": "1.2.0",
+      "name": "adler32"
+    },
+    {
+      "features": [],
+      "version": "0.8.4",
+      "name": "aes"
+    },
+    {
+      "features": [
+        "default",
+        "getrandom",
+        "runtime-rng",
+        "std"
+      ],
+      "version": "0.8.12",
+      "name": "ahash"
+    },
+    {
+      "features": [
+        "perf-literal",
+        "std"
+      ],
+      "version": "1.1.4",
+      "name": "aho-corasick"
+    },
+    {
+      "features": [
+        "alloc"
+      ],
+      "version": "0.2.21",
+      "name": "allocator-api2"
+    },
+    {
+      "features": [
+        "auto",
+        "default",
+        "wincon"
+      ],
+      "version": "1.0.0",
+      "name": "anstream"
+    },
+    {
+      "features": [
+        "default",
+        "std"
+      ],
+      "version": "1.0.14",
+      "name": "anstyle"
+    },
+    {
+      "features": [
+        "default",
+        "utf8"
+      ],
+      "version": "1.0.0",
+      "name": "anstyle-parse"
+    },
+    {
+      "features": [],
+      "version": "1.1.5",
+      "name": "anstyle-query"
+    },
+    {
+      "features": [],
+      "version": "3.0.11",
+      "name": "anstyle-wincon"
+    },
+    {
+      "features": [
+        "std"
+      ],
+      "version": "0.5.1",
+      "name": "approx"
+    },
+    {
+      "features": [],
+      "version": "1.5.1",
+      "name": "autocfg"
+    },
+    {
+      "features": [
+        "alloc",
+        "default",
+        "std"
+      ],
+      "version": "0.21.7",
+      "name": "base64"
+    },
+    {
+      "features": [
+        "default",
+        "log",
+        "logging",
+        "runtime",
+        "which",
+        "which-rustfmt"
+      ],
+      "version": "0.64.0",
+      "name": "bindgen"
+    },
+    {
+      "features": [],
+      "version": "0.10.3",
+      "name": "bit_field"
+    },
+    {
+      "features": [
+        "std"
+      ],
+      "version": "0.5.3",
+      "name": "bit-set"
+    },
+    {
+      "features": [
+        "std"
+      ],
+      "version": "0.6.3",
+      "name": "bit-vec"
+    },
+    {
+      "features": [
+        "default"
+      ],
+      "version": "1.3.2",
+      "name": "bitflags"
+    },
+    {
+      "features": [
+        "std"
+      ],
+      "version": "2.13.1",
+      "name": "bitflags"
+    },
+    {
+      "features": [],
+      "version": "0.10.4",
+      "name": "block-buffer"
+    },
+    {
+      "features": [],
+      "version": "0.3.3",
+      "name": "block-padding"
+    },
+    {
+      "features": [
+        "default"
+      ],
+      "version": "3.20.3",
+      "name": "bumpalo"
+    },
+    {
+      "features": [
+        "aarch64_simd",
+        "extern_crate_alloc",
+        "wasm_simd"
+      ],
+      "version": "1.25.2",
+      "name": "bytemuck"
+    },
+    {
+      "features": [
+        "default",
+        "std"
+      ],
+      "version": "1.5.0",
+      "name": "byteorder"
+    },
+    {
+      "features": [
+        "default",
+        "std"
+      ],
+      "version": "0.1.0",
+      "name": "byteorder-lite"
+    },
+    {
+      "features": [
+        "default",
+        "std"
+      ],
+      "version": "1.12.1",
+      "name": "bytes"
+    },
+    {
+      "features": [
+        "block-padding",
+        "default"
+      ],
+      "version": "0.1.2",
+      "name": "cbc"
+    },
+    {
+      "features": [],
+      "version": "0.6.0",
+      "name": "cexpr"
+    },
+    {
+      "features": [],
+      "version": "0.9.0",
+      "name": "cfb"
+    },
+    {
+      "features": [],
+      "version": "1.0.4",
+      "name": "cfg-if"
+    },
+    {
+      "features": [
+        "rng"
+      ],
+      "version": "0.10.1",
+      "name": "chacha20"
+    },
+    {
+      "features": [
+        "alloc",
+        "clock",
+        "default",
+        "iana-time-zone",
+        "js-sys",
+        "now",
+        "oldtime",
+        "std",
+        "wasm-bindgen",
+        "wasmbind",
+        "winapi",
+        "windows-link"
+      ],
+      "version": "0.4.45",
+      "name": "chrono"
+    },
+    {
+      "features": [
+        "block-padding"
+      ],
+      "version": "0.4.4",
+      "name": "cipher"
+    },
+    {
+      "features": [
+        "clang_3_5",
+        "clang_3_6",
+        "clang_3_7",
+        "clang_3_8",
+        "clang_3_9",
+        "clang_4_0",
+        "clang_5_0",
+        "clang_6_0",
+        "libloading",
+        "runtime"
+      ],
+      "version": "1.8.1",
+      "name": "clang-sys"
+    },
+    {
+      "features": [
+        "color",
+        "default",
+        "derive",
+        "error-context",
+        "help",
+        "std",
+        "suggestions",
+        "usage"
+      ],
+      "version": "4.6.2",
+      "name": "clap"
+    },
+    {
+      "features": [
+        "color",
+        "error-context",
+        "help",
+        "std",
+        "suggestions",
+        "usage"
+      ],
+      "version": "4.6.2",
+      "name": "clap_builder"
+    },
+    {
+      "features": [
+        "default"
+      ],
+      "version": "4.6.1",
+      "name": "clap_derive"
+    },
+    {
+      "features": [],
+      "version": "1.1.0",
+      "name": "clap_lex"
+    },
+    {
+      "features": [],
+      "version": "1.1.0",
+      "name": "color_quant"
+    },
+    {
+      "features": [],
+      "version": "1.0.5",
+      "name": "colorchoice"
+    },
+    {
+      "features": [],
+      "version": "0.2.17",
+      "name": "cpufeatures"
+    },
+    {
+      "features": [],
+      "version": "0.3.0",
+      "name": "cpufeatures"
+    },
+    {
+      "features": [
+        "default",
+        "std"
+      ],
+      "version": "1.5.0",
+      "name": "crc32fast"
+    },
+    {
+      "features": [
+        "default",
+        "std"
+      ],
+      "version": "0.8.7",
+      "name": "crossbeam-deque"
+    },
+    {
+      "features": [
+        "alloc",
+        "std"
+      ],
+      "version": "0.9.20",
+      "name": "crossbeam-epoch"
+    },
+    {
+      "features": [
+        "default",
+        "std"
+      ],
+      "version": "0.8.22",
+      "name": "crossbeam-utils"
+    },
+    {
+      "features": [
+        "std"
+      ],
+      "version": "0.1.7",
+      "name": "crypto-common"
+    },
+    {
+      "features": [],
+      "version": "0.8.6",
+      "name": "deflate"
+    },
+    {
+      "features": [
+        "alloc",
+        "block-buffer",
+        "core-api",
+        "default",
+        "mac",
+        "std",
+        "subtle"
+      ],
+      "version": "0.10.7",
+      "name": "digest"
+    },
+    {
+      "features": [
+        "std"
+      ],
+      "version": "0.27.0",
+      "name": "djvu-bitmap"
+    },
+    {
+      "features": [
+        "std"
+      ],
+      "version": "0.27.0",
+      "name": "djvu-bzz"
+    },
+    {
+      "features": [
+        "std"
+      ],
+      "version": "0.27.0",
+      "name": "djvu-iff"
+    },
+    {
+      "features": [
+        "std"
+      ],
+      "version": "0.27.0",
+      "name": "djvu-iw44"
+    },
+    {
+      "features": [
+        "std"
+      ],
+      "version": "0.27.0",
+      "name": "djvu-jb2"
+    },
+    {
+      "features": [
+        "std"
+      ],
+      "version": "0.27.0",
+      "name": "djvu-pixmap"
+    },
+    {
+      "features": [
+        "std"
+      ],
+      "version": "0.27.0",
+      "name": "djvu-rs"
+    },
+    {
+      "features": [
+        "std"
+      ],
+      "version": "0.27.0",
+      "name": "djvu-zp"
+    },
+    {
+      "features": [],
+      "version": "0.3.4",
+      "name": "doc-comment"
+    },
+    {
+      "features": [],
+      "version": "0.2.14",
+      "name": "docx-rs"
+    },
+    {
+      "features": [
+        "default",
+        "std",
+        "use_std"
+      ],
+      "version": "1.16.0",
+      "name": "either"
+    },
+    {
+      "features": [
+        "alloc",
+        "default"
+      ],
+      "version": "0.8.35",
+      "name": "encoding_rs"
+    },
+    {
+      "features": [
+        "std"
+      ],
+      "version": "0.3.14",
+      "name": "errno"
+    },
+    {
+      "features": [
+        "default",
+        "rayon"
+      ],
+      "version": "1.74.2",
+      "name": "exr"
+    },
+    {
+      "features": [
+        "default",
+        "perf",
+        "std",
+        "unicode"
+      ],
+      "version": "0.13.0",
+      "name": "fancy-regex"
+    },
+    {
+      "features": [
+        "alloc",
+        "default",
+        "std"
+      ],
+      "version": "2.5.0",
+      "name": "fastrand"
+    },
+    {
+      "features": [],
+      "version": "0.2.7",
+      "name": "fax"
+    },
+    {
+      "features": [],
+      "version": "0.3.7",
+      "name": "fdeflate"
+    },
+    {
+      "features": [
+        "any_impl",
+        "default",
+        "miniz_oxide",
+        "rust_backend"
+      ],
+      "version": "1.1.9",
+      "name": "flate2"
+    },
+    {
+      "features": [
+        "default",
+        "std"
+      ],
+      "version": "1.0.7",
+      "name": "fnv"
+    },
+    {
+      "features": [
+        "more_lengths"
+      ],
+      "version": "0.14.7",
+      "name": "generic-array"
+    },
+    {
+      "features": [],
+      "version": "0.2.17",
+      "name": "getrandom"
+    },
+    {
+      "features": [],
+      "version": "0.3.4",
+      "name": "getrandom"
+    },
+    {
+      "features": [
+        "std",
+        "sys_rng",
+        "wasm_js"
+      ],
+      "version": "0.4.3",
+      "name": "getrandom"
+    },
+    {
+      "features": [
+        "default",
+        "raii_no_panic",
+        "std"
+      ],
+      "version": "0.11.4",
+      "name": "gif"
+    },
+    {
+      "features": [
+        "color_quant",
+        "default",
+        "raii_no_panic",
+        "std"
+      ],
+      "version": "0.13.3",
+      "name": "gif"
+    },
+    {
+      "features": [
+        "std"
+      ],
+      "version": "0.30.10",
+      "name": "glam"
+    },
+    {
+      "features": [
+        "std"
+      ],
+      "version": "0.31.1",
+      "name": "glam"
+    },
+    {
+      "features": [
+        "std"
+      ],
+      "version": "0.32.1",
+      "name": "glam"
+    },
+    {
+      "features": [
+        "f64",
+        "i32",
+        "std",
+        "u32"
+      ],
+      "version": "0.33.2",
+      "name": "glam"
+    },
+    {
+      "features": [],
+      "version": "0.3.3",
+      "name": "glob"
+    },
+    {
+      "features": [
+        "alloc",
+        "default",
+        "std"
+      ],
+      "version": "2.7.1",
+      "name": "half"
+    },
+    {
+      "features": [
+        "ahash",
+        "allocator-api2",
+        "default",
+        "inline-more"
+      ],
+      "version": "0.14.5",
+      "name": "hashbrown"
+    },
+    {
+      "features": [],
+      "version": "0.5.0",
+      "name": "heck"
+    },
+    {
+      "features": [
+        "std"
+      ],
+      "version": "0.1.4-ocr.1",
+      "name": "heic-rs"
+    },
+    {
+      "features": [],
+      "version": "0.12.1",
+      "name": "hmac"
+    },
+    {
+      "features": [],
+      "version": "0.5.12",
+      "name": "home"
+    },
+    {
+      "features": [],
+      "version": "0.7.0",
+      "name": "html_parser"
+    },
+    {
+      "features": [
+        "bmp",
+        "dds",
+        "default",
+        "dxt",
+        "farbfeld",
+        "gif",
+        "hdr",
+        "ico",
+        "jpeg",
+        "jpeg_rayon",
+        "png",
+        "pnm",
+        "scoped_threadpool",
+        "tga",
+        "tiff",
+        "webp"
+      ],
+      "version": "0.23.14",
+      "name": "image"
+    },
+    {
+      "features": [
+        "bmp",
+        "dds",
+        "default",
+        "dxt",
+        "exr",
+        "farbfeld",
+        "gif",
+        "hdr",
+        "ico",
+        "jpeg",
+        "jpeg_rayon",
+        "openexr",
+        "png",
+        "pnm",
+        "qoi",
+        "tga",
+        "tiff",
+        "webp"
+      ],
+      "version": "0.24.9",
+      "name": "image"
+    },
+    {
+      "features": [
+        "bmp",
+        "jpeg",
+        "png",
+        "tiff",
+        "webp"
+      ],
+      "version": "0.25.10",
+      "name": "image"
+    },
+    {
+      "features": [],
+      "version": "0.2.4",
+      "name": "image-webp"
+    },
+    {
+      "features": [],
+      "version": "0.27.0",
+      "name": "imageproc"
+    },
+    {
+      "features": [
+        "block-padding"
+      ],
+      "version": "0.1.4",
+      "name": "inout"
+    },
+    {
+      "features": [
+        "default"
+      ],
+      "version": "1.70.2",
+      "name": "is_terminal_polyfill"
+    },
+    {
+      "features": [
+        "default",
+        "use_alloc",
+        "use_std"
+      ],
+      "version": "0.14.0",
+      "name": "itertools"
+    },
+    {
+      "features": [],
+      "version": "1.0.18",
+      "name": "itoa"
+    },
+    {
+      "features": [
+        "rayon"
+      ],
+      "version": "0.1.22",
+      "name": "jpeg-decoder"
+    },
+    {
+      "features": [
+        "rayon"
+      ],
+      "version": "0.3.2",
+      "name": "jpeg-decoder"
+    },
+    {
+      "features": [],
+      "version": "1.5.0",
+      "name": "lazy_static"
+    },
+    {
+      "features": [],
+      "version": "1.3.0",
+      "name": "lazycell"
+    },
+    {
+      "features": [],
+      "version": "0.5.3",
+      "name": "lebe"
+    },
+    {
+      "features": [],
+      "version": "0.14.0",
+      "name": "leptess"
+    },
+    {
+      "features": [],
+      "version": "1.4.0",
+      "name": "leptonica-plumbing"
+    },
+    {
+      "features": [],
+      "version": "0.4.9",
+      "name": "leptonica-sys"
+    },
+    {
+      "features": [
+        "default",
+        "extra_traits",
+        "std"
+      ],
+      "version": "0.2.186",
+      "name": "libc"
+    },
+    {
+      "features": [],
+      "version": "0.8.9",
+      "name": "libloading"
+    },
+    {
+      "features": [
+        "arch",
+        "default"
+      ],
+      "version": "0.2.16",
+      "name": "libm"
+    },
+    {
+      "features": [],
+      "version": "0.4.33",
+      "name": "log"
+    },
+    {
+      "features": [
+        "avx512",
+        "default",
+        "std"
+      ],
+      "version": "0.3.11",
+      "name": "matrixmultiply"
+    },
+    {
+      "features": [],
+      "version": "0.3.4",
+      "name": "maybe-owned"
+    },
+    {
+      "features": [
+        "default",
+        "std"
+      ],
+      "version": "0.10.6",
+      "name": "md-5"
+    },
+    {
+      "features": [
+        "alloc",
+        "default",
+        "std"
+      ],
+      "version": "2.8.3",
+      "name": "memchr"
+    },
+    {
+      "features": [
+        "std"
+      ],
+      "version": "0.2.1",
+      "name": "minimal-lexical"
+    },
+    {
+      "features": [],
+      "version": "0.3.7",
+      "name": "miniz_oxide"
+    },
+    {
+      "features": [
+        "no_extern_crate_alloc"
+      ],
+      "version": "0.4.4",
+      "name": "miniz_oxide"
+    },
+    {
+      "features": [
+        "default",
+        "simd",
+        "simd-adler32",
+        "with-alloc"
+      ],
+      "version": "0.8.9",
+      "name": "miniz_oxide"
+    },
+    {
+      "features": [
+        "avx",
+        "avx_luts",
+        "avx_shaper_fixed_point_paths",
+        "avx_shaper_paths",
+        "default",
+        "lut",
+        "neon",
+        "neon_luts",
+        "neon_shaper_fixed_point_paths",
+        "neon_shaper_paths",
+        "sse",
+        "sse_luts",
+        "sse_shaper_fixed_point_paths",
+        "sse_shaper_paths"
+      ],
+      "version": "0.8.1",
+      "name": "moxcms"
+    },
+    {
+      "features": [
+        "matrixmultiply",
+        "std"
+      ],
+      "version": "0.35.0",
+      "name": "nalgebra"
+    },
+    {
+      "features": [
+        "alloc",
+        "std"
+      ],
+      "version": "7.1.3",
+      "name": "nom"
+    },
+    {
+      "features": [],
+      "version": "0.4.3",
+      "name": "num"
+    },
+    {
+      "features": [
+        "std"
+      ],
+      "version": "0.4.8",
+      "name": "num-bigint"
+    },
+    {
+      "features": [
+        "bytemuck",
+        "default",
+        "std"
+      ],
+      "version": "0.4.6",
+      "name": "num-complex"
+    },
+    {
+      "features": [
+        "i128",
+        "std"
+      ],
+      "version": "0.1.46",
+      "name": "num-integer"
+    },
+    {
+      "features": [
+        "default",
+        "i128",
+        "std"
+      ],
+      "version": "0.1.46",
+      "name": "num-iter"
+    },
+    {
+      "features": [],
+      "version": "0.3.2",
+      "name": "num-rational"
+    },
+    {
+      "features": [
+        "std"
+      ],
+      "version": "0.4.2",
+      "name": "num-rational"
+    },
+    {
+      "features": [
+        "default",
+        "i128",
+        "libm",
+        "std"
+      ],
+      "version": "0.2.19",
+      "name": "num-traits"
+    },
+    {
+      "features": [
+        "djvu-input",
+        "heic-rs-input",
+        "native-common",
+        "raster-input",
+        "webp-input"
+      ],
+      "version": "0.1.0",
+      "name": "ocr-pipeline"
+    },
+    {
+      "features": [
+        "alloc",
+        "default",
+        "race",
+        "std"
+      ],
+      "version": "1.21.4",
+      "name": "once_cell"
+    },
+    {
+      "features": [
+        "default"
+      ],
+      "version": "1.70.2",
+      "name": "once_cell_polyfill"
+    },
+    {
+      "features": [],
+      "version": "1.0.15",
+      "name": "paste"
+    },
+    {
+      "features": [
+        "image_025",
+        "image_api",
+        "image_latest",
+        "pdfium_7881",
+        "thread_safe"
+      ],
+      "version": "0.9.3",
+      "name": "pdfium-render"
+    },
+    {
+      "features": [],
+      "version": "0.1.2",
+      "name": "peeking_take_while"
+    },
+    {
+      "features": [
+        "default",
+        "memchr",
+        "std"
+      ],
+      "version": "2.8.7",
+      "name": "pest"
+    },
+    {
+      "features": [
+        "default",
+        "std"
+      ],
+      "version": "2.8.7",
+      "name": "pest_derive"
+    },
+    {
+      "features": [
+        "std"
+      ],
+      "version": "2.8.7",
+      "name": "pest_generator"
+    },
+    {
+      "features": [
+        "default"
+      ],
+      "version": "2.8.7",
+      "name": "pest_meta"
+    },
+    {
+      "features": [],
+      "version": "1.0.1",
+      "name": "piston-float"
+    },
+    {
+      "features": [
+        "default",
+        "deflate",
+        "png-encoding"
+      ],
+      "version": "0.16.8",
+      "name": "png"
+    },
+    {
+      "features": [],
+      "version": "0.17.16",
+      "name": "png"
+    },
+    {
+      "features": [],
+      "version": "0.18.1",
+      "name": "png"
+    },
+    {
+      "features": [
+        "default",
+        "proc-macro"
+      ],
+      "version": "1.0.107",
+      "name": "proc-macro2"
+    },
+    {
+      "features": [
+        "default",
+        "relaxed-simd",
+        "std",
+        "x86-v3"
+      ],
+      "version": "0.22.3",
+      "name": "pulp"
+    },
+    {
+      "features": [
+        "relaxed-simd"
+      ],
+      "version": "0.1.1",
+      "name": "pulp-wasm-simd-flag"
+    },
+    {
+      "features": [],
+      "version": "0.1.30",
+      "name": "pxfm"
+    },
+    {
+      "features": [
+        "default",
+        "std"
+      ],
+      "version": "0.4.1",
+      "name": "qoi"
+    },
+    {
+      "features": [],
+      "version": "2.0.1",
+      "name": "quick-error"
+    },
+    {
+      "features": [
+        "default",
+        "serde",
+        "serialize"
+      ],
+      "version": "0.31.0",
+      "name": "quick-xml"
+    },
+    {
+      "features": [
+        "default",
+        "proc-macro"
+      ],
+      "version": "1.0.47",
+      "name": "quote"
+    },
+    {
+      "features": [
+        "alloc",
+        "std",
+        "std_rng",
+        "sys_rng",
+        "thread_rng"
+      ],
+      "version": "0.10.2",
+      "name": "rand"
+    },
+    {
+      "features": [],
+      "version": "0.10.1",
+      "name": "rand_core"
+    },
+    {
+      "features": [],
+      "version": "0.6.0",
+      "name": "rand_distr"
+    },
+    {
+      "features": [],
+      "version": "11.6.0",
+      "name": "raw-cpuid"
+    },
+    {
+      "features": [],
+      "version": "0.2.1",
+      "name": "rawpointer"
+    },
+    {
+      "features": [],
+      "version": "1.12.0",
+      "name": "rayon"
+    },
+    {
+      "features": [],
+      "version": "1.13.0",
+      "name": "rayon-core"
+    },
+    {
+      "features": [
+        "default"
+      ],
+      "version": "0.5.5",
+      "name": "reborrow"
+    },
+    {
+      "features": [
+        "default",
+        "perf",
+        "perf-backtrack",
+        "perf-cache",
+        "perf-dfa",
+        "perf-inline",
+        "perf-literal",
+        "perf-onepass",
+        "std",
+        "unicode",
+        "unicode-age",
+        "unicode-bool",
+        "unicode-case",
+        "unicode-gencat",
+        "unicode-perl",
+        "unicode-script",
+        "unicode-segment"
+      ],
+      "version": "1.13.1",
+      "name": "regex"
+    },
+    {
+      "features": [
+        "alloc",
+        "dfa",
+        "dfa-build",
+        "dfa-onepass",
+        "dfa-search",
+        "hybrid",
+        "meta",
+        "nfa",
+        "nfa-backtrack",
+        "nfa-pikevm",
+        "nfa-thompson",
+        "perf",
+        "perf-inline",
+        "perf-literal",
+        "perf-literal-multisubstring",
+        "perf-literal-substring",
+        "std",
+        "syntax",
+        "unicode",
+        "unicode-age",
+        "unicode-bool",
+        "unicode-case",
+        "unicode-gencat",
+        "unicode-perl",
+        "unicode-script",
+        "unicode-segment",
+        "unicode-word-boundary"
+      ],
+      "version": "0.4.16",
+      "name": "regex-automata"
+    },
+    {
+      "features": [
+        "default",
+        "std",
+        "unicode",
+        "unicode-age",
+        "unicode-bool",
+        "unicode-case",
+        "unicode-gencat",
+        "unicode-perl",
+        "unicode-script",
+        "unicode-segment"
+      ],
+      "version": "0.8.11",
+      "name": "regex-syntax"
+    },
+    {
+      "features": [
+        "default",
+        "std"
+      ],
+      "version": "1.1.0",
+      "name": "rustc-hash"
+    },
+    {
+      "features": [
+        "alloc",
+        "fs",
+        "libc-extra-traits",
+        "std"
+      ],
+      "version": "0.38.44",
+      "name": "rustix"
+    },
+    {
+      "features": [],
+      "version": "1.0.23",
+      "name": "rustversion"
+    },
+    {
+      "features": [
+        "bytemuck",
+        "default"
+      ],
+      "version": "0.7.4",
+      "name": "safe_arch"
+    },
+    {
+      "features": [
+        "bytemuck",
+        "default"
+      ],
+      "version": "1.1.0",
+      "name": "safe_arch"
+    },
+    {
+      "features": [],
+      "version": "0.1.9",
+      "name": "scoped_threadpool"
+    },
+    {
+      "features": [
+        "default",
+        "derive",
+        "serde_derive",
+        "std"
+      ],
+      "version": "1.0.229",
+      "name": "serde"
+    },
+    {
+      "features": [
+        "result",
+        "std"
+      ],
+      "version": "1.0.229",
+      "name": "serde_core"
+    },
+    {
+      "features": [
+        "default"
+      ],
+      "version": "1.0.229",
+      "name": "serde_derive"
+    },
+    {
+      "features": [
+        "default",
+        "std"
+      ],
+      "version": "1.0.151",
+      "name": "serde_json"
+    },
+    {
+      "features": [
+        "default",
+        "std"
+      ],
+      "version": "0.10.9",
+      "name": "sha2"
+    },
+    {
+      "features": [
+        "default",
+        "std"
+      ],
+      "version": "1.3.0",
+      "name": "shlex"
+    },
+    {
+      "features": [
+        "std",
+        "wide"
+      ],
+      "version": "0.10.0",
+      "name": "simba"
+    },
+    {
+      "features": [
+        "const-generics",
+        "default",
+        "std"
+      ],
+      "version": "0.3.10",
+      "name": "simd-adler32"
+    },
+    {
+      "features": [],
+      "version": "1.15.2",
+      "name": "smallvec"
+    },
+    {
+      "features": [],
+      "version": "0.11.1",
+      "name": "strsim"
+    },
+    {
+      "features": [],
+      "version": "2.6.1",
+      "name": "subtle"
+    },
+    {
+      "features": [
+        "clone-impls",
+        "default",
+        "derive",
+        "extra-traits",
+        "full",
+        "parsing",
+        "printing",
+        "proc-macro",
+        "quote",
+        "visit-mut"
+      ],
+      "version": "1.0.109",
+      "name": "syn"
+    },
+    {
+      "features": [
+        "clone-impls",
+        "default",
+        "derive",
+        "extra-traits",
+        "full",
+        "parsing",
+        "printing",
+        "proc-macro",
+        "visit",
+        "visit-mut"
+      ],
+      "version": "2.0.119",
+      "name": "syn"
+    },
+    {
+      "features": [
+        "clone-impls",
+        "default",
+        "derive",
+        "parsing",
+        "printing",
+        "proc-macro"
+      ],
+      "version": "3.0.2",
+      "name": "syn"
+    },
+    {
+      "features": [
+        "default",
+        "getrandom"
+      ],
+      "version": "3.27.0",
+      "name": "tempfile"
+    },
+    {
+      "features": [],
+      "version": "0.8.0",
+      "name": "tesseract-plumbing"
+    },
+    {
+      "features": [],
+      "version": "0.5.15",
+      "name": "tesseract-sys"
+    },
+    {
+      "features": [],
+      "version": "1.0.69",
+      "name": "thiserror"
+    },
+    {
+      "features": [
+        "default",
+        "std"
+      ],
+      "version": "2.0.19",
+      "name": "thiserror"
+    },
+    {
+      "features": [],
+      "version": "1.0.69",
+      "name": "thiserror-impl"
+    },
+    {
+      "features": [],
+      "version": "2.0.19",
+      "name": "thiserror-impl"
+    },
+    {
+      "features": [],
+      "version": "0.2.0",
+      "name": "thousands"
+    },
+    {
+      "features": [
+        "default",
+        "deflate",
+        "fax",
+        "jpeg",
+        "lzw",
+        "webp"
+      ],
+      "version": "0.11.3",
+      "name": "tiff"
+    },
+    {
+      "features": [],
+      "version": "0.6.1",
+      "name": "tiff"
+    },
+    {
+      "features": [],
+      "version": "0.9.1",
+      "name": "tiff"
+    },
+    {
+      "features": [],
+      "version": "1.20.1",
+      "name": "typenum"
+    },
+    {
+      "features": [
+        "std"
+      ],
+      "version": "0.1.7",
+      "name": "ucd-trie"
+    },
+    {
+      "features": [],
+      "version": "1.2.7",
+      "name": "umya-spreadsheet"
+    },
+    {
+      "features": [],
+      "version": "1.0.24",
+      "name": "unicode-ident"
+    },
+    {
+      "features": [],
+      "version": "0.2.0",
+      "name": "utf16string"
+    },
+    {
+      "features": [
+        "default"
+      ],
+      "version": "0.2.2",
+      "name": "utf8parse"
+    },
+    {
+      "features": [
+        "default",
+        "std"
+      ],
+      "version": "1.24.0",
+      "name": "uuid"
+    },
+    {
+      "features": [],
+      "version": "0.2.15",
+      "name": "vcpkg"
+    },
+    {
+      "features": [],
+      "version": "1.0.0",
+      "name": "vecmath"
+    },
+    {
+      "features": [],
+      "version": "0.9.5",
+      "name": "version_check"
+    },
+    {
+      "features": [
+        "default",
+        "enable-interning",
+        "std"
+      ],
+      "version": "0.2.126",
+      "name": "wasm-bindgen"
+    },
+    {
+      "features": [],
+      "version": "0.2.126",
+      "name": "wasm-bindgen-macro"
+    },
+    {
+      "features": [],
+      "version": "0.2.126",
+      "name": "wasm-bindgen-macro-support"
+    },
+    {
+      "features": [],
+      "version": "0.2.126",
+      "name": "wasm-bindgen-shared"
+    },
+    {
+      "features": [
+        "alloc",
+        "default",
+        "std"
+      ],
+      "version": "0.1.12",
+      "name": "weezl"
+    },
+    {
+      "features": [],
+      "version": "4.4.2",
+      "name": "which"
+    },
+    {
+      "features": [
+        "default",
+        "std"
+      ],
+      "version": "0.7.33",
+      "name": "wide"
+    },
+    {
+      "features": [
+        "std"
+      ],
+      "version": "1.5.0",
+      "name": "wide"
+    },
+    {
+      "features": [],
+      "version": "0.52.6",
+      "name": "windows_x86_64_msvc"
+    },
+    {
+      "features": [],
+      "version": "0.2.1",
+      "name": "windows-link"
+    },
+    {
+      "features": [
+        "default",
+        "Win32",
+        "Win32_Foundation",
+        "Win32_Networking",
+        "Win32_Networking_WinSock",
+        "Win32_NetworkManagement",
+        "Win32_NetworkManagement_IpHelper",
+        "Win32_System",
+        "Win32_System_Threading"
+      ],
+      "version": "0.59.0",
+      "name": "windows-sys"
+    },
+    {
+      "features": [
+        "default",
+        "Win32",
+        "Win32_Foundation",
+        "Win32_Networking",
+        "Win32_Networking_WinSock",
+        "Win32_Storage",
+        "Win32_Storage_FileSystem",
+        "Win32_System",
+        "Win32_System_Com",
+        "Win32_System_Console",
+        "Win32_System_Diagnostics",
+        "Win32_System_Diagnostics_Debug",
+        "Win32_UI",
+        "Win32_UI_Shell"
+      ],
+      "version": "0.61.2",
+      "name": "windows-sys"
+    },
+    {
+      "features": [],
+      "version": "0.52.6",
+      "name": "windows-targets"
+    },
+    {
+      "features": [],
+      "version": "0.8.28",
+      "name": "xml-rs"
+    },
+    {
+      "features": [
+        "derive",
+        "simd",
+        "zerocopy-derive"
+      ],
+      "version": "0.8.54",
+      "name": "zerocopy"
+    },
+    {
+      "features": [],
+      "version": "0.8.54",
+      "name": "zerocopy-derive"
+    },
+    {
+      "features": [
+        "deflate",
+        "flate2"
+      ],
+      "version": "0.5.13",
+      "name": "zip"
+    },
+    {
+      "features": [
+        "deflate",
+        "flate2"
+      ],
+      "version": "0.6.6",
+      "name": "zip"
+    },
+    {
+      "features": [],
+      "version": "1.0.23",
+      "name": "zmij"
+    },
+    {
+      "features": [
+        "std"
+      ],
+      "version": "0.5.1",
+      "name": "zune-core"
+    },
+    {
+      "features": [
+        "simd-adler32",
+        "zlib"
+      ],
+      "version": "0.2.54",
+      "name": "zune-inflate"
+    },
+    {
+      "features": [
+        "default",
+        "neon",
+        "std",
+        "x86"
+      ],
+      "version": "0.5.15",
+      "name": "zune-jpeg"
+    }
+  ],
+  "variants": {
+    "pure": {
+      "source_sha": "3185a5f5f1c79a5036b2a0c6d63e6334c4f66f26",
+      "git_tree_sha": "3349ed2e8a8cee6a9b14f2d55649173dd6479052",
+      "features": [
+        "heic-rs-input"
+      ],
+      "exe_sha256": "c6cddc7516d5e44b225cde2fabb35e534016e05a7c900774b087019e538dfc23",
+      "exe_bytes": 19186688,
+      "build_elapsed_ms": 662432,
+      "rustc_version": "rustc 1.97.1 (8bab26f4f 2026-07-14)\r\nbinary: rustc\r\ncommit-hash: 8bab26f4f68e0e26f0bb7960be334d5b520ea452\r\ncommit-date: 2026-07-14\r\nhost: x86_64-pc-windows-msvc\r\nrelease: 1.97.1\r\nLLVM version: 22.1.6",
+      "cargo_version": "cargo 1.97.1 (c980f4866 2026-06-30)",
+      "linker_version": "14.51.36248.0",
+      "argument_count": 258,
+      "response_files": [
+        {
+          "file": "argument-0.rsp.raw",
+          "bytes": 63284,
+          "sha256": "e77b263ef6ef017319aab32542e8ecca0e049c4840874289b88c844334a5883a",
+          "encoding": "utf-16"
+        }
+      ],
+      "resolved_archives": 236,
+      "archive_symbol_lines": 276219,
+      "archive_scan_failures": 0,
+      "not_scanned_temporary_objects": [
+        "symbols.o",
+        "ocr_pipeline.ocr_pipeline.4a5fffae2c8396a-cgu.0.rcgu.o",
+        "ocr_pipeline.ocr_pipeline.4a5fffae2c8396a-cgu.1.rcgu.o",
+        "ocr_pipeline.ocr_pipeline.4a5fffae2c8396a-cgu.2.rcgu.o",
+        "ocr_pipeline.ocr_pipeline.4a5fffae2c8396a-cgu.3.rcgu.o",
+        "ocr_pipeline.ocr_pipeline.4a5fffae2c8396a-cgu.4.rcgu.o",
+        "ocr_pipeline.ocr_pipeline.4a5fffae2c8396a-cgu.5.rcgu.o",
+        "ocr_pipeline.ocr_pipeline.4a5fffae2c8396a-cgu.6.rcgu.o",
+        "ocr_pipeline.a6y0vsw1a5cjgv4v52bourxwt.rcgu.o"
+      ],
+      "old_link_input_names": [],
+      "old_symbol_archives": [],
+      "old_map_lines": 0,
+      "old_verbose_lines": 0,
+      "map_sha256": "a55fd0a2c9a3d10810b1dd2013ebc39dc8a4468560033da04730f905a17eff15",
+      "pe_report_sha256": "6785004a3156a7acac57ec9bda54fb159f5459fcb202b5b6e932d0ba7c4e9b7f",
+      "pe_old_import_match": false,
+      "pe_directories": {
+        "normal_imports": {
+          "rva": 18437116,
+          "size": 560
+        },
+        "delay_imports": {
+          "rva": 0,
+          "size": 0
+        }
+      },
+      "old_dll_name_literals": {
+        "heif.dll": {
+          "ascii": false,
+          "utf16le": false
+        },
+        "libheif.dll": {
+          "ascii": false,
+          "utf16le": false
+        },
+        "libde265.dll": {
+          "ascii": false,
+          "utf16le": false
+        },
+        "de265.dll": {
+          "ascii": false,
+          "utf16le": false
+        }
+      },
+      "link_exit": 0
+    },
+    "legacy": {
+      "source_sha": "3185a5f5f1c79a5036b2a0c6d63e6334c4f66f26",
+      "git_tree_sha": "3349ed2e8a8cee6a9b14f2d55649173dd6479052",
+      "features": [
+        "native"
+      ],
+      "exe_sha256": "8afa2d6c153fd3ccf0e6dcd8cd34e408525f7ca302b58861af6dfbefb7adcad3",
+      "exe_bytes": 20172800,
+      "build_elapsed_ms": 75659,
+      "rustc_version": "rustc 1.97.1 (8bab26f4f 2026-07-14)\r\nbinary: rustc\r\ncommit-hash: 8bab26f4f68e0e26f0bb7960be334d5b520ea452\r\ncommit-date: 2026-07-14\r\nhost: x86_64-pc-windows-msvc\r\nrelease: 1.97.1\r\nLLVM version: 22.1.6",
+      "cargo_version": "cargo 1.97.1 (c980f4866 2026-06-30)",
+      "linker_version": "14.51.36248.0",
+      "argument_count": 262,
+      "response_files": [
+        {
+          "file": "argument-0.rsp.raw",
+          "bytes": 64204,
+          "sha256": "0ae10169dd82128287e67ad893ec3036184bee26e4ab91fa1a124355f2f95fc2",
+          "encoding": "utf-16"
+        }
+      ],
+      "resolved_archives": 240,
+      "archive_symbol_lines": 356145,
+      "archive_scan_failures": 0,
+      "not_scanned_temporary_objects": [
+        "symbols.o",
+        "ocr_pipeline.ocr_pipeline.a6d788e7a07c6dfa-cgu.0.rcgu.o",
+        "ocr_pipeline.ocr_pipeline.a6d788e7a07c6dfa-cgu.1.rcgu.o",
+        "ocr_pipeline.ocr_pipeline.a6d788e7a07c6dfa-cgu.2.rcgu.o",
+        "ocr_pipeline.ocr_pipeline.a6d788e7a07c6dfa-cgu.3.rcgu.o",
+        "ocr_pipeline.ocr_pipeline.a6d788e7a07c6dfa-cgu.4.rcgu.o",
+        "ocr_pipeline.ocr_pipeline.a6d788e7a07c6dfa-cgu.5.rcgu.o",
+        "ocr_pipeline.ocr_pipeline.a6d788e7a07c6dfa-cgu.6.rcgu.o",
+        "ocr_pipeline.dpoaz4h54sk9p0b3sc26zgmzf.rcgu.o"
+      ],
+      "old_link_input_names": [
+        "liblibheif_rs-5118ba8235aec501.rlib",
+        "liblibheif_sys-c286dd313cd82af8.rlib",
+        "heif.lib",
+        "libde265.lib"
+      ],
+      "old_symbol_archives": [
+        {
+          "name": "heif.lib",
+          "defined_api_symbols": 469
+        },
+        {
+          "name": "libde265.lib",
+          "defined_api_symbols": 56
+        }
+      ],
+      "old_map_lines": 2368,
+      "old_verbose_lines": 26,
+      "map_sha256": "8da005048e160197612a33c100038f5a722bd09abe9117768557ea895e3bd24f",
+      "pe_report_sha256": "12aa0e4ae8cd956c93f395a3497576751af6a82b9bda238e6932a42908cb3f63",
+      "pe_old_import_match": false,
+      "pe_directories": {
+        "normal_imports": {
+          "rva": 19348748,
+          "size": 560
+        },
+        "delay_imports": {
+          "rva": 0,
+          "size": 0
+        }
+      },
+      "old_dll_name_literals": {
+        "heif.dll": {
+          "ascii": false,
+          "utf16le": false
+        },
+        "libheif.dll": {
+          "ascii": false,
+          "utf16le": false
+        },
+        "libde265.dll": {
+          "ascii": false,
+          "utf16le": false
+        },
+        "de265.dll": {
+          "ascii": false,
+          "utf16le": false
+        }
+      },
+      "link_exit": 0
+    }
+  },
+  "synthetic_ab": {
+    "schema_version": 1,
+    "scope": "Research pipeline A/B; timings illustrative, not distribution or performance qualification",
+    "build_profile": "release",
+    "token_metric": "Casefold Unicode word multiset against upstream synthetic SVG source; no OCR-confusion substitutions",
+    "binary_identity": [
+      {
+        "sha256": "c6cddc7516d5e44b225cde2fabb35e534016e05a7c900774b087019e538dfc23",
+        "size": 19186688,
+        "variant": "heic_rs"
+      },
+      {
+        "sha256": "8afa2d6c153fd3ccf0e6dcd8cd34e408525f7ca302b58861af6dfbefb7adcad3",
+        "size": 20172800,
+        "variant": "native"
+      }
+    ],
+    "settings": {
+      "enable_cell_ocr_fallback": true,
+      "grid_dpi": 100,
+      "max_page_workers": 4,
+      "languages": "rus+eng",
+      "omp_thread_limit": 1,
+      "timeout_seconds": 120,
+      "ocr_dpi": 300
+    },
+    "cases": [
+      {
+        "case": "form",
+        "lane": "text",
+        "input_sha256": "a164547455de1798edd93609084aa898354496eb58a45a0bfe7f49940f8a8a24",
+        "native": {
+          "exit_code": 0,
+          "timeout": false,
+          "elapsed_ms": 697,
+          "capture_incomplete": false,
+          "pages": 1,
+          "characters": 269,
+          "words": 28,
+          "text_sha256": "ba248a008d7b907a496ddd81d2923c82da568bbd7d7069f9f8945669a3cf141b",
+          "grids": 0,
+          "cells": 0,
+          "filled_cells": 0,
+          "modes": [
+            "ocr"
+          ],
+          "confidence": [
+            0.86799824
+          ],
+          "word_assignment": [
+            null
+          ],
+          "warnings": 0,
+          "artifact_sizes": {
+            "result.v1.json": 2276,
+            "result.json": 403,
+            "result.docx": 18696,
+            "result.xlsx": 5374
+          },
+          "synthetic_source_token_metrics": {
+            "precision": 0.8928571428571429,
+            "recall": 1,
+            "f1": 0.9433962264150945
+          }
+        },
+        "heic_rs": {
+          "exit_code": 0,
+          "timeout": false,
+          "elapsed_ms": 674,
+          "capture_incomplete": false,
+          "pages": 1,
+          "characters": 266,
+          "words": 26,
+          "text_sha256": "896d4b627f2be1037706c6f438cbf40691d36fae31d741406f13fbe2dd7d6acd",
+          "grids": 0,
+          "cells": 0,
+          "filled_cells": 0,
+          "modes": [
+            "ocr"
+          ],
+          "confidence": [
+            0.9035674
+          ],
+          "word_assignment": [
+            null
+          ],
+          "warnings": 0,
+          "artifact_sizes": {
+            "result.v1.json": 2231,
+            "result.json": 399,
+            "result.docx": 18692,
+            "result.xlsx": 5374
+          },
+          "synthetic_source_token_metrics": {
+            "precision": 0.9615384615384616,
+            "recall": 1,
+            "f1": 0.9803921568627451
+          }
+        },
+        "comparison": {
+          "identical_input_verified": true,
+          "exact_non_timing_json": false,
+          "legacy_result_json_equal": false,
+          "different_fields": [
+            "$.document.pages[0].text",
+            "$.page_processing[0].ocr_confidence",
+            "$.page_processing[0].orientation.confidence",
+            "$.page_processing[0].quality.signals.character_count",
+            "$.page_processing[0].quality.signals.cyrillic_characters",
+            "$.page_processing[0].quality.signals.latin_characters"
+          ],
+          "geometry_equal": true,
+          "ocr_fingerprints_equal": false,
+          "docx_document_xml_equal": false,
+          "xlsx_workbook_cells_equal": true
+        },
+        "status": "DIFFERENCES_RECORDED"
+      },
+      {
+        "case": "note",
+        "lane": "text",
+        "input_sha256": "1a2bce7b210f469ffedcfb6eb69afc70caefa9c815c6461995e1749a34fe0ee7",
+        "native": {
+          "exit_code": 0,
+          "timeout": false,
+          "elapsed_ms": 437,
+          "capture_incomplete": false,
+          "pages": 1,
+          "characters": 154,
+          "words": 21,
+          "text_sha256": "68340f7b166b04822da4b0180232b214a805625097977bf2ab5d2db8b785272a",
+          "grids": 0,
+          "cells": 0,
+          "filled_cells": 0,
+          "modes": [
+            "ocr"
+          ],
+          "confidence": [
+            0.95501035
+          ],
+          "word_assignment": [
+            null
+          ],
+          "warnings": 0,
+          "artifact_sizes": {
+            "result.v1.json": 2155,
+            "result.json": 277,
+            "result.docx": 17812,
+            "result.xlsx": 5374
+          },
+          "synthetic_source_token_metrics": {
+            "precision": 1,
+            "recall": 1,
+            "f1": 1
+          }
+        },
+        "heic_rs": {
+          "exit_code": 0,
+          "timeout": false,
+          "elapsed_ms": 416,
+          "capture_incomplete": false,
+          "pages": 1,
+          "characters": 154,
+          "words": 21,
+          "text_sha256": "68340f7b166b04822da4b0180232b214a805625097977bf2ab5d2db8b785272a",
+          "grids": 0,
+          "cells": 0,
+          "filled_cells": 0,
+          "modes": [
+            "ocr"
+          ],
+          "confidence": [
+            0.9543387
+          ],
+          "word_assignment": [
+            null
+          ],
+          "warnings": 0,
+          "artifact_sizes": {
+            "result.v1.json": 2118,
+            "result.json": 277,
+            "result.docx": 17812,
+            "result.xlsx": 5374
+          },
+          "synthetic_source_token_metrics": {
+            "precision": 1,
+            "recall": 1,
+            "f1": 1
+          }
+        },
+        "comparison": {
+          "identical_input_verified": true,
+          "exact_non_timing_json": false,
+          "legacy_result_json_equal": true,
+          "different_fields": [
+            "$.page_processing[0].ocr_confidence",
+            "$.page_processing[0].orientation.confidence"
+          ],
+          "geometry_equal": true,
+          "ocr_fingerprints_equal": false,
+          "docx_document_xml_equal": true,
+          "xlsx_workbook_cells_equal": true
+        },
+        "status": "DIFFERENCES_RECORDED"
+      },
+      {
+        "case": "receipt",
+        "lane": "text",
+        "input_sha256": "cc6d17df966abd926f0f72c853713e71138a8a24f1f722ae1e6bcfaf06da336b",
+        "native": {
+          "exit_code": 0,
+          "timeout": false,
+          "elapsed_ms": 493,
+          "capture_incomplete": false,
+          "pages": 1,
+          "characters": 331,
+          "words": 39,
+          "text_sha256": "e480ac521486b2e65f49a844e6536922d8590fe47571f2fc9b76b05e27c1ea56",
+          "grids": 1,
+          "cells": 12,
+          "filled_cells": 12,
+          "modes": [
+            "ocr+grid"
+          ],
+          "confidence": [
+            0.8939209
+          ],
+          "word_assignment": [
+            {
+              "recognized_words": 32,
+              "assigned_words": 14,
+              "words_outside_tables": 18,
+              "duplicate_assignments": 0
+            }
+          ],
+          "warnings": 0,
+          "artifact_sizes": {
+            "result.v1.json": 14476,
+            "result.json": 5741,
+            "result.docx": 19544,
+            "result.xlsx": 5514
+          },
+          "synthetic_source_token_metrics": {
+            "precision": 0.9487179487179487,
+            "recall": 0.9024390243902439,
+            "f1": 0.9249999999999999
+          }
+        },
+        "heic_rs": {
+          "exit_code": 0,
+          "timeout": false,
+          "elapsed_ms": 463,
+          "capture_incomplete": false,
+          "pages": 1,
+          "characters": 331,
+          "words": 39,
+          "text_sha256": "e480ac521486b2e65f49a844e6536922d8590fe47571f2fc9b76b05e27c1ea56",
+          "grids": 1,
+          "cells": 12,
+          "filled_cells": 12,
+          "modes": [
+            "ocr+grid"
+          ],
+          "confidence": [
+            0.89447874
+          ],
+          "word_assignment": [
+            {
+              "recognized_words": 32,
+              "assigned_words": 14,
+              "words_outside_tables": 18,
+              "duplicate_assignments": 0
+            }
+          ],
+          "warnings": 0,
+          "artifact_sizes": {
+            "result.v1.json": 14459,
+            "result.json": 5738,
+            "result.docx": 19544,
+            "result.xlsx": 5514
+          },
+          "synthetic_source_token_metrics": {
+            "precision": 0.9487179487179487,
+            "recall": 0.9024390243902439,
+            "f1": 0.9249999999999999
+          }
+        },
+        "comparison": {
+          "identical_input_verified": true,
+          "exact_non_timing_json": false,
+          "legacy_result_json_equal": false,
+          "different_fields": [
+            "$.document.pages[0].tables[0].confidence",
+            "$.document.pages[0].tables[0].rows[0][0].confidence",
+            "$.document.pages[0].tables[0].rows[0][1].confidence",
+            "$.page_processing[0].ocr_confidence",
+            "$.page_processing[0].orientation.confidence",
+            "$.tables[0].grids[0].cells[0].confidence",
+            "$.tables[0].grids[0].cells[1].confidence",
+            "$.tables[0].grids[0].classification_evidence[0].score",
+            "$.tables[0].grids[0].classification_evidence[1].score",
+            "$.tables[0].grids[0].confidence"
+          ],
+          "geometry_equal": true,
+          "ocr_fingerprints_equal": false,
+          "docx_document_xml_equal": true,
+          "xlsx_workbook_cells_equal": true
+        },
+        "status": "DIFFERENCES_RECORDED"
+      },
+      {
+        "case": "text-table",
+        "lane": "pdf_control",
+        "input_sha256": "85f92e257ec6abf5929801f16c9adaa9e65cdbf0b5a1121b7cb5ad86a10a7570",
+        "native": {
+          "exit_code": 0,
+          "timeout": false,
+          "elapsed_ms": 95,
+          "capture_incomplete": false,
+          "pages": 1,
+          "characters": 343,
+          "words": 51,
+          "text_sha256": "61b15e1761bfea015f3bd9554d3df16f140a67600c44148fdb59b03cc4315d15",
+          "grids": 1,
+          "cells": 9,
+          "filled_cells": 9,
+          "modes": [
+            "native_text+grid"
+          ],
+          "confidence": [
+            null
+          ],
+          "word_assignment": [
+            {
+              "recognized_words": 51,
+              "assigned_words": 9,
+              "words_outside_tables": 42,
+              "duplicate_assignments": 0
+            }
+          ],
+          "warnings": 0,
+          "artifact_sizes": {
+            "result.v1.json": 12744,
+            "result.json": 4370,
+            "result.docx": 18609,
+            "result.xlsx": 5467
+          }
+        },
+        "heic_rs": {
+          "exit_code": 0,
+          "timeout": false,
+          "elapsed_ms": 127,
+          "capture_incomplete": false,
+          "pages": 1,
+          "characters": 343,
+          "words": 51,
+          "text_sha256": "61b15e1761bfea015f3bd9554d3df16f140a67600c44148fdb59b03cc4315d15",
+          "grids": 1,
+          "cells": 9,
+          "filled_cells": 9,
+          "modes": [
+            "native_text+grid"
+          ],
+          "confidence": [
+            null
+          ],
+          "word_assignment": [
+            {
+              "recognized_words": 51,
+              "assigned_words": 9,
+              "words_outside_tables": 42,
+              "duplicate_assignments": 0
+            }
+          ],
+          "warnings": 0,
+          "artifact_sizes": {
+            "result.v1.json": 12744,
+            "result.json": 4370,
+            "result.docx": 18609,
+            "result.xlsx": 5467
+          }
+        },
+        "comparison": {
+          "identical_input_verified": true,
+          "exact_non_timing_json": true,
+          "legacy_result_json_equal": true,
+          "different_fields": [],
+          "geometry_equal": true,
+          "ocr_fingerprints_equal": true,
+          "docx_document_xml_equal": true,
+          "xlsx_workbook_cells_equal": true
+        },
+        "status": "EXACT_NON_TIMING_MATCH"
+      },
+      {
+        "case": "raster",
+        "lane": "pdf_control",
+        "input_sha256": "c776651d5edb521cca6384cb3cfe0782645711044b309bb63dd145e092da96f1",
+        "native": {
+          "exit_code": 0,
+          "timeout": false,
+          "elapsed_ms": 973,
+          "capture_incomplete": false,
+          "pages": 1,
+          "characters": 627,
+          "words": 51,
+          "text_sha256": "46df47581c48651715ba837838483aacae430140a71e313ed0f85cf521b7c753",
+          "grids": 1,
+          "cells": 9,
+          "filled_cells": 9,
+          "modes": [
+            "ocr+grid"
+          ],
+          "confidence": [
+            0.96031797
+          ],
+          "word_assignment": [
+            {
+              "recognized_words": 51,
+              "assigned_words": 9,
+              "words_outside_tables": 42,
+              "duplicate_assignments": 0
+            }
+          ],
+          "warnings": 0,
+          "artifact_sizes": {
+            "result.v1.json": 12998,
+            "result.json": 4697,
+            "result.docx": 19229,
+            "result.xlsx": 5467
+          }
+        },
+        "heic_rs": {
+          "exit_code": 0,
+          "timeout": false,
+          "elapsed_ms": 959,
+          "capture_incomplete": false,
+          "pages": 1,
+          "characters": 627,
+          "words": 51,
+          "text_sha256": "46df47581c48651715ba837838483aacae430140a71e313ed0f85cf521b7c753",
+          "grids": 1,
+          "cells": 9,
+          "filled_cells": 9,
+          "modes": [
+            "ocr+grid"
+          ],
+          "confidence": [
+            0.96031797
+          ],
+          "word_assignment": [
+            {
+              "recognized_words": 51,
+              "assigned_words": 9,
+              "words_outside_tables": 42,
+              "duplicate_assignments": 0
+            }
+          ],
+          "warnings": 0,
+          "artifact_sizes": {
+            "result.v1.json": 13017,
+            "result.json": 4697,
+            "result.docx": 19229,
+            "result.xlsx": 5467
+          }
+        },
+        "comparison": {
+          "identical_input_verified": true,
+          "exact_non_timing_json": true,
+          "legacy_result_json_equal": true,
+          "different_fields": [],
+          "geometry_equal": true,
+          "ocr_fingerprints_equal": true,
+          "docx_document_xml_equal": true,
+          "xlsx_workbook_cells_equal": true
+        },
+        "status": "EXACT_NON_TIMING_MATCH"
+      },
+      {
+        "case": "main10",
+        "lane": "format_only",
+        "input_sha256": "a89e36be51e534f457fe4020c8ee5204afcb25831d01f5ca5676fe9cb2c698b9",
+        "native": {
+          "exit_code": 0,
+          "timeout": false,
+          "elapsed_ms": 89,
+          "capture_incomplete": false,
+          "pages": 1,
+          "characters": 0,
+          "words": 0,
+          "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "grids": 0,
+          "cells": 0,
+          "filled_cells": 0,
+          "modes": [
+            "ocr"
+          ],
+          "confidence": [
+            null
+          ],
+          "word_assignment": [
+            null
+          ],
+          "warnings": 0,
+          "artifact_sizes": {
+            "result.v1.json": 2084,
+            "result.json": 115,
+            "result.docx": 16898,
+            "result.xlsx": 5374
+          }
+        },
+        "heic_rs": {
+          "exit_code": 0,
+          "timeout": false,
+          "elapsed_ms": 89,
+          "capture_incomplete": false,
+          "pages": 1,
+          "characters": 0,
+          "words": 0,
+          "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "grids": 0,
+          "cells": 0,
+          "filled_cells": 0,
+          "modes": [
+            "ocr"
+          ],
+          "confidence": [
+            null
+          ],
+          "word_assignment": [
+            null
+          ],
+          "warnings": 0,
+          "artifact_sizes": {
+            "result.v1.json": 2075,
+            "result.json": 115,
+            "result.docx": 16898,
+            "result.xlsx": 5374
+          }
+        },
+        "comparison": {
+          "identical_input_verified": true,
+          "exact_non_timing_json": true,
+          "legacy_result_json_equal": true,
+          "different_fields": [],
+          "geometry_equal": true,
+          "ocr_fingerprints_equal": true,
+          "docx_document_xml_equal": true,
+          "xlsx_workbook_cells_equal": true
+        },
+        "status": "EXACT_NON_TIMING_MATCH"
+      },
+      {
+        "case": "alpha",
+        "lane": "format_only",
+        "input_sha256": "be642c699dfa1ca175b026a5eab706f70103b66152a950cd19cf5346743018c6",
+        "native": {
+          "exit_code": 0,
+          "timeout": false,
+          "elapsed_ms": 83,
+          "capture_incomplete": false,
+          "pages": 1,
+          "characters": 0,
+          "words": 0,
+          "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "grids": 1,
+          "cells": 0,
+          "filled_cells": 0,
+          "modes": [
+            "ocr+grid"
+          ],
+          "confidence": [
+            null
+          ],
+          "word_assignment": [
+            {
+              "recognized_words": 0,
+              "assigned_words": 0,
+              "words_outside_tables": 0,
+              "duplicate_assignments": 0
+            }
+          ],
+          "warnings": 0,
+          "artifact_sizes": {
+            "result.v1.json": 3320,
+            "result.json": 285,
+            "result.docx": 17085,
+            "result.xlsx": 5005
+          }
+        },
+        "heic_rs": {
+          "exit_code": 0,
+          "timeout": false,
+          "elapsed_ms": 85,
+          "capture_incomplete": false,
+          "pages": 1,
+          "characters": 0,
+          "words": 0,
+          "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "grids": 1,
+          "cells": 0,
+          "filled_cells": 0,
+          "modes": [
+            "ocr+grid"
+          ],
+          "confidence": [
+            null
+          ],
+          "word_assignment": [
+            {
+              "recognized_words": 0,
+              "assigned_words": 0,
+              "words_outside_tables": 0,
+              "duplicate_assignments": 0
+            }
+          ],
+          "warnings": 0,
+          "artifact_sizes": {
+            "result.v1.json": 3348,
+            "result.json": 285,
+            "result.docx": 17085,
+            "result.xlsx": 5005
+          }
+        },
+        "comparison": {
+          "identical_input_verified": true,
+          "exact_non_timing_json": true,
+          "legacy_result_json_equal": true,
+          "different_fields": [],
+          "geometry_equal": true,
+          "ocr_fingerprints_equal": true,
+          "docx_document_xml_equal": true,
+          "xlsx_workbook_cells_equal": true
+        },
+        "status": "EXACT_NON_TIMING_MATCH"
+      },
+      {
+        "case": "irot90",
+        "lane": "format_only",
+        "input_sha256": "2227bc8c3f52cfeef217f46149353e76fe60b83cc4d5ffbbfd1dfbbe374bebfb",
+        "native": {
+          "exit_code": 0,
+          "timeout": false,
+          "elapsed_ms": 88,
+          "capture_incomplete": false,
+          "pages": 1,
+          "characters": 0,
+          "words": 0,
+          "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "grids": 1,
+          "cells": 0,
+          "filled_cells": 0,
+          "modes": [
+            "ocr+grid"
+          ],
+          "confidence": [
+            null
+          ],
+          "word_assignment": [
+            {
+              "recognized_words": 0,
+              "assigned_words": 0,
+              "words_outside_tables": 0,
+              "duplicate_assignments": 0
+            }
+          ],
+          "warnings": 0,
+          "artifact_sizes": {
+            "result.v1.json": 3332,
+            "result.json": 285,
+            "result.docx": 17085,
+            "result.xlsx": 5005
+          }
+        },
+        "heic_rs": {
+          "exit_code": 0,
+          "timeout": false,
+          "elapsed_ms": 86,
+          "capture_incomplete": false,
+          "pages": 1,
+          "characters": 0,
+          "words": 0,
+          "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "grids": 1,
+          "cells": 0,
+          "filled_cells": 0,
+          "modes": [
+            "ocr+grid"
+          ],
+          "confidence": [
+            null
+          ],
+          "word_assignment": [
+            {
+              "recognized_words": 0,
+              "assigned_words": 0,
+              "words_outside_tables": 0,
+              "duplicate_assignments": 0
+            }
+          ],
+          "warnings": 0,
+          "artifact_sizes": {
+            "result.v1.json": 3337,
+            "result.json": 285,
+            "result.docx": 17085,
+            "result.xlsx": 5005
+          }
+        },
+        "comparison": {
+          "identical_input_verified": true,
+          "exact_non_timing_json": true,
+          "legacy_result_json_equal": true,
+          "different_fields": [],
+          "geometry_equal": true,
+          "ocr_fingerprints_equal": true,
+          "docx_document_xml_equal": true,
+          "xlsx_workbook_cells_equal": true
+        },
+        "status": "EXACT_NON_TIMING_MATCH"
+      },
+      {
+        "case": "imir0",
+        "lane": "format_only",
+        "input_sha256": "d781c4fd167cd8ee13801753702da6dcf6d7bc0488a9193564606ec1f3d36e6e",
+        "native": {
+          "exit_code": 0,
+          "timeout": false,
+          "elapsed_ms": 132,
+          "capture_incomplete": false,
+          "pages": 1,
+          "characters": 0,
+          "words": 0,
+          "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "grids": 1,
+          "cells": 0,
+          "filled_cells": 0,
+          "modes": [
+            "ocr+grid"
+          ],
+          "confidence": [
+            null
+          ],
+          "word_assignment": [
+            {
+              "recognized_words": 0,
+              "assigned_words": 0,
+              "words_outside_tables": 0,
+              "duplicate_assignments": 0
+            }
+          ],
+          "warnings": 0,
+          "artifact_sizes": {
+            "result.v1.json": 3357,
+            "result.json": 285,
+            "result.docx": 17085,
+            "result.xlsx": 5005
+          }
+        },
+        "heic_rs": {
+          "exit_code": 0,
+          "timeout": false,
+          "elapsed_ms": 123,
+          "capture_incomplete": false,
+          "pages": 1,
+          "characters": 0,
+          "words": 0,
+          "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "grids": 1,
+          "cells": 0,
+          "filled_cells": 0,
+          "modes": [
+            "ocr+grid"
+          ],
+          "confidence": [
+            null
+          ],
+          "word_assignment": [
+            {
+              "recognized_words": 0,
+              "assigned_words": 0,
+              "words_outside_tables": 0,
+              "duplicate_assignments": 0
+            }
+          ],
+          "warnings": 0,
+          "artifact_sizes": {
+            "result.v1.json": 3340,
+            "result.json": 285,
+            "result.docx": 17085,
+            "result.xlsx": 5005
+          }
+        },
+        "comparison": {
+          "identical_input_verified": true,
+          "exact_non_timing_json": true,
+          "legacy_result_json_equal": true,
+          "different_fields": [],
+          "geometry_equal": true,
+          "ocr_fingerprints_equal": true,
+          "docx_document_xml_equal": true,
+          "xlsx_workbook_cells_equal": true
+        },
+        "status": "EXACT_NON_TIMING_MATCH"
+      },
+      {
+        "case": "grid",
+        "lane": "format_only",
+        "input_sha256": "f24a3b6ae495605e179bd34ae282047dcc4581819eb53041db34c9fdb66648cd",
+        "native": {
+          "exit_code": 0,
+          "timeout": false,
+          "elapsed_ms": 1003,
+          "capture_incomplete": false,
+          "pages": 1,
+          "characters": 0,
+          "words": 0,
+          "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "grids": 1,
+          "cells": 196,
+          "filled_cells": 98,
+          "modes": [
+            "ocr+grid"
+          ],
+          "confidence": [
+            null
+          ],
+          "word_assignment": [
+            {
+              "recognized_words": 0,
+              "assigned_words": 0,
+              "words_outside_tables": 0,
+              "duplicate_assignments": 0
+            }
+          ],
+          "warnings": 0,
+          "artifact_sizes": {
+            "result.v1.json": 156124,
+            "result.json": 76636,
+            "result.docx": 18991,
+            "result.xlsx": 5683
+          }
+        },
+        "heic_rs": {
+          "exit_code": 0,
+          "timeout": false,
+          "elapsed_ms": 994,
+          "capture_incomplete": false,
+          "pages": 1,
+          "characters": 0,
+          "words": 0,
+          "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "grids": 1,
+          "cells": 196,
+          "filled_cells": 98,
+          "modes": [
+            "ocr+grid"
+          ],
+          "confidence": [
+            null
+          ],
+          "word_assignment": [
+            {
+              "recognized_words": 0,
+              "assigned_words": 0,
+              "words_outside_tables": 0,
+              "duplicate_assignments": 0
+            }
+          ],
+          "warnings": 0,
+          "artifact_sizes": {
+            "result.v1.json": 156140,
+            "result.json": 76636,
+            "result.docx": 18991,
+            "result.xlsx": 5683
+          }
+        },
+        "comparison": {
+          "identical_input_verified": true,
+          "exact_non_timing_json": true,
+          "legacy_result_json_equal": true,
+          "different_fields": [],
+          "geometry_equal": true,
+          "ocr_fingerprints_equal": true,
+          "docx_document_xml_equal": true,
+          "xlsx_workbook_cells_equal": true
+        },
+        "status": "EXACT_NON_TIMING_MATCH"
+      },
+      {
+        "case": "white16",
+        "lane": "format_only",
+        "input_sha256": "96bb56231cd2a98bc26f9f734681ea0b0a6dbcde597a761e50a9d40e6a4e608d",
+        "native": {
+          "exit_code": 1,
+          "timeout": false,
+          "elapsed_ms": 47,
+          "capture_incomplete": false,
+          "output_published": false
+        },
+        "heic_rs": {
+          "exit_code": 0,
+          "timeout": false,
+          "elapsed_ms": 79,
+          "capture_incomplete": false,
+          "pages": 1,
+          "characters": 0,
+          "words": 0,
+          "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "grids": 0,
+          "cells": 0,
+          "filled_cells": 0,
+          "modes": [
+            "ocr"
+          ],
+          "confidence": [
+            null
+          ],
+          "word_assignment": [
+            null
+          ],
+          "warnings": 0,
+          "artifact_sizes": {
+            "result.v1.json": 2115,
+            "result.json": 115,
+            "result.docx": 16898,
+            "result.xlsx": 5374
+          }
+        },
+        "status": "CANDIDATE_ONLY_SUCCESS"
+      }
+    ]
+  },
+  "private_regression": {
+    "status": "PASS_LOCAL_CLI_COMPARISON",
+    "elapsed_seconds": 107.188,
+    "unique_cohort": [
+      40,
+      345,
+      4071,
+      36633,
+      36639
+    ],
+    "model_load_smoke": "PASS_SYNTHETIC_ONLY",
+    "inputs_and_bundles_unchanged": true,
+    "receipt_sha256": "36a80c53e1db368dc7ffd49f87816c569824b83d21dca492e1a4efd2e12f070c",
+    "observer": {
+      "schema_version": 1,
+      "purpose": "Denser second stable ACTIVE module snapshot; no gate relaxation",
+      "original_runner_sha256": "a5f8f946522ca9caf5ff516c2113915d9cf29e61a39ac51dc85c36207a6b03d1",
+      "wrapper_sha256": "cb5d88a0fd494747be01b9d2015edd0e458560ae80487debc51b7e53a3bcf68a",
+      "original_observer_function_sha256": "aaa4efb8b50b915bcd69be9381f40a646e9efaf89066fa254e2fc09c8333b254",
+      "effective_observer_function_sha256": "d1243a9c2b116142dc1208742359b2bc2ad53d34796832fd3491fc827b53b25b",
+      "base_poll_seconds": 0.05,
+      "stable_followup_seconds": 0.005,
+      "unchanged": [
+        "two identical complete ACTIVE snapshots",
+        "PID/birth/image identity",
+        "module paths",
+        "four-error 299 recovery budget",
+        "120-second timeout",
+        "owned job tree",
+        "async pipe drain",
+        "export integrity",
+        "all semantic/field/f32/OOXML/oracle comparisons"
+      ]
+    },
+    "earlier_observer_attempts": "2 FAIL_OR_INCOMPLETE attempts retained: short successful CLI exited before two full ACTIVE snapshots"
+  },
+  "local_package": {
+    "files": 551,
+    "bytes": 54226081,
+    "manifest_sha256": "f6c8208182d4f590a7f1c586e3892722e122afc1fbf7e3d93282092e75c30469",
+    "distribution_status": "blocked",
+    "smoke": "PASS: controlled PATH, accepted semantic baseline; clean Windows evidence is separate",
+    "static_inventory_entries": 241,
+    "static_inventory_scope": "Selected graph superset plus native inventory; not a complete retained-code SBOM",
+    "old_heif_static_entries": 0,
+    "zip_created": false
+  },
+  "source_only_packager_tests": {
+    "pass_assertions": 50,
+    "exit_code": 0,
+    "scope": "synthetic fixtures/archives only",
+    "initial_junction_attempt": "NOT_RUN remainder: access denied; full approved rerun PASS",
+    "receipt_sha256": "24283ccabd8a98e6dd639434a5e5de5562ecb498fcf5838ee961e8ed731bda35"
+  }
+}

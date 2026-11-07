@@ -48,6 +48,9 @@ jobs:
           cache-bin: false
       - name: Fetch locked Rust dependencies
         run: cargo fetch --locked
+      - name: Validate Windows feature graphs without native installation
+        shell: pwsh
+        run: ./tools/heic-rs-evaluation/check-feature-matrix.ps1 -GraphOnly -EvidenceRoot (Join-Path $env:RUNNER_TEMP ('ocr-feature-graphs-' + [guid]::NewGuid().ToString('N')))
       - name: Formatting
         run: cargo fmt --all -- --check
       - name: Portable packaging source-only gates

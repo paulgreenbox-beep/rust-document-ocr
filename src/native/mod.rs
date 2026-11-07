@@ -4,6 +4,8 @@ pub mod djvu_source;
 pub mod heic_rs_source;
 #[cfg(feature = "heif-input")]
 pub mod heif_source;
+#[cfg(any(feature = "heif-input", feature = "heic-rs-input"))]
+pub mod heif_types;
 pub mod input_source;
 pub mod pdfium_render_ffi;
 pub mod pdfium_source;
