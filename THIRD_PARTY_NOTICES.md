@@ -55,6 +55,26 @@ files are distributed; the upstream Apache-2.0 model terms remain separate.
 
 ## Research-only OCR systems and model artifacts
 
+The isolated `tools/heic-rs-evaluation/vendor/heic-rs` research derivative
+`0.1.4-ocr.1` includes library source from published heic-rs 0.1.4 (Thomas
+Braun, 2026; MIT OR Apache-2.0). Its original LICENSE-MIT, LICENSE-APACHE,
+NOTICE and source copyright notices are retained alongside dated modification
+notices and PATCH_NOTES.md. Original archive/VCS/source hashes and the local
+patch diff are recorded in that tool. No branding or font assets are included.
+The extended tiny HEIF/PNG fixtures are synthetic; their construction and
+independent-reference provenance are recorded in `provenance_extended.md`.
+The original six fixtures retain their upstream notices. The decoder's NOTICE
+does not grant third-party HEVC patent rights. This isolated source experiment
+does not remove libheif/libde265 from the production OCR or approve any binary
+distribution.
+
+The research pipeline A/B additionally includes unmodified synthetic HEIC/SVG
+fixtures from Cloud2BR/OCR-IMG2PDF-Converter at commit
+`33db9cd8021e703d5100380538d3b8a8400cbe79`, under its Apache-2.0 repository
+license. Original LICENSE/README bytes, source SVGs and file hashes accompany
+them in `tools/heic-rs-evaluation/fixtures/ocr-public`. No encoder, fonts,
+customer input or model weights are included with these fixtures.
+
 Surya, GOT-OCR, and ABBYY are not dependencies or assets in this source release. The project's MIT license grants no rights in their code, services, checkpoints, or model weights.
 
 | System or artifact | Primary-source terms reviewed | Source-release decision |

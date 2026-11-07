@@ -1,0 +1,498 @@
+# Review view: original published 0.1.4 sources -> local research derivative.
+# New src/hevc/resource_tests.rs and manifest/notes are separate new files.
+# Zero context is deliberate so blank context lines do not add trailing whitespace.
+diff --git a/src/decode.rs b/src/decode.rs
+index 4f10408..38541ae 100644
+--- a/src/decode.rs
++++ b/src/decode.rs
+@@ -0,0 +1 @@
++// Modified 2026-11-07 for the OCR research derivative: aggregate raw-picture preflight.
+@@ -6 +7,2 @@
+-//! checked against the caller's ceiling before any of it allocates.
++//! checked against the caller's ceiling before HEVC image buffers are allocated.
++//! Encoded-input and metadata parsing allocations are a separate concern.
+@@ -12 +14 @@ use crate::context::Context;
+-use crate::error::{Error, Result};
++use crate::error::{Error, ResourceStage, Result};
+@@ -25,2 +27,2 @@ use crate::transform;
+-/// Container-level failures are reported before anything is decoded, so a
+-/// malformed file costs nothing. A file whose bitstream uses a coding tool
++/// Container-level failures are reported before HEVC image decoding; metadata
++/// parsing still has an input-dependent cost. A bitstream using a coding tool
+@@ -30,9 +31,0 @@ pub fn decode(bytes: &[u8], options: &DecodeOptions) -> Result<Image> {
+-    // One thread pool for the whole decode, not one per stage. Inside, the
+-    // caller's choice has already been honoured, so `threads` there means
+-    // "the pool we are in" or "this thread" and nothing else.
+-    parallel::scope(options.threads, |threads| run(bytes, options, threads))
+-}
+-
+-/// The decode itself, already inside whatever thread pool the caller asked
+-/// for.
+-fn run(bytes: &[u8], options: &DecodeOptions, threads: Option<usize>) -> Result<Image> {
+@@ -55,2 +48,76 @@ fn run(bytes: &[u8], options: &DecodeOptions, threads: Option<usize>) -> Result<
+-    let decoded = decode_item(&ctx, id, &p, threads)?;
+-    let alpha = alpha_frame(&ctx, id, options, limit, threads)?;
++    // Immutable, serial preflight of every picture, including auxiliary alpha
++    // and each tile occurrence. Reject the complete request before any HEVC
++    // item payload copies, image buffers, parallel dispatch or private pool.
++    // Metadata parsing/encoded byte bounds remain a separate input concern.
++    let mut budget = CodedBudget { used: 0, limit };
++    preflight_item(&ctx, id, &p, &mut budget)?;
++    if options.decode_alpha && options.layout.has_alpha() {
++        if let Some(aux) = ctx.alpha_item(id)? {
++            preflight_item(&ctx, aux, &ctx.props(aux)?, &mut budget)?;
++        }
++    }
++    parallel::scope(options.threads, |threads| run(&ctx, &p, options, threads))
++}
++
++struct CodedBudget {
++    used: u64,
++    limit: u64,
++}
++
++impl CodedBudget {
++    fn charge(&mut self, pixels: u64) -> Result<()> {
++        let required = self.used.checked_add(pixels).ok_or(Error::ResourceLimit {
++            stage: ResourceStage::AggregateCodedPictures,
++            required: u64::MAX,
++            limit: self.limit,
++        })?;
++        if required > self.limit {
++            return Err(Error::ResourceLimit {
++                stage: ResourceStage::AggregateCodedPictures,
++                required,
++                limit: self.limit,
++            });
++        }
++        self.used = required;
++        Ok(())
++    }
++}
++
++fn preflight_item(
++    ctx: &Context<'_>,
++    id: u32,
++    p: &ItemProps<'_>,
++    budget: &mut CodedBudget,
++) -> Result<()> {
++    if let Some((grid, tiles)) = ctx.grid(id)? {
++        // A forged primary ispe must not hide a larger grid/alpha canvas.
++        check_pixels(grid.output_width, grid.output_height, budget.limit)?;
++        for tile in tiles {
++            preflight_coded(&ctx.props(tile)?, budget)?;
++        }
++    } else {
++        preflight_coded(p, budget)?;
++    }
++    Ok(())
++}
++
++fn preflight_coded(p: &ItemProps<'_>, budget: &mut CodedBudget) -> Result<()> {
++    let hvcc = p.hvcc.as_ref().ok_or(Error::MissingBox("hvcC"))?;
++    // Charge the largest raw area across all supplied SPS configurations,
++    // not the cropped probe geometry or the container's ispe metadata.
++    let required = hevc::coded_pixel_requirement(&hvcc.parameter_sets(), budget.limit)?;
++    budget.charge(required)
++}
++
++/// The image-buffer work, entered only after the whole immutable request fits.
++fn run(
++    ctx: &Context<'_>,
++    p: &ItemProps<'_>,
++    options: &DecodeOptions,
++    threads: Option<usize>,
++) -> Result<Image> {
++    let id = ctx.meta.primary;
++    let limit = options.pixel_limit();
++
++    let decoded = decode_item(ctx, id, p, limit, threads)?;
++    let alpha = alpha_frame(ctx, id, options, limit, threads)?;
+@@ -114,0 +182 @@ fn decode_item(
++    limit: u64,
+@@ -119,2 +187,3 @@ fn decode_item(
+-            let frames =
+-                parallel::try_map(&tiles, threads, |t| decode_coded(ctx, *t, &ctx.props(*t)?))?;
++            let frames = parallel::try_map(&tiles, threads, |t| {
++                decode_coded(ctx, *t, &ctx.props(*t)?, limit)
++            })?;
+@@ -123 +192 @@ fn decode_item(
+-        None => decode_coded(ctx, id, p).map(Decoded::Picture),
++        None => decode_coded(ctx, id, p, limit).map(Decoded::Picture),
+@@ -128 +197 @@ fn decode_item(
+-fn decode_coded(ctx: &Context<'_>, id: u32, p: &ItemProps<'_>) -> Result<Frame> {
++fn decode_coded(ctx: &Context<'_>, id: u32, p: &ItemProps<'_>, limit: u64) -> Result<Frame> {
+@@ -136 +205 @@ fn decode_coded(ctx: &Context<'_>, id: u32, p: &ItemProps<'_>) -> Result<Frame>
+-    let frame = hevc::decode_still(&params, &nals)?;
++    let frame = hevc::decode_still_limited(&params, &nals, limit)?;
+@@ -159 +228 @@ fn alpha_frame(
+-    decode_item(ctx, aux, &aux_props, threads)?
++    decode_item(ctx, aux, &aux_props, limit, threads)?
+@@ -168,0 +238,22 @@ pub fn effective_nclx(p: &ItemProps<'_>) -> Nclx {
++
++#[cfg(test)]
++mod budget_tests {
++    use super::*;
++
++    #[test]
++    fn resource_limit_aggregate_addition_does_not_wrap_or_mutate_on_failure() {
++        let mut budget = CodedBudget {
++            used: u64::MAX - 1,
++            limit: u64::MAX,
++        };
++        assert_eq!(
++            budget.charge(2),
++            Err(Error::ResourceLimit {
++                stage: ResourceStage::AggregateCodedPictures,
++                required: u64::MAX,
++                limit: u64::MAX,
++            })
++        );
++        assert_eq!(budget.used, u64::MAX - 1);
++    }
++}
+
+diff --git a/src/error.rs b/src/error.rs
+index 7628035..cd72691 100644
+--- a/src/error.rs
++++ b/src/error.rs
+@@ -0,0 +1 @@
++// Modified 2026-11-07 for the OCR research derivative: typed decoded-resource limits.
+@@ -8,0 +10,10 @@ use core::fmt;
++/// Which preallocation budget rejected a decode in the local research derivative.
++#[derive(Debug, Clone, Copy, PartialEq, Eq)]
++#[non_exhaustive]
++pub enum ResourceStage {
++    /// One HEVC configuration's untrimmed luma width times height.
++    CodedPicture,
++    /// Sum of worst-case untrimmed areas for all requested primary/alpha/grid pictures.
++    AggregateCodedPictures,
++}
++
+@@ -35,0 +47,10 @@ pub enum Error {
++    /// A decoded-picture budget was rejected before HEVC image buffers were allocated.
++    /// Units are untrimmed luma sample sites, not bytes or displayed pixels.
++    ResourceLimit {
++        /// The checked stage.
++        stage: ResourceStage,
++        /// Required untrimmed luma sites (or u64::MAX when the sum overflowed).
++        required: u64,
++        /// Caller-allowed untrimmed luma sites.
++        limit: u64,
++    },
+@@ -76,0 +98,8 @@ impl fmt::Display for Error {
++            Error::ResourceLimit {
++                stage,
++                required,
++                limit,
++            } => write!(
++                f,
++                "decoded resource limit at {stage:?}: {required} untrimmed luma sites exceed {limit}"
++            ),
+
+diff --git a/src/hevc/decode/geom.rs b/src/hevc/decode/geom.rs
+index 5393890..5193b50 100644
+--- a/src/hevc/decode/geom.rs
++++ b/src/hevc/decode/geom.rs
+@@ -0,0 +1 @@
++// Modified 2026-11-07 for the OCR research derivative: test-only image-table allocation boundary.
+@@ -44,0 +46,2 @@ impl Geometry {
++        #[cfg(test)]
++        crate::hevc::mark_image_buffer_phase();
+
+diff --git a/src/hevc/decode/mod.rs b/src/hevc/decode/mod.rs
+index db6375b..f466b08 100644
+--- a/src/hevc/decode/mod.rs
++++ b/src/hevc/decode/mod.rs
+@@ -0,0 +1 @@
++// Modified 2026-11-07 for the OCR research derivative: raw-SPS gate before image tables.
+@@ -31 +32 @@ use alloc::vec::Vec;
+-pub fn decode(sets: &ParameterSets, slices: &[&[u8]]) -> Result<Frame> {
++pub fn decode(sets: &ParameterSets, slices: &[&[u8]], max_coded_pixels: u64) -> Result<Frame> {
+@@ -56,0 +58,16 @@ pub fn decode(sets: &ParameterSets, slices: &[&[u8]]) -> Result<Frame> {
++    // Defence in depth at the exact allocation boundary. The public seam has
++    // already bounded every supplied SPS before slice RBSP copying; do not let
++    // later refactoring turn metadata/cropped dimensions into this gate.
++    let required =
++        (sps.width as u64)
++            .checked_mul(sps.height as u64)
++            .ok_or(Error::ResourceLimit {
++                required: u64::MAX,
++                limit: max_coded_pixels,
++            })?;
++    if required > max_coded_pixels {
++        return Err(Error::ResourceLimit {
++            required,
++            limit: max_coded_pixels,
++        });
++    }
+
+diff --git a/src/hevc/decode/sets.rs b/src/hevc/decode/sets.rs
+index d6a4885..1df5bd1 100644
+--- a/src/hevc/decode/sets.rs
++++ b/src/hevc/decode/sets.rs
+@@ -0,0 +1 @@
++// Modified 2026-11-07 for the OCR research derivative: account for every SPS before replacement.
+@@ -10,0 +12,2 @@ pub struct ParameterSets {
++    /// Largest raw luma area seen, including SPS definitions later replaced by the same id.
++    pub max_raw_pixels: u64,
+@@ -36,0 +40,4 @@ impl ParameterSets {
++                    let raw = (s.width as u64)
++                        .checked_mul(s.height as u64)
++                        .ok_or(Error::TooLarge)?;
++                    out.max_raw_pixels = out.max_raw_pixels.max(raw);
+
+diff --git a/src/hevc/error.rs b/src/hevc/error.rs
+index c5e9d25..1def261 100644
+--- a/src/hevc/error.rs
++++ b/src/hevc/error.rs
+@@ -0,0 +1 @@
++// Modified 2026-11-07 for the OCR research derivative: pre-Geometry resource failure.
+@@ -24,0 +26,2 @@ pub enum Error {
++    /// Untrimmed SPS luma sites exceed the per-picture preallocation budget.
++    ResourceLimit { required: u64, limit: u64 },
+@@ -44,0 +48,4 @@ impl core::fmt::Display for Error {
++            Error::ResourceLimit { required, limit } => write!(
++                f,
++                "{required} untrimmed luma sites exceed the {limit} coded-picture limit"
++            ),
+@@ -61,0 +69,5 @@ impl From<Error> for crate::Error {
++            Error::ResourceLimit { required, limit } => crate::Error::ResourceLimit {
++                stage: crate::ResourceStage::CodedPicture,
++                required,
++                limit,
++            },
+
+diff --git a/src/hevc/mod.rs b/src/hevc/mod.rs
+index b1d9131..0c63126 100644
+--- a/src/hevc/mod.rs
++++ b/src/hevc/mod.rs
+@@ -0,0 +1 @@
++// Modified 2026-11-07 for the OCR research derivative: raw-SPS preallocation API.
+@@ -52,0 +54,21 @@ mod golden;
++#[cfg(test)]
++mod resource_tests;
++
++#[cfg(test)]
++std::thread_local! {
++    static IMAGE_BUFFER_PHASES: core::cell::Cell<usize> = const { core::cell::Cell::new(0) };
++}
++
++#[cfg(test)]
++pub(crate) fn mark_image_buffer_phase() {
++    IMAGE_BUFFER_PHASES.with(|n| n.set(n.get() + 1));
++}
++#[cfg(test)]
++pub(crate) fn reset_image_buffer_count() {
++    IMAGE_BUFFER_PHASES.with(|n| n.set(0));
++}
++#[cfg(test)]
++pub(crate) fn image_buffer_count() -> usize {
++    IMAGE_BUFFER_PHASES.with(|n| n.get())
++}
++
+@@ -63,0 +86,95 @@ pub fn decode_still(parameter_sets: &[&[u8]], slices: &[&[u8]]) -> Result<Frame>
++    decode_still_limited(parameter_sets, slices, crate::DEFAULT_MAX_PIXELS)
++}
++
++/// Decode one picture with a preallocation ceiling on untrimmed luma sample sites.
++///
++/// Every SPS in the configuration must fit, including unused configurations.
++/// This check precedes slice RBSP copying, Geometry, Picture and filter storage.
++/// The unit is raw luma width times height, not cropped/output pixels or bytes.
++pub fn decode_still_limited(
++    parameter_sets: &[&[u8]],
++    slices: &[&[u8]],
++    max_coded_pixels: u64,
++) -> Result<Frame> {
++    let sets = decode::ParameterSets::parse(parameter_sets)?;
++    check_coded_requirement(&sets, max_coded_pixels)?;
++    Ok(decode::decode(&sets, slices, max_coded_pixels)?)
++}
++
++/// Both untrimmed allocation geometry and cropped display geometry from a configuration.
++#[derive(Debug, Clone, Copy, PartialEq, Eq)]
++pub struct CodedImageInfo {
++    /// Width before the SPS conformance window.
++    pub raw_width: u32,
++    /// Height before the SPS conformance window.
++    pub raw_height: u32,
++    /// Width after the SPS conformance window.
++    pub width: u32,
++    /// Height after the SPS conformance window.
++    pub height: u32,
++    /// Luma sample depth.
++    pub bit_depth: u8,
++    /// Chroma sampling.
++    pub chroma: ChromaFormat,
++    /// Largest untrimmed width times height across every supplied SPS.
++    pub max_raw_pixels: u64,
++}
++
++/// Inspect allocation geometry without allocating decoded image buffers.
++///
++/// Dimension/depth fields describe the first PPS-selected SPS (as `probe` does),
++/// while max_raw_pixels conservatively includes every SPS, even unused ones.
++pub fn probe_coded(parameter_sets: &[&[u8]]) -> Result<CodedImageInfo> {
++    let sets = decode::ParameterSets::parse(parameter_sets)?;
++    let sps = sets.first_sps()?;
++    let [l, r, t, b] = sps.crop;
++    let cropped_width = l
++        .checked_add(r)
++        .and_then(|crop| sps.width.checked_sub(crop))
++        .ok_or(crate::Error::Malformed(
++            "conformance window overflows coded width",
++        ))?;
++    let cropped_height = t
++        .checked_add(b)
++        .and_then(|crop| sps.height.checked_sub(crop))
++        .ok_or(crate::Error::Malformed(
++            "conformance window overflows coded height",
++        ))?;
++    Ok(CodedImageInfo {
++        raw_width: sps.width as u32,
++        raw_height: sps.height as u32,
++        width: cropped_width as u32,
++        height: cropped_height as u32,
++        bit_depth: sps.bit_depth_y,
++        chroma: ChromaFormat::from_idc(sps.chroma_array_type).unwrap_or(ChromaFormat::Monochrome),
++        max_raw_pixels: maximum_coded_requirement(&sets)?,
++    })
++}
++
++fn maximum_coded_requirement(sets: &decode::ParameterSets) -> Result<u64> {
++    if sets.sps.is_empty() {
++        return Err(crate::Error::MissingParameterSet("SPS"));
++    }
++    let mut maximum = sets.max_raw_pixels;
++    for sps in &sets.sps {
++        let required = (sps.width as u64)
++            .checked_mul(sps.height as u64)
++            .ok_or(crate::Error::Malformed("untrimmed SPS dimensions overflow"))?;
++        maximum = maximum.max(required);
++    }
++    Ok(maximum)
++}
++
++fn check_coded_requirement(sets: &decode::ParameterSets, limit: u64) -> Result<u64> {
++    let required = maximum_coded_requirement(sets)?;
++    if required > limit {
++        return Err(crate::Error::ResourceLimit {
++            stage: crate::ResourceStage::CodedPicture,
++            required,
++            limit,
++        });
++    }
++    Ok(required)
++}
++
++pub(crate) fn coded_pixel_requirement(parameter_sets: &[&[u8]], limit: u64) -> Result<u64> {
+@@ -65 +182,10 @@ pub fn decode_still(parameter_sets: &[&[u8]], slices: &[&[u8]]) -> Result<Frame>
+-    Ok(decode::decode(&sets, slices)?)
++    check_coded_requirement(&sets, limit)
++}
++
++#[cfg(test)]
++pub(crate) fn reset_picture_count() {
++    picture::reset_picture_count();
++}
++#[cfg(test)]
++pub(crate) fn picture_count() -> usize {
++    picture::picture_count()
+
+diff --git a/src/hevc/picture.rs b/src/hevc/picture.rs
+index d3dab15..6dda84c 100644
+--- a/src/hevc/picture.rs
++++ b/src/hevc/picture.rs
+@@ -0,0 +1 @@
++// Modified 2026-11-07 for the OCR research derivative: test-only allocation-boundary counter.
+@@ -6,0 +8,14 @@ use alloc::vec::Vec;
++#[cfg(test)]
++std::thread_local! {
++    static PICTURE_CONSTRUCTIONS: core::cell::Cell<usize> = const { core::cell::Cell::new(0) };
++}
++
++#[cfg(test)]
++pub(crate) fn reset_picture_count() {
++    PICTURE_CONSTRUCTIONS.with(|n| n.set(0));
++}
++#[cfg(test)]
++pub(crate) fn picture_count() -> usize {
++    PICTURE_CONSTRUCTIONS.with(|n| n.get())
++}
++
+@@ -95,0 +111,2 @@ impl Picture {
++        #[cfg(test)]
++        PICTURE_CONSTRUCTIONS.with(|n| n.set(n.get() + 1));
+
+diff --git a/src/image.rs b/src/image.rs
+index a9e63ed..ee99dba 100644
+--- a/src/image.rs
++++ b/src/image.rs
+@@ -0,0 +1 @@
++// Modified 2026-11-07 for the OCR research derivative: explicit raw aggregate budget units.
+@@ -141 +142,2 @@ pub struct DecodeOptions {
+-    /// The largest image that will be produced, in pixels.
++    /// Ceiling on each output/intermediate canvas in displayed pixels, and
++    /// separately on aggregate untrimmed HEVC luma sample sites for the request.
+@@ -143 +145,9 @@ pub struct DecodeOptions {
+-    /// `None` removes the ceiling entirely, which is only safe for input you
++    /// The raw aggregate includes every main/alpha grid tile occurrence, using
++    /// the largest width*height across all its SPS configurations before any
++    /// conformance crop. This conservative budget can reject an image whose
++    /// displayed dimensions alone fit. It is not an exact heap-byte ceiling;
++    /// chroma, geometry, filters, crop copies and output buffers are bounded
++    /// multiples of the admitted raw sites and output pixels. Encoded input and
++    /// metadata allocations are governed separately, not by this field.
++    ///
++    /// `None` removes both ceilings entirely, which is only safe for input you
+
+diff --git a/src/lib.rs b/src/lib.rs
+index 179bb28..5e0e603 100644
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -0,0 +1 @@
++// Modified 2026-11-07 for the OCR research derivative: resource-stage API export.
+@@ -90 +91 @@ pub use crate::decode::decode;
+-pub use crate::error::{Error, Result};
++pub use crate::error::{Error, ResourceStage, Result};
+
+diff --git a/src/props/simple.rs b/src/props/simple.rs
+index 5b16f7d..00d57ee 100644
+--- a/src/props/simple.rs
++++ b/src/props/simple.rs
+@@ -0,0 +1 @@
++// Modified 2026-11-07 for the OCR research derivative: ISO 23008-12:2022 imir mapping.
+@@ -114,2 +115,2 @@ pub fn parse_irot(b: &BoxHeader<'_>) -> Result<Rotation> {
+-/// The coded field names the *axis*: 0 is a vertical axis, which exchanges
+-/// left and right; 1 is a horizontal axis, which exchanges top and bottom.
++/// ISO/IEC 23008-12:2022 defines 0 as exchanging top/bottom, and 1 as
++/// exchanging left/right. These are effects, not an inferred geometric axis.
+@@ -118 +119 @@ pub enum Mirror {
+-    /// Coded axis 0: left and right are exchanged.
++    /// Coded value 1: left and right are exchanged.
+@@ -120 +121 @@ pub enum Mirror {
+-    /// Coded axis 1: top and bottom are exchanged.
++    /// Coded value 0: top and bottom are exchanged.
+@@ -128,2 +128,0 @@ pub fn parse_imir(b: &BoxHeader<'_>) -> Result<Mirror> {
+-        Mirror::LeftRight
+-    } else {
+@@ -130,0 +130,2 @@ pub fn parse_imir(b: &BoxHeader<'_>) -> Result<Mirror> {
++    } else {
++        Mirror::LeftRight
+@@ -133,0 +135,15 @@ pub fn parse_imir(b: &BoxHeader<'_>) -> Result<Mirror> {
++#[cfg(test)]
++mod ocr_mirror_mapping_tests {
++    use super::*;
++    use crate::boxes::BoxIter;
++
++    #[test]
++    fn imir_codes_match_iso_effects_not_inferred_axis_names() {
++        for (value, expected) in [(0, Mirror::TopBottom), (1, Mirror::LeftRight)] {
++            let bytes = [0, 0, 0, 9, b'i', b'm', b'i', b'r', value];
++            let header = BoxIter::new(&bytes).require(b"imir", "imir").unwrap();
++            assert_eq!(parse_imir(&header).unwrap(), expected);
++        }
++    }
++}
++

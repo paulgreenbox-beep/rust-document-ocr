@@ -37,7 +37,7 @@ use crate::page_analysis::{
     ProcessingMode, RenderSize,
 };
 use crate::page_source::{
-    dimensions_within_pixel_limit, PageSource, RenderedPage, RenderedPageRegion,
+    dimensions_within_pixel_limit, NativeGridWords, PageSource, RenderedPage, RenderedPageRegion,
 };
 use crate::preprocessing::preprocess;
 use crate::progress::{OcrProgressEvent, OcrProgressReporter, OcrProgressStage};
@@ -518,9 +518,15 @@ enum PreparedWork {
 struct PreparedGridRender {
     rendered: RenderedPage,
     native_words: Vec<crate::dto::Word>,
+    native_owners: Option<NativeGridOwners>,
     grid_candidates: Vec<TableGrid>,
     cell_ocr_regions: Vec<Option<RenderedPageRegion>>,
 }
+
+/// Owner coordinates are actual grid/cell indices, not positions in the
+/// filtered bbox list passed to a source (which can skip geometry-less cells).
+type NativeGridOwners = Vec<Option<(usize, usize)>>;
+type NativeGridExtraction = (Vec<crate::dto::Word>, Option<NativeGridOwners>);
 
 struct ProcessedPage {
     page_number: u32,
@@ -625,13 +631,13 @@ fn prepare_page<S: PageSource>(
                         }
                     };
                     timings.grid_detection_ms += elapsed_ms(stage_started);
-                    let cell_bounds = native_grid_cell_bounds(&grid_candidates);
                     let stage_started = Instant::now();
-                    let native_words = match source.native_words_for_grid_cells(
+                    let (native_words, native_owners) = match extract_bound_native_grid_words(
+                        source,
                         page_number,
                         width,
                         height,
-                        &cell_bounds,
+                        &grid_candidates,
                     ) {
                         Ok(Some(words)) => words,
                         Ok(None) => {
@@ -641,14 +647,14 @@ fn prepare_page<S: PageSource>(
                                     "page source does not expose coordinate-bearing native words"
                                         .to_string(),
                             });
-                            Vec::new()
+                            (Vec::new(), None)
                         }
                         Err(error) => {
                             warnings.push(PipelineWarning::NativeWordGeometryUnavailable {
                                 page_number,
                                 message: error.to_string(),
                             });
-                            Vec::new()
+                            (Vec::new(), None)
                         }
                     };
                     timings.native_text_extraction_ms += elapsed_ms(stage_started);
@@ -665,6 +671,7 @@ fn prepare_page<S: PageSource>(
                             page_number,
                             &rendered,
                             &native_words,
+                            native_owners.as_ref(),
                             &grid_candidates,
                             cell_ocr_dpi,
                             roi_pixel_budget,
@@ -677,6 +684,7 @@ fn prepare_page<S: PageSource>(
                     Some(PreparedGridRender {
                         rendered,
                         native_words,
+                        native_owners,
                         grid_candidates,
                         cell_ocr_regions,
                     })
@@ -821,6 +829,98 @@ fn native_grid_cell_bounds(grids: &[TableGrid]) -> Vec<BoundingBox> {
         .collect()
 }
 
+fn extract_bound_native_grid_words<S: PageSource>(
+    source: &S,
+    page_number: u32,
+    width: u32,
+    height: u32,
+    grids: &[TableGrid],
+) -> Result<Option<NativeGridExtraction>, Box<dyn std::error::Error>> {
+    let cells = native_grid_cell_bounds(grids);
+    source
+        .native_words_with_grid_owners(page_number, width, height, &cells)?
+        .map(|result| bind_native_grid_words(result, grids))
+        .transpose()
+}
+
+fn bind_native_grid_words(
+    result: NativeGridWords,
+    grids: &[TableGrid],
+) -> Result<NativeGridExtraction, Box<dyn std::error::Error>> {
+    let NativeGridWords { words, cell_owners } = result;
+    let Some(owners) = cell_owners else {
+        return Ok((words, None));
+    };
+    if owners.len() != words.len() {
+        return Err("native grid owner count does not match word count".into());
+    }
+    let cells = grids
+        .iter()
+        .enumerate()
+        .flat_map(|(grid_index, grid)| {
+            grid.cells
+                .iter()
+                .enumerate()
+                .filter_map(move |(cell_index, cell)| {
+                    cell.bbox.as_ref().map(|_| (grid_index, cell_index))
+                })
+        })
+        .collect::<Vec<_>>();
+    let owners = owners
+        .into_iter()
+        .map(|owner| {
+            owner
+                .map(|index| {
+                    cells.get(index).copied().ok_or_else(|| {
+                        format!(
+                            "native grid owner index {index} exceeds supplied cell count {}",
+                            cells.len()
+                        )
+                    })
+                })
+                .transpose()
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok((words, Some(owners)))
+}
+
+fn assign_bound_native_words(
+    grid: &mut TableGrid,
+    grid_index: usize,
+    words: &[crate::dto::Word],
+    owners: Option<&NativeGridOwners>,
+) -> TableAssignmentMetrics {
+    match owners {
+        None => grid.assign_native_words(words),
+        Some(owners) => {
+            let local = owners
+                .iter()
+                .map(|owner| {
+                    owner.and_then(|(owner_grid, cell)| (owner_grid == grid_index).then_some(cell))
+                })
+                .collect::<Vec<_>>();
+            grid.assign_native_words_with_owners(words, &local)
+        }
+    }
+}
+
+fn bound_native_word_assignment_metrics(
+    words: &[crate::dto::Word],
+    grids: &[TableGrid],
+    owners: Option<&NativeGridOwners>,
+) -> PageWordAssignmentMetrics {
+    let Some(owners) = owners else {
+        return native_page_word_assignment_metrics(words, grids);
+    };
+    let assigned = owners.iter().filter(|owner| owner.is_some()).count();
+    PageWordAssignmentMetrics {
+        recognized_words: saturating_u32(words.len()),
+        assigned_words: saturating_u32(assigned),
+        words_outside_tables: saturating_u32(words.len().saturating_sub(assigned)),
+        duplicate_assignments: 0,
+    }
+}
+
 fn finish_prepared_native_page<O: OcrEngine>(
     mut prepared: PreparedPage,
     layer: NativeTextLayer,
@@ -833,6 +933,7 @@ fn finish_prepared_native_page<O: OcrEngine>(
     let Some(PreparedGridRender {
         rendered,
         native_words,
+        native_owners,
         grid_candidates,
         cell_ocr_regions,
     }) = grid_render
@@ -924,12 +1025,17 @@ fn finish_prepared_native_page<O: OcrEngine>(
         });
     }
 
-    let assignment = native_page_word_assignment_metrics(&native_words, &grid_candidates);
+    let assignment = bound_native_word_assignment_metrics(
+        &native_words,
+        &grid_candidates,
+        native_owners.as_ref(),
+    );
     let mut matrices = Vec::with_capacity(grid_candidates.len());
     let mut fallback_confidences = Vec::new();
     for (grid_index, mut grid) in grid_candidates.into_iter().enumerate() {
         let stage_started = Instant::now();
-        let mut metrics = grid.assign_native_words(&native_words);
+        let mut metrics =
+            assign_bound_native_words(&mut grid, grid_index, &native_words, native_owners.as_ref());
         prepared.timings.assignment_ms += elapsed_ms(stage_started);
         if config.enable_cell_ocr_fallback {
             let fallback =
@@ -1669,18 +1775,18 @@ where
             .expect("usable native text layer must exist");
         if let Some((rendered, grid_candidates)) = native_grid_render {
             let (page_width, page_height) = rendered.image.dimensions();
-            let cell_bounds = native_grid_cell_bounds(&grid_candidates);
             let render_size = RenderSize {
                 width: page_width,
                 height: page_height,
                 dpi: rendered.dpi.round().clamp(0.0, f64::from(u32::MAX)) as u32,
             };
             let stage_started = Instant::now();
-            let native_words = match source.native_words_for_grid_cells(
+            let (native_words, native_owners) = match extract_bound_native_grid_words(
+                source,
                 page_num,
                 page_width,
                 page_height,
-                &cell_bounds,
+                &grid_candidates,
             ) {
                 Ok(Some(words)) => words,
                 Ok(None) => {
@@ -1689,14 +1795,14 @@ where
                         message: "page source does not expose coordinate-bearing native words"
                             .to_string(),
                     });
-                    Vec::new()
+                    (Vec::new(), None)
                 }
                 Err(error) => {
                     warnings.push(PipelineWarning::NativeWordGeometryUnavailable {
                         page_number: page_num,
                         message: error.to_string(),
                     });
-                    Vec::new()
+                    (Vec::new(), None)
                 }
             };
             timings.native_text_extraction_ms += elapsed_ms(stage_started);
@@ -1758,12 +1864,21 @@ where
                 return Ok((page, processing, warnings));
             }
 
-            let assignment = native_page_word_assignment_metrics(&native_words, &grid_candidates);
+            let assignment = bound_native_word_assignment_metrics(
+                &native_words,
+                &grid_candidates,
+                native_owners.as_ref(),
+            );
             let mut matrices = Vec::with_capacity(grid_candidates.len());
             let mut fallback_confidences = Vec::new();
-            for mut grid in grid_candidates {
+            for (grid_index, mut grid) in grid_candidates.into_iter().enumerate() {
                 let stage_started = Instant::now();
-                let mut metrics = grid.assign_native_words(&native_words);
+                let mut metrics = assign_bound_native_words(
+                    &mut grid,
+                    grid_index,
+                    &native_words,
+                    native_owners.as_ref(),
+                );
                 timings.assignment_ms += elapsed_ms(stage_started);
                 if enable_cell_ocr_fallback {
                     report_stage_started(progress, OcrProgressStage::Ocr, page_num, total_pages);
@@ -2120,6 +2235,7 @@ fn prepare_grid_cell_ocr_regions<S: PageSource>(
     page_number: u32,
     rendered: &RenderedPage,
     native_words: &[crate::dto::Word],
+    native_owners: Option<&NativeGridOwners>,
     grid_candidates: &[TableGrid],
     cell_ocr_dpi: u32,
     max_pixels: usize,
@@ -2132,7 +2248,8 @@ fn prepare_grid_cell_ocr_regions<S: PageSource>(
 
     for (grid_index, grid) in grid_candidates.iter().enumerate() {
         let mut assigned = grid.clone();
-        let metrics = assigned.assign_native_words(native_words);
+        let metrics =
+            assign_bound_native_words(&mut assigned, grid_index, native_words, native_owners);
         let has_unresolved_cells = assigned.cells.iter().any(|cell| {
             cell.text.trim().is_empty()
                 && cell.bbox.as_ref().is_some_and(|bbox| {
@@ -4313,6 +4430,7 @@ mod tests {
                 Some(super::PreparedGridRender {
                     rendered: RenderedPage::new(7, image.clone(), 300.0),
                     native_words: engine.recognize_words(&image).unwrap(),
+                    native_owners: None,
                     grid_candidates: vec![grid_fixture(
                         BoundingBox::new(30.0, 30.0, 270.0, 270.0),
                         2,
@@ -5314,6 +5432,182 @@ mod tests {
         bitmap: GrayImage,
         layer: NativeTextLayer,
         metadata_angle: u16,
+    }
+
+    #[test]
+    fn native_grid_owner_binding_handles_sparse_cells_and_rejects_bad_indices() {
+        use crate::dto::Word;
+        use crate::page_source::NativeGridWords;
+        let mut first = grid_fixture(BoundingBox::new(0.0, 0.0, 100.0, 100.0), 1, 2, 1.0);
+        first.cells.insert(0, TableCell::default());
+        first.cells[1].col_span = 2;
+        let grids = vec![
+            first,
+            grid_fixture(BoundingBox::new(0.0, 0.0, 100.0, 100.0), 1, 2, 1.0),
+        ];
+        let words = vec![
+            Word::new("A", BoundingBox::new(49.0, 10.0, 54.0, 20.0), 0.75),
+            Word::new("outside", BoundingBox::new(10.0, 10.0, 20.0, 20.0), 0.8),
+        ];
+        let before = words.clone();
+        let (words, owners) = super::bind_native_grid_words(
+            NativeGridWords {
+                words,
+                cell_owners: Some(vec![Some(0), None]),
+            },
+            &grids,
+        )
+        .unwrap();
+        assert_eq!(owners.as_ref().unwrap(), &[Some((0, 1)), None]);
+        let metrics = super::bound_native_word_assignment_metrics(&words, &grids, owners.as_ref());
+        assert_eq!(
+            (
+                metrics.assigned_words,
+                metrics.words_outside_tables,
+                metrics.duplicate_assignments
+            ),
+            (1, 1, 0)
+        );
+        let legacy = super::native_page_word_assignment_metrics(&words, &grids);
+        assert_eq!(
+            legacy.duplicate_assignments, 2,
+            "custom sources without ownership retain geometric behavior"
+        );
+        for (index, mut grid) in grids.clone().into_iter().enumerate() {
+            let metrics =
+                super::assign_bound_native_words(&mut grid, index, &words, owners.as_ref());
+            assert_eq!(metrics.words_assigned, u32::from(index == 0));
+            if index == 0 {
+                assert_eq!(grid.cells[1].text, "A");
+                assert_eq!(grid.cells[1].col_span, 2);
+            }
+        }
+        assert_eq!(
+            serde_json::to_value(&words).unwrap(),
+            serde_json::to_value(&before).unwrap()
+        );
+        for owners in [vec![], vec![Some(4), None]] {
+            assert!(super::bind_native_grid_words(
+                NativeGridWords {
+                    words: words.clone(),
+                    cell_owners: Some(owners)
+                },
+                &grids
+            )
+            .is_err());
+        }
+        let (_, second_owner) = super::bind_native_grid_words(
+            NativeGridWords {
+                words: vec![words[0].clone()],
+                cell_owners: Some(vec![Some(2)]),
+            },
+            &grids,
+        )
+        .unwrap();
+        assert_eq!(second_owner.unwrap(), vec![Some((1, 0))]);
+    }
+
+    #[test]
+    fn native_grid_owned_pipeline_preserves_canonical_text_and_stable_json() {
+        struct OwnedSource {
+            bitmap: GrayImage,
+        }
+        impl PageSource for OwnedSource {
+            fn total_pages(&self) -> Result<u32, Box<dyn std::error::Error>> {
+                Ok(1)
+            }
+            fn render_page(
+                &mut self,
+                page: u32,
+            ) -> Result<RenderedPage, Box<dyn std::error::Error>> {
+                Ok(RenderedPage::new(page, self.bitmap.clone(), 100.0))
+            }
+            fn native_text_for_page(
+                &self,
+                _: u32,
+            ) -> Result<Option<NativeTextLayer>, Box<dyn std::error::Error>> {
+                let text =
+                    "Canonical searchable native page text stays separate from cell geometry 123.";
+                Ok(Some(NativeTextLayer::new(
+                    text.into(),
+                    text.chars().count(),
+                )))
+            }
+            fn native_words_with_grid_owners(
+                &self,
+                _: u32,
+                _: u32,
+                _: u32,
+                cells: &[BoundingBox],
+            ) -> Result<Option<crate::page_source::NativeGridWords>, Box<dyn std::error::Error>>
+            {
+                assert_eq!(cells.len(), 4);
+                // Both projected boxes lie in cell 1, but source evidence
+                // binds the first to cell 0 and the second to no table.
+                let bbox = &cells[1];
+                let bbox =
+                    BoundingBox::new(bbox.x0 + 2.0, bbox.y0 + 2.0, bbox.x1 - 2.0, bbox.y1 - 2.0);
+                Ok(Some(crate::page_source::NativeGridWords {
+                    words: vec![
+                        crate::dto::Word::new("A", bbox.clone(), 0.75),
+                        crate::dto::Word::new("outside", bbox, 0.8),
+                    ],
+                    cell_owners: Some(vec![Some(0), None]),
+                }))
+            }
+        }
+        let mut bitmap = GrayImage::from_pixel(300, 300, Luma([255]));
+        for position in [30, 150, 270] {
+            for along in 30..=270 {
+                bitmap.put_pixel(position, along, Luma([0]));
+                bitmap.put_pixel(along, position, Luma([0]));
+            }
+        }
+        let engine = CountingOcr::new();
+        for workers in [1, 2] {
+            let mut source = OwnedSource {
+                bitmap: bitmap.clone(),
+            };
+            let outcome = Pipeline::new(&mut source, &engine, DEFAULT_MAX_PIXELS, None)
+                .with_table_mode(TableMode::Grid)
+                .with_cell_ocr_fallback(false)
+                .run_with_warnings_parallel(workers)
+                .unwrap();
+            assert!(outcome.warnings.is_empty());
+            assert_eq!(
+                outcome.page_processing[0].processing_mode,
+                ProcessingMode::NativeTextWithGrid
+            );
+            let counts = outcome.page_processing[0].word_assignment.as_ref().unwrap();
+            assert_eq!(
+                (
+                    counts.assigned_words,
+                    counts.words_outside_tables,
+                    counts.duplicate_assignments
+                ),
+                (1, 1, 0)
+            );
+            let expected_text = source.native_text_for_page(1).unwrap().unwrap().text;
+            assert_eq!(outcome.document.pages[0].text, expected_text);
+            let matrix = outcome.document.pages[0].tables[0].clone();
+            assert_eq!(matrix.rows[0][0].text, "A");
+            assert_eq!(matrix.rows[0][0].confidence, 0.75);
+            assert!(matrix.rows[0][1].text.is_empty());
+            let stable = crate::OcrResult::from_document(outcome.document, vec![]);
+            let json = serde_json::to_value(&stable).unwrap();
+            assert_eq!(json["document"]["pages"][0]["text"], expected_text);
+            assert_eq!(
+                json["document"]["pages"][0]["tables"][0]["rows"][0][0],
+                serde_json::to_value(&matrix.rows[0][0]).unwrap()
+            );
+            assert_eq!(
+                serde_json::to_value(&stable.tables[0].grids[0].cells[0]).unwrap(),
+                serde_json::json!({"row": 0, "column": 0, "row_span": 1, "col_span": 1,
+                    "text": "A", "confidence": 0.75,
+                    "bbox": {"x": 30, "y": 30, "width": 120, "height": 120}})
+            );
+        }
+        assert_eq!(engine.calls.load(Ordering::SeqCst), 0);
     }
 
     impl PageSource for NativeTextStubSource {

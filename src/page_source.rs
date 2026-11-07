@@ -8,6 +8,16 @@ use image::{imageops, GrayImage, Luma};
 use crate::dto::{BoundingBox, Word};
 use crate::page_analysis::{NativeTextLayer, NativeTextLayout, PageOrientation};
 
+/// Native words plus optional source-owned membership in the requested cells.
+/// This transport-only evidence does not change Word geometry or JSON schemas.
+/// Outer `None` retains geometric assignment for existing/custom sources;
+/// an inner `None` explicitly identifies a word outside the confirmed cells.
+#[derive(Debug, Default)]
+pub struct NativeGridWords {
+    pub words: Vec<Word>,
+    pub cell_owners: Option<Vec<Option<usize>>>,
+}
+
 /// A single rendered page returned by a [`PageSource`].
 pub struct RenderedPage {
     pub page_num: u32,
@@ -219,6 +229,25 @@ pub trait PageSource {
         self.native_words_for_rendered_page(page_num, width, height)
     }
 
+    /// Preserves source glyph ownership through integer word-box projection.
+    /// Owner indices refer to `cell_bounds`, with one entry per returned word.
+    /// The default calls the existing grid hook, preserving custom overrides.
+    fn native_words_with_grid_owners(
+        &self,
+        page_num: u32,
+        width: u32,
+        height: u32,
+        cell_bounds: &[BoundingBox],
+    ) -> Result<Option<NativeGridWords>, Box<dyn std::error::Error>> {
+        self.native_words_for_grid_cells(page_num, width, height, cell_bounds)
+            .map(|words| {
+                words.map(|words| NativeGridWords {
+                    words,
+                    cell_owners: None,
+                })
+            })
+    }
+
     /// Renders a bounded grayscale image for the ruled-grid routing preflight.
     ///
     /// Production PDF sources may override this to render directly at the
@@ -362,6 +391,54 @@ mod tests {
         assert_eq!(words.len(), 1);
         assert_eq!(words[0].text, "ABC");
         assert_eq!(words[0].bbox, BoundingBox::new(10.0, 20.0, 35.0, 32.0));
+        let bound = ExistingSource
+            .native_words_with_grid_owners(1, 80, 60, &[])
+            .unwrap()
+            .unwrap();
+        assert!(bound.cell_owners.is_none());
+        assert_eq!(
+            serde_json::to_value(&bound.words[0]).unwrap(),
+            serde_json::to_value(&words[0]).unwrap()
+        );
+    }
+
+    #[test]
+    fn existing_custom_grid_override_is_used_by_owner_hook() {
+        struct GridSource;
+        impl PageSource for GridSource {
+            fn total_pages(&self) -> Result<u32, Box<dyn std::error::Error>> {
+                Ok(1)
+            }
+            fn render_page(
+                &mut self,
+                page_num: u32,
+            ) -> Result<RenderedPage, Box<dyn std::error::Error>> {
+                StubPageSource::single(80, 60, 255).render_page(page_num)
+            }
+            fn native_words_for_grid_cells(
+                &self,
+                _: u32,
+                _: u32,
+                _: u32,
+                cells: &[BoundingBox],
+            ) -> Result<Option<Vec<Word>>, Box<dyn std::error::Error>> {
+                Ok(Some(vec![Word::new(
+                    "grid override",
+                    cells[0].clone(),
+                    0.75,
+                )]))
+            }
+        }
+        let bbox = BoundingBox::new(1.0, 2.0, 3.0, 4.0);
+        let result = GridSource
+            .native_words_with_grid_owners(1, 80, 60, std::slice::from_ref(&bbox))
+            .unwrap()
+            .unwrap();
+        assert!(result.cell_owners.is_none());
+        assert_eq!(
+            serde_json::to_value(result.words).unwrap(),
+            serde_json::to_value(vec![Word::new("grid override", bbox, 0.75)]).unwrap()
+        );
     }
 
     #[test]

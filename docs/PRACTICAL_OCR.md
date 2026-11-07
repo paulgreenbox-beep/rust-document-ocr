@@ -12,9 +12,10 @@ The canonical native page text stays separate from geometry-aware text assigned 
 
 `PageSource::native_words_for_grid_cells` is additive. Its default forwards to `native_words_for_rendered_page`, so existing custom sources need not implement it. The PDF source uses the supplied cell boundaries for its positioned words. Table values and geometry can change where ownership or reading order was previously wrong; the CLI, JSON schema and DOCX/XLSX serializers are not changed by these fixes.
 
-Refined edges are used when splitting native glyph runs. Final assignment
-uses the projected words and the detected grid cells; it does not carry a
-stable refined cell identity through that projection. Do not interpret the
-duplicate metrics as a guarantee of unique ownership across adjacent grids.
+`PageSource::native_words_with_grid_owners` additionally carries non-serialized source ownership alongside the unchanged words. Its default delegates to the existing grid hook without supplying owners, preserving geometric assignment for custom sources. PDF source owners are bound to actual grid/cell indices before assignment, so rounding an ink box cannot move a word across a refined source seam. Word confidence and bounding boxes, canonical page text, and exported JSON coordinates remain unchanged. Malformed owner counts/indices use the existing geometry-unavailable diagnostic path. The separately run synthetic PDF test `source_grid_owner_survives_word_projection_and_matrix_json` covers source refinement through final cell JSON.
+
+Sources without explicit ownership still use projected geometry and report
+cross-grid seam duplicates. Their duplicate metrics alone do not establish
+unique source ownership across adjacent grids.
 
 The optional technical-cell model is discovered in the chosen tessdata directory when present. It does not replace the configured page languages. The source change does not train, replace or grant redistribution rights for any model. Synthetic checks establish specific behavior, not a general accuracy rate.

@@ -1,0 +1,1966 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-07",
+  "implementation_commit": "1905632ff1775dd727c9eac3bb768707b8036313",
+  "parent_head": "fd0d8a20c36b4a94701af6d42ab0a6755838fa4b",
+  "scope": "Full CLI pipeline debug-build A/B, isolated opt-in research; not release qualification or a large human-verified corpus",
+  "features": {
+    "baseline": "native (unchanged libheif source)",
+    "candidate": "heic-rs-input (implies native; overrides HEIF source; no fallback)",
+    "root_default": "[] unchanged",
+    "heic_rs": "local0.1.4-ocr.1,std only; no Rayon",
+    "native_dependency_graph": "retained; NOT a proof of LGPL removal"
+  },
+  "build": {
+    "host": "Windows x64",
+    "rust": "1.97.1",
+    "profile": "dev unoptimized+debuginfo",
+    "offline_locked": true,
+    "toolchain": "existing MSVC14.51.36231 / SDK10.0.26100.0 / LLVM22.1.6 / vcpkg x64-windows-static-md; process-local only"
+  },
+  "verification": {
+    "fmt": {
+      "status": "PASS",
+      "exit_code": 0
+    },
+    "check_candidate": {
+      "status": "PASS",
+      "exit_code": 0
+    },
+    "builds": {
+      "status": "PASS",
+      "exit_code": 0
+    },
+    "native_tests": {
+      "passed": 357,
+      "ignored_in_suite": 5,
+      "separate_pdfium_controls_passed": 2,
+      "remaining_diagnostic_not_run": 3,
+      "exit_code": 0
+    },
+    "candidate_tests": {
+      "passed": 369,
+      "ignored_in_suite": 5,
+      "including_new_adapter_tests": 12,
+      "separate_pdfium_controls_passed": 2,
+      "remaining_diagnostic_not_run": 3,
+      "exit_code": 0
+    },
+    "clippy_candidate_lib": {
+      "status": "PASS",
+      "exit_code": 0
+    },
+    "comparison_integrity_tests": {
+      "status": "PASS",
+      "passed": 5,
+      "exit_code": 0
+    },
+    "powershell_parser": "PASS",
+    "prior_attempt": "Native suite initially exit101: no local PDFium fixture/runtime and default Temp xlsx access denied. Existing prepare-test-runtime copies verified inputs into ignored experiment runtime; process-local TMP/TEMP and serial tests resolved these without modifying old tests or production assets. Original failure log retained.",
+    "check_native": {
+      "status": "PASS",
+      "exit_code": 0
+    }
+  },
+  "settings": {
+    "grid_dpi": 100,
+    "ocr_dpi": 300,
+    "languages": "rus+eng",
+    "omp_thread_limit": 1,
+    "enable_cell_ocr_fallback": true,
+    "timeout_seconds": 120,
+    "max_page_workers": 4
+  },
+  "binaries": [
+    {
+      "size": 32020992,
+      "variant": "heic_rs",
+      "sha256": "adfe0e43cd17b2a387774f0abcea3ddb1db7181aebf201105f1c878bb50be5a9"
+    },
+    {
+      "size": 32425472,
+      "variant": "native",
+      "sha256": "ef4ba7a25e80e29f6823d81e98efb308e36a3b5d21fd06b7454cb164552c36f7"
+    }
+  ],
+  "full_pipeline": {
+    "cases": 11,
+    "processes": 22,
+    "candidate_successes": 11,
+    "baseline_successes": 10,
+    "timeouts": 0,
+    "incomplete_captures": 0,
+    "prior_run": "Same11-case comparison performed before receipt-hardening; second run independently repeats text/grid outcomes",
+    "cases_detail": [
+      {
+        "case": "form",
+        "lane": "text",
+        "input_sha256": "a164547455de1798edd93609084aa898354496eb58a45a0bfe7f49940f8a8a24",
+        "native": {
+          "exit_code": 0,
+          "timeout": false,
+          "elapsed_ms": 3288,
+          "capture_incomplete": false,
+          "pages": 1,
+          "characters": 269,
+          "words": 28,
+          "text_sha256": "ba248a008d7b907a496ddd81d2923c82da568bbd7d7069f9f8945669a3cf141b",
+          "grids": 0,
+          "cells": 0,
+          "filled_cells": 0,
+          "modes": [
+            "ocr"
+          ],
+          "confidence": [
+            0.86799824
+          ],
+          "word_assignment": [
+            null
+          ],
+          "warnings": 0,
+          "artifact_sizes": {
+            "result.v1.json": 2277,
+            "result.json": 403,
+            "result.docx": 18696,
+            "result.xlsx": 5374
+          },
+          "synthetic_source_token_metrics": {
+            "precision": 0.8928571428571429,
+            "recall": 1,
+            "f1": 0.9433962264150945
+          }
+        },
+        "heic_rs": {
+          "exit_code": 0,
+          "timeout": false,
+          "elapsed_ms": 3211,
+          "capture_incomplete": false,
+          "pages": 1,
+          "characters": 266,
+          "words": 26,
+          "text_sha256": "896d4b627f2be1037706c6f438cbf40691d36fae31d741406f13fbe2dd7d6acd",
+          "grids": 0,
+          "cells": 0,
+          "filled_cells": 0,
+          "modes": [
+            "ocr"
+          ],
+          "confidence": [
+            0.9035674
+          ],
+          "word_assignment": [
+            null
+          ],
+          "warnings": 0,
+          "artifact_sizes": {
+            "result.v1.json": 2247,
+            "result.json": 399,
+            "result.docx": 18692,
+            "result.xlsx": 5374
+          },
+          "synthetic_source_token_metrics": {
+            "precision": 0.9615384615384616,
+            "recall": 1,
+            "f1": 0.9803921568627451
+          }
+        },
+        "comparison": {
+          "identical_input_verified": true,
+          "exact_non_timing_json": false,
+          "legacy_result_json_equal": false,
+          "different_fields": [
+            "$.document.pages[0].text",
+            "$.page_processing[0].ocr_confidence",
+            "$.page_processing[0].orientation.confidence",
+            "$.page_processing[0].quality.signals.character_count",
+            "$.page_processing[0].quality.signals.cyrillic_characters",
+            "$.page_processing[0].quality.signals.latin_characters"
+          ],
+          "geometry_equal": true,
+          "ocr_fingerprints_equal": false,
+          "docx_document_xml_equal": false,
+          "xlsx_workbook_cells_equal": true
+        },
+        "status": "DIFFERENCES_RECORDED"
+      },
+      {
+        "case": "note",
+        "lane": "text",
+        "input_sha256": "1a2bce7b210f469ffedcfb6eb69afc70caefa9c815c6461995e1749a34fe0ee7",
+        "native": {
+          "exit_code": 0,
+          "timeout": false,
+          "elapsed_ms": 1925,
+          "capture_incomplete": false,
+          "pages": 1,
+          "characters": 154,
+          "words": 21,
+          "text_sha256": "68340f7b166b04822da4b0180232b214a805625097977bf2ab5d2db8b785272a",
+          "grids": 0,
+          "cells": 0,
+          "filled_cells": 0,
+          "modes": [
+            "ocr"
+          ],
+          "confidence": [
+            0.95501035
+          ],
+          "word_assignment": [
+            null
+          ],
+          "warnings": 0,
+          "artifact_sizes": {
+            "result.v1.json": 2136,
+            "result.json": 277,
+            "result.docx": 17812,
+            "result.xlsx": 5374
+          },
+          "synthetic_source_token_metrics": {
+            "precision": 1,
+            "recall": 1,
+            "f1": 1
+          }
+        },
+        "heic_rs": {
+          "exit_code": 0,
+          "timeout": false,
+          "elapsed_ms": 2084,
+          "capture_incomplete": false,
+          "pages": 1,
+          "characters": 154,
+          "words": 21,
+          "text_sha256": "68340f7b166b04822da4b0180232b214a805625097977bf2ab5d2db8b785272a",
+          "grids": 0,
+          "cells": 0,
+          "filled_cells": 0,
+          "modes": [
+            "ocr"
+          ],
+          "confidence": [
+            0.9543387
+          ],
+          "word_assignment": [
+            null
+          ],
+          "warnings": 0,
+          "artifact_sizes": {
+            "result.v1.json": 2148,
+            "result.json": 277,
+            "result.docx": 17812,
+            "result.xlsx": 5374
+          },
+          "synthetic_source_token_metrics": {
+            "precision": 1,
+            "recall": 1,
+            "f1": 1
+          }
+        },
+        "comparison": {
+          "identical_input_verified": true,
+          "exact_non_timing_json": false,
+          "legacy_result_json_equal": true,
+          "different_fields": [
+            "$.page_processing[0].ocr_confidence",
+            "$.page_processing[0].orientation.confidence"
+          ],
+          "geometry_equal": true,
+          "ocr_fingerprints_equal": false,
+          "docx_document_xml_equal": true,
+          "xlsx_workbook_cells_equal": true
+        },
+        "status": "DIFFERENCES_RECORDED"
+      },
+      {
+        "case": "receipt",
+        "lane": "text",
+        "input_sha256": "cc6d17df966abd926f0f72c853713e71138a8a24f1f722ae1e6bcfaf06da336b",
+        "native": {
+          "exit_code": 0,
+          "timeout": false,
+          "elapsed_ms": 1675,
+          "capture_incomplete": false,
+          "pages": 1,
+          "characters": 331,
+          "words": 39,
+          "text_sha256": "e480ac521486b2e65f49a844e6536922d8590fe47571f2fc9b76b05e27c1ea56",
+          "grids": 1,
+          "cells": 12,
+          "filled_cells": 12,
+          "modes": [
+            "ocr+grid"
+          ],
+          "confidence": [
+            0.8939209
+          ],
+          "word_assignment": [
+            {
+              "recognized_words": 32,
+              "assigned_words": 14,
+              "words_outside_tables": 18,
+              "duplicate_assignments": 0
+            }
+          ],
+          "warnings": 0,
+          "artifact_sizes": {
+            "result.v1.json": 14522,
+            "result.json": 5741,
+            "result.docx": 19544,
+            "result.xlsx": 5514
+          },
+          "synthetic_source_token_metrics": {
+            "precision": 0.9487179487179487,
+            "recall": 0.9024390243902439,
+            "f1": 0.9249999999999999
+          }
+        },
+        "heic_rs": {
+          "exit_code": 0,
+          "timeout": false,
+          "elapsed_ms": 2146,
+          "capture_incomplete": false,
+          "pages": 1,
+          "characters": 331,
+          "words": 39,
+          "text_sha256": "e480ac521486b2e65f49a844e6536922d8590fe47571f2fc9b76b05e27c1ea56",
+          "grids": 1,
+          "cells": 12,
+          "filled_cells": 12,
+          "modes": [
+            "ocr+grid"
+          ],
+          "confidence": [
+            0.89447874
+          ],
+          "word_assignment": [
+            {
+              "recognized_words": 32,
+              "assigned_words": 14,
+              "words_outside_tables": 18,
+              "duplicate_assignments": 0
+            }
+          ],
+          "warnings": 0,
+          "artifact_sizes": {
+            "result.v1.json": 14503,
+            "result.json": 5738,
+            "result.docx": 19544,
+            "result.xlsx": 5514
+          },
+          "synthetic_source_token_metrics": {
+            "precision": 0.9487179487179487,
+            "recall": 0.9024390243902439,
+            "f1": 0.9249999999999999
+          }
+        },
+        "comparison": {
+          "identical_input_verified": true,
+          "exact_non_timing_json": false,
+          "legacy_result_json_equal": false,
+          "different_fields": [
+            "$.document.pages[0].tables[0].confidence",
+            "$.document.pages[0].tables[0].rows[0][0].confidence",
+            "$.document.pages[0].tables[0].rows[0][1].confidence",
+            "$.page_processing[0].ocr_confidence",
+            "$.page_processing[0].orientation.confidence",
+            "$.tables[0].grids[0].cells[0].confidence",
+            "$.tables[0].grids[0].cells[1].confidence",
+            "$.tables[0].grids[0].classification_evidence[0].score",
+            "$.tables[0].grids[0].classification_evidence[1].score",
+            "$.tables[0].grids[0].confidence"
+          ],
+          "geometry_equal": true,
+          "ocr_fingerprints_equal": false,
+          "docx_document_xml_equal": true,
+          "xlsx_workbook_cells_equal": true
+        },
+        "status": "DIFFERENCES_RECORDED"
+      },
+      {
+        "case": "text-table",
+        "lane": "pdf_control",
+        "input_sha256": "85f92e257ec6abf5929801f16c9adaa9e65cdbf0b5a1121b7cb5ad86a10a7570",
+        "native": {
+          "exit_code": 0,
+          "timeout": false,
+          "elapsed_ms": 509,
+          "capture_incomplete": false,
+          "pages": 1,
+          "characters": 343,
+          "words": 51,
+          "text_sha256": "61b15e1761bfea015f3bd9554d3df16f140a67600c44148fdb59b03cc4315d15",
+          "grids": 1,
+          "cells": 9,
+          "filled_cells": 9,
+          "modes": [
+            "native_text+grid"
+          ],
+          "confidence": [
+            null
+          ],
+          "word_assignment": [
+            {
+              "recognized_words": 51,
+              "assigned_words": 9,
+              "words_outside_tables": 42,
+              "duplicate_assignments": 0
+            }
+          ],
+          "warnings": 0,
+          "artifact_sizes": {
+            "result.v1.json": 12734,
+            "result.json": 4370,
+            "result.docx": 18609,
+            "result.xlsx": 5467
+          }
+        },
+        "heic_rs": {
+          "exit_code": 0,
+          "timeout": false,
+          "elapsed_ms": 619,
+          "capture_incomplete": false,
+          "pages": 1,
+          "characters": 343,
+          "words": 51,
+          "text_sha256": "61b15e1761bfea015f3bd9554d3df16f140a67600c44148fdb59b03cc4315d15",
+          "grids": 1,
+          "cells": 9,
+          "filled_cells": 9,
+          "modes": [
+            "native_text+grid"
+          ],
+          "confidence": [
+            null
+          ],
+          "word_assignment": [
+            {
+              "recognized_words": 51,
+              "assigned_words": 9,
+              "words_outside_tables": 42,
+              "duplicate_assignments": 0
+            }
+          ],
+          "warnings": 0,
+          "artifact_sizes": {
+            "result.v1.json": 12734,
+            "result.json": 4370,
+            "result.docx": 18609,
+            "result.xlsx": 5467
+          }
+        },
+        "comparison": {
+          "identical_input_verified": true,
+          "exact_non_timing_json": true,
+          "legacy_result_json_equal": true,
+          "different_fields": [],
+          "geometry_equal": true,
+          "ocr_fingerprints_equal": true,
+          "docx_document_xml_equal": true,
+          "xlsx_workbook_cells_equal": true
+        },
+        "status": "EXACT_NON_TIMING_MATCH"
+      },
+      {
+        "case": "raster",
+        "lane": "pdf_control",
+        "input_sha256": "c776651d5edb521cca6384cb3cfe0782645711044b309bb63dd145e092da96f1",
+        "native": {
+          "exit_code": 0,
+          "timeout": false,
+          "elapsed_ms": 5376,
+          "capture_incomplete": false,
+          "pages": 1,
+          "characters": 627,
+          "words": 51,
+          "text_sha256": "46df47581c48651715ba837838483aacae430140a71e313ed0f85cf521b7c753",
+          "grids": 1,
+          "cells": 9,
+          "filled_cells": 9,
+          "modes": [
+            "ocr+grid"
+          ],
+          "confidence": [
+            0.96031797
+          ],
+          "word_assignment": [
+            {
+              "recognized_words": 51,
+              "assigned_words": 9,
+              "words_outside_tables": 42,
+              "duplicate_assignments": 0
+            }
+          ],
+          "warnings": 0,
+          "artifact_sizes": {
+            "result.v1.json": 13024,
+            "result.json": 4697,
+            "result.docx": 19229,
+            "result.xlsx": 5467
+          }
+        },
+        "heic_rs": {
+          "exit_code": 0,
+          "timeout": false,
+          "elapsed_ms": 5256,
+          "capture_incomplete": false,
+          "pages": 1,
+          "characters": 627,
+          "words": 51,
+          "text_sha256": "46df47581c48651715ba837838483aacae430140a71e313ed0f85cf521b7c753",
+          "grids": 1,
+          "cells": 9,
+          "filled_cells": 9,
+          "modes": [
+            "ocr+grid"
+          ],
+          "confidence": [
+            0.96031797
+          ],
+          "word_assignment": [
+            {
+              "recognized_words": 51,
+              "assigned_words": 9,
+              "words_outside_tables": 42,
+              "duplicate_assignments": 0
+            }
+          ],
+          "warnings": 0,
+          "artifact_sizes": {
+            "result.v1.json": 13033,
+            "result.json": 4697,
+            "result.docx": 19229,
+            "result.xlsx": 5467
+          }
+        },
+        "comparison": {
+          "identical_input_verified": true,
+          "exact_non_timing_json": true,
+          "legacy_result_json_equal": true,
+          "different_fields": [],
+          "geometry_equal": true,
+          "ocr_fingerprints_equal": true,
+          "docx_document_xml_equal": true,
+          "xlsx_workbook_cells_equal": true
+        },
+        "status": "EXACT_NON_TIMING_MATCH"
+      },
+      {
+        "case": "main10",
+        "lane": "format_only",
+        "input_sha256": "a89e36be51e534f457fe4020c8ee5204afcb25831d01f5ca5676fe9cb2c698b9",
+        "native": {
+          "exit_code": 0,
+          "timeout": false,
+          "elapsed_ms": 118,
+          "capture_incomplete": false,
+          "pages": 1,
+          "characters": 0,
+          "words": 0,
+          "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "grids": 0,
+          "cells": 0,
+          "filled_cells": 0,
+          "modes": [
+            "ocr"
+          ],
+          "confidence": [
+            null
+          ],
+          "word_assignment": [
+            null
+          ],
+          "warnings": 0,
+          "artifact_sizes": {
+            "result.v1.json": 2062,
+            "result.json": 115,
+            "result.docx": 16898,
+            "result.xlsx": 5374
+          }
+        },
+        "heic_rs": {
+          "exit_code": 0,
+          "timeout": false,
+          "elapsed_ms": 96,
+          "capture_incomplete": false,
+          "pages": 1,
+          "characters": 0,
+          "words": 0,
+          "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "grids": 0,
+          "cells": 0,
+          "filled_cells": 0,
+          "modes": [
+            "ocr"
+          ],
+          "confidence": [
+            null
+          ],
+          "word_assignment": [
+            null
+          ],
+          "warnings": 0,
+          "artifact_sizes": {
+            "result.v1.json": 2101,
+            "result.json": 115,
+            "result.docx": 16898,
+            "result.xlsx": 5374
+          }
+        },
+        "comparison": {
+          "identical_input_verified": true,
+          "exact_non_timing_json": true,
+          "legacy_result_json_equal": true,
+          "different_fields": [],
+          "geometry_equal": true,
+          "ocr_fingerprints_equal": true,
+          "docx_document_xml_equal": true,
+          "xlsx_workbook_cells_equal": true
+        },
+        "status": "EXACT_NON_TIMING_MATCH"
+      },
+      {
+        "case": "alpha",
+        "lane": "format_only",
+        "input_sha256": "be642c699dfa1ca175b026a5eab706f70103b66152a950cd19cf5346743018c6",
+        "native": {
+          "exit_code": 0,
+          "timeout": false,
+          "elapsed_ms": 98,
+          "capture_incomplete": false,
+          "pages": 1,
+          "characters": 0,
+          "words": 0,
+          "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "grids": 1,
+          "cells": 0,
+          "filled_cells": 0,
+          "modes": [
+            "ocr+grid"
+          ],
+          "confidence": [
+            null
+          ],
+          "word_assignment": [
+            {
+              "recognized_words": 0,
+              "assigned_words": 0,
+              "words_outside_tables": 0,
+              "duplicate_assignments": 0
+            }
+          ],
+          "warnings": 0,
+          "artifact_sizes": {
+            "result.v1.json": 3347,
+            "result.json": 285,
+            "result.docx": 17085,
+            "result.xlsx": 5005
+          }
+        },
+        "heic_rs": {
+          "exit_code": 0,
+          "timeout": false,
+          "elapsed_ms": 103,
+          "capture_incomplete": false,
+          "pages": 1,
+          "characters": 0,
+          "words": 0,
+          "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "grids": 1,
+          "cells": 0,
+          "filled_cells": 0,
+          "modes": [
+            "ocr+grid"
+          ],
+          "confidence": [
+            null
+          ],
+          "word_assignment": [
+            {
+              "recognized_words": 0,
+              "assigned_words": 0,
+              "words_outside_tables": 0,
+              "duplicate_assignments": 0
+            }
+          ],
+          "warnings": 0,
+          "artifact_sizes": {
+            "result.v1.json": 3376,
+            "result.json": 285,
+            "result.docx": 17085,
+            "result.xlsx": 5005
+          }
+        },
+        "comparison": {
+          "identical_input_verified": true,
+          "exact_non_timing_json": true,
+          "legacy_result_json_equal": true,
+          "different_fields": [],
+          "geometry_equal": true,
+          "ocr_fingerprints_equal": true,
+          "docx_document_xml_equal": true,
+          "xlsx_workbook_cells_equal": true
+        },
+        "status": "EXACT_NON_TIMING_MATCH"
+      },
+      {
+        "case": "irot90",
+        "lane": "format_only",
+        "input_sha256": "2227bc8c3f52cfeef217f46149353e76fe60b83cc4d5ffbbfd1dfbbe374bebfb",
+        "native": {
+          "exit_code": 0,
+          "timeout": false,
+          "elapsed_ms": 93,
+          "capture_incomplete": false,
+          "pages": 1,
+          "characters": 0,
+          "words": 0,
+          "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "grids": 1,
+          "cells": 0,
+          "filled_cells": 0,
+          "modes": [
+            "ocr+grid"
+          ],
+          "confidence": [
+            null
+          ],
+          "word_assignment": [
+            {
+              "recognized_words": 0,
+              "assigned_words": 0,
+              "words_outside_tables": 0,
+              "duplicate_assignments": 0
+            }
+          ],
+          "warnings": 0,
+          "artifact_sizes": {
+            "result.v1.json": 3349,
+            "result.json": 285,
+            "result.docx": 17085,
+            "result.xlsx": 5005
+          }
+        },
+        "heic_rs": {
+          "exit_code": 0,
+          "timeout": false,
+          "elapsed_ms": 100,
+          "capture_incomplete": false,
+          "pages": 1,
+          "characters": 0,
+          "words": 0,
+          "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "grids": 1,
+          "cells": 0,
+          "filled_cells": 0,
+          "modes": [
+            "ocr+grid"
+          ],
+          "confidence": [
+            null
+          ],
+          "word_assignment": [
+            {
+              "recognized_words": 0,
+              "assigned_words": 0,
+              "words_outside_tables": 0,
+              "duplicate_assignments": 0
+            }
+          ],
+          "warnings": 0,
+          "artifact_sizes": {
+            "result.v1.json": 3346,
+            "result.json": 285,
+            "result.docx": 17085,
+            "result.xlsx": 5005
+          }
+        },
+        "comparison": {
+          "identical_input_verified": true,
+          "exact_non_timing_json": true,
+          "legacy_result_json_equal": true,
+          "different_fields": [],
+          "geometry_equal": true,
+          "ocr_fingerprints_equal": true,
+          "docx_document_xml_equal": true,
+          "xlsx_workbook_cells_equal": true
+        },
+        "status": "EXACT_NON_TIMING_MATCH"
+      },
+      {
+        "case": "imir0",
+        "lane": "format_only",
+        "input_sha256": "d781c4fd167cd8ee13801753702da6dcf6d7bc0488a9193564606ec1f3d36e6e",
+        "native": {
+          "exit_code": 0,
+          "timeout": false,
+          "elapsed_ms": 451,
+          "capture_incomplete": false,
+          "pages": 1,
+          "characters": 0,
+          "words": 0,
+          "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "grids": 1,
+          "cells": 0,
+          "filled_cells": 0,
+          "modes": [
+            "ocr+grid"
+          ],
+          "confidence": [
+            null
+          ],
+          "word_assignment": [
+            {
+              "recognized_words": 0,
+              "assigned_words": 0,
+              "words_outside_tables": 0,
+              "duplicate_assignments": 0
+            }
+          ],
+          "warnings": 0,
+          "artifact_sizes": {
+            "result.v1.json": 3365,
+            "result.json": 285,
+            "result.docx": 17085,
+            "result.xlsx": 5005
+          }
+        },
+        "heic_rs": {
+          "exit_code": 0,
+          "timeout": false,
+          "elapsed_ms": 540,
+          "capture_incomplete": false,
+          "pages": 1,
+          "characters": 0,
+          "words": 0,
+          "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "grids": 1,
+          "cells": 0,
+          "filled_cells": 0,
+          "modes": [
+            "ocr+grid"
+          ],
+          "confidence": [
+            null
+          ],
+          "word_assignment": [
+            {
+              "recognized_words": 0,
+              "assigned_words": 0,
+              "words_outside_tables": 0,
+              "duplicate_assignments": 0
+            }
+          ],
+          "warnings": 0,
+          "artifact_sizes": {
+            "result.v1.json": 3330,
+            "result.json": 285,
+            "result.docx": 17085,
+            "result.xlsx": 5005
+          }
+        },
+        "comparison": {
+          "identical_input_verified": true,
+          "exact_non_timing_json": true,
+          "legacy_result_json_equal": true,
+          "different_fields": [],
+          "geometry_equal": true,
+          "ocr_fingerprints_equal": true,
+          "docx_document_xml_equal": true,
+          "xlsx_workbook_cells_equal": true
+        },
+        "status": "EXACT_NON_TIMING_MATCH"
+      },
+      {
+        "case": "grid",
+        "lane": "format_only",
+        "input_sha256": "f24a3b6ae495605e179bd34ae282047dcc4581819eb53041db34c9fdb66648cd",
+        "native": {
+          "exit_code": 0,
+          "timeout": false,
+          "elapsed_ms": 2419,
+          "capture_incomplete": false,
+          "pages": 1,
+          "characters": 0,
+          "words": 0,
+          "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "grids": 1,
+          "cells": 196,
+          "filled_cells": 98,
+          "modes": [
+            "ocr+grid"
+          ],
+          "confidence": [
+            null
+          ],
+          "word_assignment": [
+            {
+              "recognized_words": 0,
+              "assigned_words": 0,
+              "words_outside_tables": 0,
+              "duplicate_assignments": 0
+            }
+          ],
+          "warnings": 0,
+          "artifact_sizes": {
+            "result.v1.json": 156174,
+            "result.json": 76636,
+            "result.docx": 18991,
+            "result.xlsx": 5683
+          }
+        },
+        "heic_rs": {
+          "exit_code": 0,
+          "timeout": false,
+          "elapsed_ms": 2670,
+          "capture_incomplete": false,
+          "pages": 1,
+          "characters": 0,
+          "words": 0,
+          "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "grids": 1,
+          "cells": 196,
+          "filled_cells": 98,
+          "modes": [
+            "ocr+grid"
+          ],
+          "confidence": [
+            null
+          ],
+          "word_assignment": [
+            {
+              "recognized_words": 0,
+              "assigned_words": 0,
+              "words_outside_tables": 0,
+              "duplicate_assignments": 0
+            }
+          ],
+          "warnings": 0,
+          "artifact_sizes": {
+            "result.v1.json": 156144,
+            "result.json": 76636,
+            "result.docx": 18991,
+            "result.xlsx": 5683
+          }
+        },
+        "comparison": {
+          "identical_input_verified": true,
+          "exact_non_timing_json": true,
+          "legacy_result_json_equal": true,
+          "different_fields": [],
+          "geometry_equal": true,
+          "ocr_fingerprints_equal": true,
+          "docx_document_xml_equal": true,
+          "xlsx_workbook_cells_equal": true
+        },
+        "status": "EXACT_NON_TIMING_MATCH"
+      },
+      {
+        "case": "white16",
+        "lane": "format_only",
+        "input_sha256": "96bb56231cd2a98bc26f9f734681ea0b0a6dbcde597a761e50a9d40e6a4e608d",
+        "native": {
+          "exit_code": 1,
+          "timeout": false,
+          "elapsed_ms": 48,
+          "capture_incomplete": false,
+          "output_published": false
+        },
+        "heic_rs": {
+          "exit_code": 0,
+          "timeout": false,
+          "elapsed_ms": 97,
+          "capture_incomplete": false,
+          "pages": 1,
+          "characters": 0,
+          "words": 0,
+          "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "grids": 0,
+          "cells": 0,
+          "filled_cells": 0,
+          "modes": [
+            "ocr"
+          ],
+          "confidence": [
+            null
+          ],
+          "word_assignment": [
+            null
+          ],
+          "warnings": 0,
+          "artifact_sizes": {
+            "result.v1.json": 2092,
+            "result.json": 115,
+            "result.docx": 16898,
+            "result.xlsx": 5374
+          }
+        },
+        "status": "CANDIDATE_ONLY_SUCCESS"
+      }
+    ]
+  },
+  "comparison_scope": {
+    "json": "Full result.v1.json except page_processing[].timings; legacy result.json also compared",
+    "docx": "Normalized word/document.xml only, not all ZIP parts/styles/rels or visual layout",
+    "xlsx": "Normalized workbook/worksheet/sharedStrings XML only, not whole archive/style equality",
+    "token_metric": "Casefold Unicode word multiset against upstream synthetic SVG source; no OCR-confusion substitutions",
+    "format_lane": "Zero page text on flat/pattern fixtures is expected; existing false grid/cell values in patterns are not useful OCR-quality evidence"
+  },
+  "runs": [
+    {
+      "capture_incomplete": false,
+      "artifacts": [
+        {
+          "size": 2277,
+          "sha256": "c34b4292f8f794f333f1b08a4f0c93f0ca092ea50ceb8491cf48d7a4d5b8d4f7",
+          "name": "result.v1.json"
+        },
+        {
+          "size": 403,
+          "sha256": "eb71439455247769012711b1e398e5f001c56a1b9a3204c8df9198438daab39d",
+          "name": "result.json"
+        },
+        {
+          "size": 18696,
+          "sha256": "cdea3ab70c129738836e0eeb542c3df5756ba03cbf9617719f8329721c17a2cf",
+          "name": "result.docx"
+        },
+        {
+          "size": 5374,
+          "sha256": "3d01a3708e9094a1c23d299f998650782acf066af6467b9db477f3aff36b7215",
+          "name": "result.xlsx"
+        }
+      ],
+      "output": "native/form",
+      "case": "form",
+      "elapsed_ms": 3288,
+      "exit_code": 0,
+      "timeout": false,
+      "input_sha256": "a164547455de1798edd93609084aa898354496eb58a45a0bfe7f49940f8a8a24",
+      "input": "tools/heic-rs-evaluation/fixtures/ocr-public/form-fixture.heic",
+      "lane": "text",
+      "variant": "native"
+    },
+    {
+      "capture_incomplete": false,
+      "artifacts": [
+        {
+          "size": 2247,
+          "sha256": "bbe76f83611cb828338e286e56079120b08a75a4a4e9d0255136f190b367db44",
+          "name": "result.v1.json"
+        },
+        {
+          "size": 399,
+          "sha256": "daa4c44e71b191a03e57b9039ae1c58e0728656cda23173530cac3610dcad2cc",
+          "name": "result.json"
+        },
+        {
+          "size": 18692,
+          "sha256": "9c540476e915a2fa699eff45b50fb6a501ca150dfd502846f489528128b86394",
+          "name": "result.docx"
+        },
+        {
+          "size": 5374,
+          "sha256": "3d01a3708e9094a1c23d299f998650782acf066af6467b9db477f3aff36b7215",
+          "name": "result.xlsx"
+        }
+      ],
+      "output": "heic_rs/form",
+      "case": "form",
+      "elapsed_ms": 3211,
+      "exit_code": 0,
+      "timeout": false,
+      "input_sha256": "a164547455de1798edd93609084aa898354496eb58a45a0bfe7f49940f8a8a24",
+      "input": "tools/heic-rs-evaluation/fixtures/ocr-public/form-fixture.heic",
+      "lane": "text",
+      "variant": "heic_rs"
+    },
+    {
+      "capture_incomplete": false,
+      "artifacts": [
+        {
+          "size": 2148,
+          "sha256": "d75fd2039509907782df67a35f6526433c3ddf5699e10254615f2d42d724fa6c",
+          "name": "result.v1.json"
+        },
+        {
+          "size": 277,
+          "sha256": "6140c53e95bbabf88ee78500de5375c1829dc308cb182636a80dba222de3c048",
+          "name": "result.json"
+        },
+        {
+          "size": 17812,
+          "sha256": "afbda571b23390d28a0b7cfabab47b7e014b21b31e073ea6bf82ca275b81294b",
+          "name": "result.docx"
+        },
+        {
+          "size": 5374,
+          "sha256": "3d01a3708e9094a1c23d299f998650782acf066af6467b9db477f3aff36b7215",
+          "name": "result.xlsx"
+        }
+      ],
+      "output": "heic_rs/note",
+      "case": "note",
+      "elapsed_ms": 2084,
+      "exit_code": 0,
+      "timeout": false,
+      "input_sha256": "1a2bce7b210f469ffedcfb6eb69afc70caefa9c815c6461995e1749a34fe0ee7",
+      "input": "tools/heic-rs-evaluation/fixtures/ocr-public/note-fixture.heic",
+      "lane": "text",
+      "variant": "heic_rs"
+    },
+    {
+      "capture_incomplete": false,
+      "artifacts": [
+        {
+          "size": 2136,
+          "sha256": "d849ab4222eef94cbb3f7d359f092964506826ef27b1321b6845d0456d827b0a",
+          "name": "result.v1.json"
+        },
+        {
+          "size": 277,
+          "sha256": "6140c53e95bbabf88ee78500de5375c1829dc308cb182636a80dba222de3c048",
+          "name": "result.json"
+        },
+        {
+          "size": 17812,
+          "sha256": "afbda571b23390d28a0b7cfabab47b7e014b21b31e073ea6bf82ca275b81294b",
+          "name": "result.docx"
+        },
+        {
+          "size": 5374,
+          "sha256": "3d01a3708e9094a1c23d299f998650782acf066af6467b9db477f3aff36b7215",
+          "name": "result.xlsx"
+        }
+      ],
+      "output": "native/note",
+      "case": "note",
+      "elapsed_ms": 1925,
+      "exit_code": 0,
+      "timeout": false,
+      "input_sha256": "1a2bce7b210f469ffedcfb6eb69afc70caefa9c815c6461995e1749a34fe0ee7",
+      "input": "tools/heic-rs-evaluation/fixtures/ocr-public/note-fixture.heic",
+      "lane": "text",
+      "variant": "native"
+    },
+    {
+      "capture_incomplete": false,
+      "artifacts": [
+        {
+          "size": 14522,
+          "sha256": "e4754e5a898bf3355b4985100c1ca1ea2d8a193836fcb92c314973f9715c5612",
+          "name": "result.v1.json"
+        },
+        {
+          "size": 5741,
+          "sha256": "c01f80b9167779087d6cb0ecafc8c0cae0aa29dc8a13eb8fceb1f860f305f328",
+          "name": "result.json"
+        },
+        {
+          "size": 19544,
+          "sha256": "389a8ccfba044c944db0faf06a3b0e8fdb64b3a11549cc8a40fba1a2c2bf668b",
+          "name": "result.docx"
+        },
+        {
+          "size": 5514,
+          "sha256": "594dda62e38e314bbf8ed7a4507279e44185f3245cf6182711593703e35c0a5b",
+          "name": "result.xlsx"
+        }
+      ],
+      "output": "native/receipt",
+      "case": "receipt",
+      "elapsed_ms": 1675,
+      "exit_code": 0,
+      "timeout": false,
+      "input_sha256": "cc6d17df966abd926f0f72c853713e71138a8a24f1f722ae1e6bcfaf06da336b",
+      "input": "tools/heic-rs-evaluation/fixtures/ocr-public/receipt-fixture.heic",
+      "lane": "text",
+      "variant": "native"
+    },
+    {
+      "capture_incomplete": false,
+      "artifacts": [
+        {
+          "size": 14503,
+          "sha256": "ca6de7bff0f88a6236f9ed1821b6c5389d0e12e587fae967ffd2c6af6739074e",
+          "name": "result.v1.json"
+        },
+        {
+          "size": 5738,
+          "sha256": "acbec6d672d41ea6f11421cdbb0eb20bfa3cf671ad9b49aa0b4dd2b4d156eb76",
+          "name": "result.json"
+        },
+        {
+          "size": 19544,
+          "sha256": "389a8ccfba044c944db0faf06a3b0e8fdb64b3a11549cc8a40fba1a2c2bf668b",
+          "name": "result.docx"
+        },
+        {
+          "size": 5514,
+          "sha256": "594dda62e38e314bbf8ed7a4507279e44185f3245cf6182711593703e35c0a5b",
+          "name": "result.xlsx"
+        }
+      ],
+      "output": "heic_rs/receipt",
+      "case": "receipt",
+      "elapsed_ms": 2146,
+      "exit_code": 0,
+      "timeout": false,
+      "input_sha256": "cc6d17df966abd926f0f72c853713e71138a8a24f1f722ae1e6bcfaf06da336b",
+      "input": "tools/heic-rs-evaluation/fixtures/ocr-public/receipt-fixture.heic",
+      "lane": "text",
+      "variant": "heic_rs"
+    },
+    {
+      "capture_incomplete": false,
+      "artifacts": [
+        {
+          "size": 12734,
+          "sha256": "9e542afe49e79eedc35622d37007f5b374f2f227ddca77ad23c71f244ae2af1a",
+          "name": "result.v1.json"
+        },
+        {
+          "size": 4370,
+          "sha256": "407cd8c06814c6ad1f2f16387a69e0ab3c9f4f4f7a4ee6f441c55fa9b77e4c9f",
+          "name": "result.json"
+        },
+        {
+          "size": 18609,
+          "sha256": "78248c30be9bade98d4b2443158dcacbd7afe904ff2825c11728af568fcc0448",
+          "name": "result.docx"
+        },
+        {
+          "size": 5467,
+          "sha256": "c357dbcf446af9ca4a2a4b10cb98cd82d95a0715e65586c2aeeaf2d3eea106ec",
+          "name": "result.xlsx"
+        }
+      ],
+      "output": "heic_rs/text-table",
+      "case": "text-table",
+      "elapsed_ms": 619,
+      "exit_code": 0,
+      "timeout": false,
+      "input_sha256": "85f92e257ec6abf5929801f16c9adaa9e65cdbf0b5a1121b7cb5ad86a10a7570",
+      "input": "examples/documents/synthetic-text-table.pdf",
+      "lane": "pdf_control",
+      "variant": "heic_rs"
+    },
+    {
+      "capture_incomplete": false,
+      "artifacts": [
+        {
+          "size": 12734,
+          "sha256": "807cf15f4c8ab25039f5f67f46ef2ae7a6ff079cb31728bf5aef08c6f31ea1ef",
+          "name": "result.v1.json"
+        },
+        {
+          "size": 4370,
+          "sha256": "407cd8c06814c6ad1f2f16387a69e0ab3c9f4f4f7a4ee6f441c55fa9b77e4c9f",
+          "name": "result.json"
+        },
+        {
+          "size": 18609,
+          "sha256": "78248c30be9bade98d4b2443158dcacbd7afe904ff2825c11728af568fcc0448",
+          "name": "result.docx"
+        },
+        {
+          "size": 5467,
+          "sha256": "c357dbcf446af9ca4a2a4b10cb98cd82d95a0715e65586c2aeeaf2d3eea106ec",
+          "name": "result.xlsx"
+        }
+      ],
+      "output": "native/text-table",
+      "case": "text-table",
+      "elapsed_ms": 509,
+      "exit_code": 0,
+      "timeout": false,
+      "input_sha256": "85f92e257ec6abf5929801f16c9adaa9e65cdbf0b5a1121b7cb5ad86a10a7570",
+      "input": "examples/documents/synthetic-text-table.pdf",
+      "lane": "pdf_control",
+      "variant": "native"
+    },
+    {
+      "capture_incomplete": false,
+      "artifacts": [
+        {
+          "size": 13024,
+          "sha256": "286badc1796934324748c0ca2df53e429c8ab76b8dfedb1e796b16ebe3cfb625",
+          "name": "result.v1.json"
+        },
+        {
+          "size": 4697,
+          "sha256": "634cf3f3833651cd260871ed1d901013fdcc7ab534b78b7f253d39d557ca01cf",
+          "name": "result.json"
+        },
+        {
+          "size": 19229,
+          "sha256": "6b7513d51a8f93786f7c9dcda722449aba3d97f7fee2019155346f2145481028",
+          "name": "result.docx"
+        },
+        {
+          "size": 5467,
+          "sha256": "c357dbcf446af9ca4a2a4b10cb98cd82d95a0715e65586c2aeeaf2d3eea106ec",
+          "name": "result.xlsx"
+        }
+      ],
+      "output": "native/raster",
+      "case": "raster",
+      "elapsed_ms": 5376,
+      "exit_code": 0,
+      "timeout": false,
+      "input_sha256": "c776651d5edb521cca6384cb3cfe0782645711044b309bb63dd145e092da96f1",
+      "input": "examples/documents/synthetic-raster.pdf",
+      "lane": "pdf_control",
+      "variant": "native"
+    },
+    {
+      "capture_incomplete": false,
+      "artifacts": [
+        {
+          "size": 13033,
+          "sha256": "940020d3b838684f053d74518650ceb7d56735599f55bae5368894e6f673cd9b",
+          "name": "result.v1.json"
+        },
+        {
+          "size": 4697,
+          "sha256": "634cf3f3833651cd260871ed1d901013fdcc7ab534b78b7f253d39d557ca01cf",
+          "name": "result.json"
+        },
+        {
+          "size": 19229,
+          "sha256": "6b7513d51a8f93786f7c9dcda722449aba3d97f7fee2019155346f2145481028",
+          "name": "result.docx"
+        },
+        {
+          "size": 5467,
+          "sha256": "c357dbcf446af9ca4a2a4b10cb98cd82d95a0715e65586c2aeeaf2d3eea106ec",
+          "name": "result.xlsx"
+        }
+      ],
+      "output": "heic_rs/raster",
+      "case": "raster",
+      "elapsed_ms": 5256,
+      "exit_code": 0,
+      "timeout": false,
+      "input_sha256": "c776651d5edb521cca6384cb3cfe0782645711044b309bb63dd145e092da96f1",
+      "input": "examples/documents/synthetic-raster.pdf",
+      "lane": "pdf_control",
+      "variant": "heic_rs"
+    },
+    {
+      "capture_incomplete": false,
+      "artifacts": [
+        {
+          "size": 2101,
+          "sha256": "084c1c213f132f00325327bfd07b589584c2df266041cca0ea930929d03e9ecb",
+          "name": "result.v1.json"
+        },
+        {
+          "size": 115,
+          "sha256": "01279903c2b7638c5037dcb2befa50bf32c24a338188ade79e7aa3ed1885a18c",
+          "name": "result.json"
+        },
+        {
+          "size": 16898,
+          "sha256": "84d176254a36ec76f8a7cf4e5267027fe1176e76821913a722fca48eb1c53fa4",
+          "name": "result.docx"
+        },
+        {
+          "size": 5374,
+          "sha256": "3d01a3708e9094a1c23d299f998650782acf066af6467b9db477f3aff36b7215",
+          "name": "result.xlsx"
+        }
+      ],
+      "output": "heic_rs/main10",
+      "case": "main10",
+      "elapsed_ms": 96,
+      "exit_code": 0,
+      "timeout": false,
+      "input_sha256": "a89e36be51e534f457fe4020c8ee5204afcb25831d01f5ca5676fe9cb2c698b9",
+      "input": "tools/heic-rs-evaluation/fixtures/extended/gray-main10-64.heic",
+      "lane": "format_only",
+      "variant": "heic_rs"
+    },
+    {
+      "capture_incomplete": false,
+      "artifacts": [
+        {
+          "size": 2062,
+          "sha256": "4cf01e30ff7d39b17e77ef46d5b25b9490c8394c7870220fd0c4e07ec76dc206",
+          "name": "result.v1.json"
+        },
+        {
+          "size": 115,
+          "sha256": "01279903c2b7638c5037dcb2befa50bf32c24a338188ade79e7aa3ed1885a18c",
+          "name": "result.json"
+        },
+        {
+          "size": 16898,
+          "sha256": "84d176254a36ec76f8a7cf4e5267027fe1176e76821913a722fca48eb1c53fa4",
+          "name": "result.docx"
+        },
+        {
+          "size": 5374,
+          "sha256": "3d01a3708e9094a1c23d299f998650782acf066af6467b9db477f3aff36b7215",
+          "name": "result.xlsx"
+        }
+      ],
+      "output": "native/main10",
+      "case": "main10",
+      "elapsed_ms": 118,
+      "exit_code": 0,
+      "timeout": false,
+      "input_sha256": "a89e36be51e534f457fe4020c8ee5204afcb25831d01f5ca5676fe9cb2c698b9",
+      "input": "tools/heic-rs-evaluation/fixtures/extended/gray-main10-64.heic",
+      "lane": "format_only",
+      "variant": "native"
+    },
+    {
+      "capture_incomplete": false,
+      "artifacts": [
+        {
+          "size": 3347,
+          "sha256": "7fd4bb41f74627d74079153fb89dd61a91ea945c5e65e53992e109b12f4b5cef",
+          "name": "result.v1.json"
+        },
+        {
+          "size": 285,
+          "sha256": "bdb8f3793d720228d1eb91f0b1af41de33d22b94d1ae67b1603c7e68b2a38fa4",
+          "name": "result.json"
+        },
+        {
+          "size": 17085,
+          "sha256": "1dd49153e2bd9e76706a658a02e84fa8db32309f09be85485560c6ace58b608f",
+          "name": "result.docx"
+        },
+        {
+          "size": 5005,
+          "sha256": "c3735dfeb5dc92471655bb11e9bce2c62e46e2c1c87c5600842d7348bd153387",
+          "name": "result.xlsx"
+        }
+      ],
+      "output": "native/alpha",
+      "case": "alpha",
+      "elapsed_ms": 98,
+      "exit_code": 0,
+      "timeout": false,
+      "input_sha256": "be642c699dfa1ca175b026a5eab706f70103b66152a950cd19cf5346743018c6",
+      "input": "tools/heic-rs-evaluation/fixtures/extended/flat-alpha128-64.heic",
+      "lane": "format_only",
+      "variant": "native"
+    },
+    {
+      "capture_incomplete": false,
+      "artifacts": [
+        {
+          "size": 3376,
+          "sha256": "cee2ac757351ab82782971a0d3ab5933d129001c756192684dce565249d8b7ac",
+          "name": "result.v1.json"
+        },
+        {
+          "size": 285,
+          "sha256": "bdb8f3793d720228d1eb91f0b1af41de33d22b94d1ae67b1603c7e68b2a38fa4",
+          "name": "result.json"
+        },
+        {
+          "size": 17085,
+          "sha256": "1dd49153e2bd9e76706a658a02e84fa8db32309f09be85485560c6ace58b608f",
+          "name": "result.docx"
+        },
+        {
+          "size": 5005,
+          "sha256": "c3735dfeb5dc92471655bb11e9bce2c62e46e2c1c87c5600842d7348bd153387",
+          "name": "result.xlsx"
+        }
+      ],
+      "output": "heic_rs/alpha",
+      "case": "alpha",
+      "elapsed_ms": 103,
+      "exit_code": 0,
+      "timeout": false,
+      "input_sha256": "be642c699dfa1ca175b026a5eab706f70103b66152a950cd19cf5346743018c6",
+      "input": "tools/heic-rs-evaluation/fixtures/extended/flat-alpha128-64.heic",
+      "lane": "format_only",
+      "variant": "heic_rs"
+    },
+    {
+      "capture_incomplete": false,
+      "artifacts": [
+        {
+          "size": 3346,
+          "sha256": "393cef840415868b50e932b200840dcebb29164e88703f451495dcf097fb595a",
+          "name": "result.v1.json"
+        },
+        {
+          "size": 285,
+          "sha256": "bdb8f3793d720228d1eb91f0b1af41de33d22b94d1ae67b1603c7e68b2a38fa4",
+          "name": "result.json"
+        },
+        {
+          "size": 17085,
+          "sha256": "1dd49153e2bd9e76706a658a02e84fa8db32309f09be85485560c6ace58b608f",
+          "name": "result.docx"
+        },
+        {
+          "size": 5005,
+          "sha256": "c3735dfeb5dc92471655bb11e9bce2c62e46e2c1c87c5600842d7348bd153387",
+          "name": "result.xlsx"
+        }
+      ],
+      "output": "heic_rs/irot90",
+      "case": "irot90",
+      "elapsed_ms": 100,
+      "exit_code": 0,
+      "timeout": false,
+      "input_sha256": "2227bc8c3f52cfeef217f46149353e76fe60b83cc4d5ffbbfd1dfbbe374bebfb",
+      "input": "tools/heic-rs-evaluation/fixtures/extended/strips-irot90.heic",
+      "lane": "format_only",
+      "variant": "heic_rs"
+    },
+    {
+      "capture_incomplete": false,
+      "artifacts": [
+        {
+          "size": 3349,
+          "sha256": "42402af5bcd0bd8b57a065908c9a2a8b20b632ada0da9d0c05faa5e4b5477f09",
+          "name": "result.v1.json"
+        },
+        {
+          "size": 285,
+          "sha256": "bdb8f3793d720228d1eb91f0b1af41de33d22b94d1ae67b1603c7e68b2a38fa4",
+          "name": "result.json"
+        },
+        {
+          "size": 17085,
+          "sha256": "1dd49153e2bd9e76706a658a02e84fa8db32309f09be85485560c6ace58b608f",
+          "name": "result.docx"
+        },
+        {
+          "size": 5005,
+          "sha256": "c3735dfeb5dc92471655bb11e9bce2c62e46e2c1c87c5600842d7348bd153387",
+          "name": "result.xlsx"
+        }
+      ],
+      "output": "native/irot90",
+      "case": "irot90",
+      "elapsed_ms": 93,
+      "exit_code": 0,
+      "timeout": false,
+      "input_sha256": "2227bc8c3f52cfeef217f46149353e76fe60b83cc4d5ffbbfd1dfbbe374bebfb",
+      "input": "tools/heic-rs-evaluation/fixtures/extended/strips-irot90.heic",
+      "lane": "format_only",
+      "variant": "native"
+    },
+    {
+      "capture_incomplete": false,
+      "artifacts": [
+        {
+          "size": 3365,
+          "sha256": "e6173567e539026b9f0488cf39524b3c73e60053eed89e23628c7e0a92a42434",
+          "name": "result.v1.json"
+        },
+        {
+          "size": 285,
+          "sha256": "bdb8f3793d720228d1eb91f0b1af41de33d22b94d1ae67b1603c7e68b2a38fa4",
+          "name": "result.json"
+        },
+        {
+          "size": 17085,
+          "sha256": "1dd49153e2bd9e76706a658a02e84fa8db32309f09be85485560c6ace58b608f",
+          "name": "result.docx"
+        },
+        {
+          "size": 5005,
+          "sha256": "c3735dfeb5dc92471655bb11e9bce2c62e46e2c1c87c5600842d7348bd153387",
+          "name": "result.xlsx"
+        }
+      ],
+      "output": "native/imir0",
+      "case": "imir0",
+      "elapsed_ms": 451,
+      "exit_code": 0,
+      "timeout": false,
+      "input_sha256": "d781c4fd167cd8ee13801753702da6dcf6d7bc0488a9193564606ec1f3d36e6e",
+      "input": "tools/heic-rs-evaluation/fixtures/extended/gradient-imir0.heic",
+      "lane": "format_only",
+      "variant": "native"
+    },
+    {
+      "capture_incomplete": false,
+      "artifacts": [
+        {
+          "size": 3330,
+          "sha256": "6a555af741ed9e862a8d88a93c78559a0977578bd4e7a39c3d7c4b9a55f69ef5",
+          "name": "result.v1.json"
+        },
+        {
+          "size": 285,
+          "sha256": "bdb8f3793d720228d1eb91f0b1af41de33d22b94d1ae67b1603c7e68b2a38fa4",
+          "name": "result.json"
+        },
+        {
+          "size": 17085,
+          "sha256": "1dd49153e2bd9e76706a658a02e84fa8db32309f09be85485560c6ace58b608f",
+          "name": "result.docx"
+        },
+        {
+          "size": 5005,
+          "sha256": "c3735dfeb5dc92471655bb11e9bce2c62e46e2c1c87c5600842d7348bd153387",
+          "name": "result.xlsx"
+        }
+      ],
+      "output": "heic_rs/imir0",
+      "case": "imir0",
+      "elapsed_ms": 540,
+      "exit_code": 0,
+      "timeout": false,
+      "input_sha256": "d781c4fd167cd8ee13801753702da6dcf6d7bc0488a9193564606ec1f3d36e6e",
+      "input": "tools/heic-rs-evaluation/fixtures/extended/gradient-imir0.heic",
+      "lane": "format_only",
+      "variant": "heic_rs"
+    },
+    {
+      "capture_incomplete": false,
+      "artifacts": [
+        {
+          "size": 156144,
+          "sha256": "e6d6410797fdfa7a3d242234b9457bb1db7c1b82a967c90a565190294387f40a",
+          "name": "result.v1.json"
+        },
+        {
+          "size": 76636,
+          "sha256": "cd62b52a30371f44b4baa7a1e5b4a6d93a9c7ae9541c78dc2d1c794e32c9fb8f",
+          "name": "result.json"
+        },
+        {
+          "size": 18991,
+          "sha256": "cbe677cc1ce2a3e5f9baff222ab3e46da51fb0a172ddc7bac2c052151dc57b2c",
+          "name": "result.docx"
+        },
+        {
+          "size": 5683,
+          "sha256": "da0c331036462b98fd0ecfbb654e9d3ce2bb7f9dacb666c46df93ed8dc71f886",
+          "name": "result.xlsx"
+        }
+      ],
+      "output": "heic_rs/grid",
+      "case": "grid",
+      "elapsed_ms": 2670,
+      "exit_code": 0,
+      "timeout": false,
+      "input_sha256": "f24a3b6ae495605e179bd34ae282047dcc4581819eb53041db34c9fdb66648cd",
+      "input": "tools/heic-rs-evaluation/fixtures/checker-1024.heic",
+      "lane": "format_only",
+      "variant": "heic_rs"
+    },
+    {
+      "capture_incomplete": false,
+      "artifacts": [
+        {
+          "size": 156174,
+          "sha256": "e786d9ca9dc0802ef7ee88d4a4163debe31ea5c1aad4e97c4c3dd5a8b04f4815",
+          "name": "result.v1.json"
+        },
+        {
+          "size": 76636,
+          "sha256": "cd62b52a30371f44b4baa7a1e5b4a6d93a9c7ae9541c78dc2d1c794e32c9fb8f",
+          "name": "result.json"
+        },
+        {
+          "size": 18991,
+          "sha256": "cbe677cc1ce2a3e5f9baff222ab3e46da51fb0a172ddc7bac2c052151dc57b2c",
+          "name": "result.docx"
+        },
+        {
+          "size": 5683,
+          "sha256": "da0c331036462b98fd0ecfbb654e9d3ce2bb7f9dacb666c46df93ed8dc71f886",
+          "name": "result.xlsx"
+        }
+      ],
+      "output": "native/grid",
+      "case": "grid",
+      "elapsed_ms": 2419,
+      "exit_code": 0,
+      "timeout": false,
+      "input_sha256": "f24a3b6ae495605e179bd34ae282047dcc4581819eb53041db34c9fdb66648cd",
+      "input": "tools/heic-rs-evaluation/fixtures/checker-1024.heic",
+      "lane": "format_only",
+      "variant": "native"
+    },
+    {
+      "capture_incomplete": false,
+      "artifacts": [],
+      "output": "native/white16",
+      "case": "white16",
+      "elapsed_ms": 48,
+      "exit_code": 1,
+      "timeout": false,
+      "input_sha256": "96bb56231cd2a98bc26f9f734681ea0b0a6dbcde597a761e50a9d40e6a4e608d",
+      "input": "tools/heic-rs-evaluation/fixtures/flat-white-16.heic",
+      "lane": "format_only",
+      "variant": "native"
+    },
+    {
+      "capture_incomplete": false,
+      "artifacts": [
+        {
+          "size": 2092,
+          "sha256": "596c5b61c4161dd968dd4064d2084ca5235cf577ff774365dabbbca25dabfd0a",
+          "name": "result.v1.json"
+        },
+        {
+          "size": 115,
+          "sha256": "01279903c2b7638c5037dcb2befa50bf32c24a338188ade79e7aa3ed1885a18c",
+          "name": "result.json"
+        },
+        {
+          "size": 16898,
+          "sha256": "84d176254a36ec76f8a7cf4e5267027fe1176e76821913a722fca48eb1c53fa4",
+          "name": "result.docx"
+        },
+        {
+          "size": 5374,
+          "sha256": "3d01a3708e9094a1c23d299f998650782acf066af6467b9db477f3aff36b7215",
+          "name": "result.xlsx"
+        }
+      ],
+      "output": "heic_rs/white16",
+      "case": "white16",
+      "elapsed_ms": 97,
+      "exit_code": 0,
+      "timeout": false,
+      "input_sha256": "96bb56231cd2a98bc26f9f734681ea0b0a6dbcde597a761e50a9d40e6a4e608d",
+      "input": "tools/heic-rs-evaluation/fixtures/flat-white-16.heic",
+      "lane": "format_only",
+      "variant": "heic_rs"
+    }
+  ],
+  "source_hashes": [
+    {
+      "path": "Cargo.lock",
+      "size": 66829,
+      "sha256": "890b2dfb70b4049c3feb72892d231ddc28730896701e4d88d4136761de080376"
+    },
+    {
+      "path": "Cargo.toml",
+      "size": 3102,
+      "sha256": "ccd43cad1bcee25d0176ef5861c311f87195880eafb37459912bb8d27e327b95"
+    },
+    {
+      "path": "src/native/heic_rs_source.rs",
+      "size": 26717,
+      "sha256": "107ecef5e7870cd6f24d6efc4a80ba924fd53144b11e1785a49d8bcffae9a7ae"
+    },
+    {
+      "path": "src/native/input_source.rs",
+      "size": 16296,
+      "sha256": "4a8f58f4430e4a5bcab88e72d1b4e1f331fd60b8d20bea5cb01fe06d6af12b6f"
+    },
+    {
+      "path": "src/native/mod.rs",
+      "size": 614,
+      "sha256": "eae7c83ee33b31486a9a916f156dec9e55f107bfe8ae9a3560a6878757e80545"
+    },
+    {
+      "path": "tests/heic_rs_dispatch.rs",
+      "size": 1601,
+      "sha256": "4a934e2733a4617ff928416ca7727a95d0df9d89a3b17b40f41ecd6f7d34a559"
+    },
+    {
+      "path": "tools/heic-rs-evaluation/compare_pipeline_ab.py",
+      "size": 6932,
+      "sha256": "4e6ca804420f59f5ed67a3ca9c9457088f9935365f91777abfb376c9fd9a2dbf"
+    },
+    {
+      "path": "tools/heic-rs-evaluation/fixtures/ocr-public/form-fixture.heic",
+      "size": 29178,
+      "sha256": "a164547455de1798edd93609084aa898354496eb58a45a0bfe7f49940f8a8a24"
+    },
+    {
+      "path": "tools/heic-rs-evaluation/fixtures/ocr-public/form-fixture.svg",
+      "size": 2218,
+      "sha256": "1494ec97fc247566b88a6d3bfbc3e920f5016d1d4b5e6d24d8d12824fe9566ba"
+    },
+    {
+      "path": "tools/heic-rs-evaluation/fixtures/ocr-public/note-fixture.heic",
+      "size": 29089,
+      "sha256": "1a2bce7b210f469ffedcfb6eb69afc70caefa9c815c6461995e1749a34fe0ee7"
+    },
+    {
+      "path": "tools/heic-rs-evaluation/fixtures/ocr-public/note-fixture.svg",
+      "size": 1291,
+      "sha256": "54bfdb9a5a9d1d9737b4a638fdc766958c4fcaf90b0a8791afe25c4668edcb05"
+    },
+    {
+      "path": "tools/heic-rs-evaluation/fixtures/ocr-public/PROVENANCE.md",
+      "size": 1271,
+      "sha256": "a5d3fce6e5e3e817936029cfa70334a1a924681b3a267032738e8d727e8d7ba0"
+    },
+    {
+      "path": "tools/heic-rs-evaluation/fixtures/ocr-public/receipt-fixture.heic",
+      "size": 23766,
+      "sha256": "cc6d17df966abd926f0f72c853713e71138a8a24f1f722ae1e6bcfaf06da336b"
+    },
+    {
+      "path": "tools/heic-rs-evaluation/fixtures/ocr-public/receipt-fixture.svg",
+      "size": 1990,
+      "sha256": "9dcafc3e4dab507ea20576076cccc7feac272e3c0b922a04362b8396cef2185a"
+    },
+    {
+      "path": "tools/heic-rs-evaluation/fixtures/ocr-public/SOURCE_MANIFEST.json",
+      "size": 2132,
+      "sha256": "38bec9064b6f91228184a60eddb251fd9236821521650d8707126e9877d7d9bd"
+    },
+    {
+      "path": "tools/heic-rs-evaluation/fixtures/ocr-public/UPSTREAM_LICENSE.txt",
+      "size": 11357,
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+    },
+    {
+      "path": "tools/heic-rs-evaluation/fixtures/ocr-public/UPSTREAM_README.md",
+      "size": 1154,
+      "sha256": "ee292f094e9e3cd283bcbddbc318562cbef43c72d68721fe91bd5bedfe1d22a5"
+    },
+    {
+      "path": "tools/heic-rs-evaluation/run-pipeline-ab.ps1",
+      "size": 7025,
+      "sha256": "21f047bb57fe44991ca4d21acc2409968cb7dde26be2034f992e059c3be5f434"
+    },
+    {
+      "path": "tools/heic-rs-evaluation/tests/test_pipeline_ab.py",
+      "size": 3001,
+      "sha256": "656f435d8011bb22aca8c42773b12ebaf3578ad87cfc29f5f0cd01c6b73e5b53"
+    },
+    {
+      "path": "tools/heic-rs-evaluation/PIPELINE_HEIC_RS_RESEARCH.md",
+      "size": 7990,
+      "sha256": "165daea642c767a355f3863e8de5166af76d329b26e1a2310f910a099ffd7759"
+    }
+  ],
+  "runtime_input_hashes": [
+    {
+      "path": "pdfium.dll",
+      "size": 7211520,
+      "sha256": "79d4676b656cfb1abcea88f9ade3b4b0826c5200382db5f4ec72a636c598c118"
+    },
+    {
+      "path": "tessdata/eng_technical_eg79_v1.traineddata",
+      "size": 15400601,
+      "sha256": "7ceee3f56f290c3b90c1670d8e0c7dd86e344759ff03915407c53369f1c8437c"
+    },
+    {
+      "path": "tessdata/eng.traineddata",
+      "size": 4113088,
+      "sha256": "7d4322bd2a7749724879683fc3912cb542f19906c83bcc1a52132556427170b2"
+    },
+    {
+      "path": "tessdata/rus.traineddata",
+      "size": 3861738,
+      "sha256": "e16e5e036cce1d9ec2b00063cf8b54472625b9e14d893a169e2b0dedeb4df225"
+    }
+  ],
+  "private_log_hashes": [
+    {
+      "path": "adapter-tests.log",
+      "size": 1972,
+      "sha256": "1ef21a566b30d3e23bdba86c609d7a64715c1ddd63a8aadf40e41433a9fd36c8"
+    },
+    {
+      "path": "build-final-heic-rs-input.log",
+      "size": 169,
+      "sha256": "4c19372f36666929ce93d96b736bb0954c0eb9baf388501bc8d1bd9e00118c8e"
+    },
+    {
+      "path": "build-final-native.log",
+      "size": 169,
+      "sha256": "ad9ee25fd6e5e26c3ab8a3edcd990272a4b47bd60ab8d9314665fe8ce625fc56"
+    },
+    {
+      "path": "build-heic-rs.log",
+      "size": 169,
+      "sha256": "1f2d704b8435f3b4c0938d69227714fa922575bc8251f74ae0498ff95e0c46fe"
+    },
+    {
+      "path": "build-native.log",
+      "size": 7515,
+      "sha256": "d5c8f0a2c535c47a265daf21414137bd9ab2c2fd93ed22837b387514d7494621"
+    },
+    {
+      "path": "check-heic-rs.log",
+      "size": 6838,
+      "sha256": "cbfc8a977095cb64a7369b8bbdb0f733d29ee91a581dc12adbd8e7d6baac18da"
+    },
+    {
+      "path": "clippy-heic-rs.log",
+      "size": 168,
+      "sha256": "560bac7cdfc043a6cf1f7351a441412f9e99c0a43338ed2e981ebc9ea8f5e8cd"
+    },
+    {
+      "path": "fmt.log",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "test-comparison-integrity.log",
+      "size": 108,
+      "sha256": "6770e893ddc8d9148dcebaf551d1729590918033afd7a1e16aca231d0f4b3258"
+    },
+    {
+      "path": "test-heic-rs-all.log",
+      "size": 35259,
+      "sha256": "7d2add2a0a44b6b8d142cc29171af4ec24508d0c850b74660997b0cc260b2e3d"
+    },
+    {
+      "path": "test-heic-rs-input-glyph-owner-separate.log",
+      "size": 419,
+      "sha256": "50c51d98e0a6425362994a37402ce6fe580da5d2d0e8f10207a1203e331ab430"
+    },
+    {
+      "path": "test-heic-rs-input-native-text-separate.log",
+      "size": 388,
+      "sha256": "24006912f990e260a1d09b281cf661b09402db65c12eb27ae836e2c7d1ae5081"
+    },
+    {
+      "path": "test-heic-rs-provisioned.log",
+      "size": 37242,
+      "sha256": "a748f07c4063e62fcf88c7a5a530c7d053a8683f5e02cec9dff2743e3e06cc1f"
+    },
+    {
+      "path": "test-native-glyph-owner-separate.log",
+      "size": 419,
+      "sha256": "27c9c12b9c1525ef173be69c56cbf5a7a36965051955427227322380702c6476"
+    },
+    {
+      "path": "test-native-native-text-separate.log",
+      "size": 388,
+      "sha256": "21cb0b649cfdbae257d7a0354321592e221284386951e7f0d167b17685bdaeb1"
+    },
+    {
+      "path": "test-native-provisioned.log",
+      "size": 36155,
+      "sha256": "a9e28ca9649ab75778e1c221df052c7dff28443acc6f905f5897bfa05b37d018"
+    },
+    {
+      "path": "check-native.log",
+      "size": 168,
+      "sha256": "07d9c83002f676d87aabe6ede9e337628ef4987f6a9ed8ecd7b21fa9badc5a91"
+    }
+  ],
+  "limitations": [
+    "Debug timings not a performance benchmark; no speedup established",
+    "Only3 known-source English synthetic text HEIC; not Russian/CAD/camera/large holdout qualification",
+    "Primary image only; collections warned; sequences/overlays unsupported by candidate",
+    "Primary-linked premultiplied alpha explicitly rejected",
+    "Conservative raw aggregate pixel cap can reject large/cropped/tiled inputs admitted by old path; exact byte/RSS cap not established",
+    "No full OCR release build or installed OCR replacement",
+    "Windows Sandbox: NOT RUN — DEFERRED BY OWNER",
+    "Separate clean Windows x64: NOT RUN — DEFERRED BY OWNER"
+  ],
+  "release_status": "WINDOWS PORTABLE RELEASE — BLOCKED: LICENSING",
+  "preservation": {
+    "rc1_files": 546,
+    "rc1_bytes": 55187865,
+    "rc1_tree_sha256": "e36c70573c8de05db6b2a3eb67d3329d875b0a563899c534dbfc5f82a3981c7f",
+    "rc1_exe_sha256": "c305d60ec3861ebb5cf4e9532f346559be4ebc1b5989da31412c1c36f71f8cb4",
+    "rc1_manifest_sha256": "09299e7ec10aa9132516f7e7c2b9f35ef80e498a85987377785a096839c8b0af",
+    "sealed_receipts_unchanged": 6
+  }
+}

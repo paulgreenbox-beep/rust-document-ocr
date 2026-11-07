@@ -1,0 +1,230 @@
+// Modified 2026-11-07 for the OCR research derivative: raw-SPS preallocation API.
+//! The HEVC (ITU-T H.265) still-picture intra decoder.
+//!
+//! This module decodes one intra picture — Main, Main 10 or Main Still
+//! Picture, 4:2:0, 4:2:2, 4:4:4 or monochrome, 8 or 10 bits — from the
+//! parameter sets and coded slices of an IRAP access unit. Like every other
+//! module in the crate it performs no I/O: [`decode_still`] takes bytes and
+//! returns samples. Inter prediction, P and B slices and multi-picture
+//! sequences are refused with [`Error::Unsupported`], naming the tool that was
+//! asked for.
+//!
+//! [`Error::Unsupported`]: crate::Error::Unsupported
+//!
+//! # Contract
+//!
+//! `parameter_sets` are the VPS, SPS and PPS NAL units taken from the item's
+//! `hvcC` property, in that order, each without a length prefix or start code.
+//! `slices` are the remaining NAL units of the item's data, already split on
+//! their length prefixes. Both borrow from the caller; the decoder does not
+//! assume they outlive the call.
+//!
+//! # Errors
+//!
+//! The decoder has its own, narrower notion of failure, defined in the private
+//! `error` submodule. It never reaches a caller: it is converted into
+//! [`crate::Error`] at this seam, carrying the same message, so that a caller
+//! of [`crate::decode()`] matches on exactly one error type.
+
+mod bits;
+mod cabac;
+mod decode;
+mod error;
+mod filter;
+mod frame;
+mod intra;
+mod nal;
+mod picture;
+mod ps;
+mod scan;
+mod slice;
+mod transform;
+
+#[cfg(any(test, feature = "bench"))]
+#[doc(hidden)]
+pub mod synth;
+
+#[cfg(feature = "bench")]
+#[doc(hidden)]
+pub mod bench_api;
+
+#[cfg(test)]
+mod golden;
+
+#[cfg(test)]
+mod resource_tests;
+
+#[cfg(test)]
+std::thread_local! {
+    static IMAGE_BUFFER_PHASES: core::cell::Cell<usize> = const { core::cell::Cell::new(0) };
+}
+
+#[cfg(test)]
+pub(crate) fn mark_image_buffer_phase() {
+    IMAGE_BUFFER_PHASES.with(|n| n.set(n.get() + 1));
+}
+#[cfg(test)]
+pub(crate) fn reset_image_buffer_count() {
+    IMAGE_BUFFER_PHASES.with(|n| n.set(0));
+}
+#[cfg(test)]
+pub(crate) fn image_buffer_count() -> usize {
+    IMAGE_BUFFER_PHASES.with(|n| n.get())
+}
+
+pub use frame::{ChromaFormat, Frame, Info};
+
+#[cfg(test)]
+use nal::split_annexb;
+
+use crate::error::Result;
+
+/// Decode a single still picture.
+///
+/// See the module documentation for the shape of the inputs.
+pub fn decode_still(parameter_sets: &[&[u8]], slices: &[&[u8]]) -> Result<Frame> {
+    decode_still_limited(parameter_sets, slices, crate::DEFAULT_MAX_PIXELS)
+}
+
+/// Decode one picture with a preallocation ceiling on untrimmed luma sample sites.
+///
+/// Every SPS in the configuration must fit, including unused configurations.
+/// This check precedes slice RBSP copying, Geometry, Picture and filter storage.
+/// The unit is raw luma width times height, not cropped/output pixels or bytes.
+pub fn decode_still_limited(
+    parameter_sets: &[&[u8]],
+    slices: &[&[u8]],
+    max_coded_pixels: u64,
+) -> Result<Frame> {
+    let sets = decode::ParameterSets::parse(parameter_sets)?;
+    check_coded_requirement(&sets, max_coded_pixels)?;
+    Ok(decode::decode(&sets, slices, max_coded_pixels)?)
+}
+
+/// Both untrimmed allocation geometry and cropped display geometry from a configuration.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct CodedImageInfo {
+    /// Width before the SPS conformance window.
+    pub raw_width: u32,
+    /// Height before the SPS conformance window.
+    pub raw_height: u32,
+    /// Width after the SPS conformance window.
+    pub width: u32,
+    /// Height after the SPS conformance window.
+    pub height: u32,
+    /// Luma sample depth.
+    pub bit_depth: u8,
+    /// Chroma sampling.
+    pub chroma: ChromaFormat,
+    /// Largest untrimmed width times height across every supplied SPS.
+    pub max_raw_pixels: u64,
+}
+
+/// Inspect allocation geometry without allocating decoded image buffers.
+///
+/// Dimension/depth fields describe the first PPS-selected SPS (as `probe` does),
+/// while max_raw_pixels conservatively includes every SPS, even unused ones.
+pub fn probe_coded(parameter_sets: &[&[u8]]) -> Result<CodedImageInfo> {
+    let sets = decode::ParameterSets::parse(parameter_sets)?;
+    let sps = sets.first_sps()?;
+    let [l, r, t, b] = sps.crop;
+    let cropped_width = l
+        .checked_add(r)
+        .and_then(|crop| sps.width.checked_sub(crop))
+        .ok_or(crate::Error::Malformed(
+            "conformance window overflows coded width",
+        ))?;
+    let cropped_height = t
+        .checked_add(b)
+        .and_then(|crop| sps.height.checked_sub(crop))
+        .ok_or(crate::Error::Malformed(
+            "conformance window overflows coded height",
+        ))?;
+    Ok(CodedImageInfo {
+        raw_width: sps.width as u32,
+        raw_height: sps.height as u32,
+        width: cropped_width as u32,
+        height: cropped_height as u32,
+        bit_depth: sps.bit_depth_y,
+        chroma: ChromaFormat::from_idc(sps.chroma_array_type).unwrap_or(ChromaFormat::Monochrome),
+        max_raw_pixels: maximum_coded_requirement(&sets)?,
+    })
+}
+
+fn maximum_coded_requirement(sets: &decode::ParameterSets) -> Result<u64> {
+    if sets.sps.is_empty() {
+        return Err(crate::Error::MissingParameterSet("SPS"));
+    }
+    let mut maximum = sets.max_raw_pixels;
+    for sps in &sets.sps {
+        let required = (sps.width as u64)
+            .checked_mul(sps.height as u64)
+            .ok_or(crate::Error::Malformed("untrimmed SPS dimensions overflow"))?;
+        maximum = maximum.max(required);
+    }
+    Ok(maximum)
+}
+
+fn check_coded_requirement(sets: &decode::ParameterSets, limit: u64) -> Result<u64> {
+    let required = maximum_coded_requirement(sets)?;
+    if required > limit {
+        return Err(crate::Error::ResourceLimit {
+            stage: crate::ResourceStage::CodedPicture,
+            required,
+            limit,
+        });
+    }
+    Ok(required)
+}
+
+pub(crate) fn coded_pixel_requirement(parameter_sets: &[&[u8]], limit: u64) -> Result<u64> {
+    let sets = decode::ParameterSets::parse(parameter_sets)?;
+    check_coded_requirement(&sets, limit)
+}
+
+#[cfg(test)]
+pub(crate) fn reset_picture_count() {
+    picture::reset_picture_count();
+}
+#[cfg(test)]
+pub(crate) fn picture_count() -> usize {
+    picture::picture_count()
+}
+
+/// Read the geometry out of a sequence parameter set without decoding.
+pub fn probe(parameter_sets: &[&[u8]]) -> Result<Info> {
+    let sets = decode::ParameterSets::parse(parameter_sets)?;
+    let sps = sets.first_sps()?;
+    let [l, r, t, b] = sps.crop;
+    Ok(Info {
+        width: sps.width.saturating_sub(l + r).max(1) as u32,
+        height: sps.height.saturating_sub(t + b).max(1) as u32,
+        bit_depth: sps.bit_depth_y,
+        chroma: ChromaFormat::from_idc(sps.chroma_array_type).unwrap_or(ChromaFormat::Monochrome),
+    })
+}
+
+/// Decode one still picture from an Annex-B byte stream.
+///
+/// Start codes are located, the NAL units split out and sorted into parameter
+/// sets and slices, and [`decode_still`] is then applied. HEIF stores NAL
+/// units with length prefixes rather than start codes, so this is used only by
+/// the decoder's own tests, which speak the codec's native framing.
+#[cfg(test)]
+pub(crate) fn decode_annexb(stream: &[u8]) -> Result<Frame> {
+    use alloc::vec::Vec;
+    let units = split_annexb(stream);
+    let mut sets: Vec<&[u8]> = Vec::new();
+    let mut slices: Vec<&[u8]> = Vec::new();
+    for u in units {
+        let Ok(h) = nal::NalHeader::parse(u) else {
+            continue;
+        };
+        if h.is_vcl() {
+            slices.push(u);
+        } else if matches!(h.nal_unit_type, 32..=34) {
+            sets.push(u);
+        }
+    }
+    decode_still(&sets, &slices)
+}

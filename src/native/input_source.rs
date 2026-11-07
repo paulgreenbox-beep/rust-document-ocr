@@ -10,16 +10,23 @@ use crate::{
     dto::{BoundingBox, Word},
     input_format::{detect_input_format, InputFormat, InputLimits, InputSourceError},
     page_analysis::{NativeTextLayer, NativeTextLayout, PageOrientation},
-    page_source::{PageSource, RenderedPage, RenderedPageRegion},
+    page_source::{NativeGridWords, PageSource, RenderedPage, RenderedPageRegion},
 };
 
 use super::{
     djvu_source::{DjVuLimits, DjVuPageSource, DjVuSourceError},
-    heif_source::{HeifPageSource, HeifSourceError, HeifSourceLimits, HeifSourceWarning},
+    heif_source::{HeifSourceError, HeifSourceLimits, HeifSourceWarning},
     pdfium_source::PdfiumPageSource,
     raster_source::RasterImagePageSource,
     tiff_source::TiffPageSource,
 };
+
+// The opt-in research build deliberately has no native decoder fallback.
+// Without this feature, the established native source remains unchanged.
+#[cfg(feature = "heic-rs-input")]
+use super::heic_rs_source::HeicRsPageSource as HeifPageSource;
+#[cfg(not(feature = "heic-rs-input"))]
+use super::heif_source::HeifPageSource;
 
 /// A non-fatal source-level condition that embedding hosts can serialize.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -285,6 +292,21 @@ impl PageSource for NativePageSource {
         match self {
             Self::Pdf(source) => {
                 source.native_words_for_grid_cells(page_num, width, height, cell_bounds)
+            }
+            _ => Ok(None),
+        }
+    }
+
+    fn native_words_with_grid_owners(
+        &self,
+        page_num: u32,
+        width: u32,
+        height: u32,
+        cell_bounds: &[BoundingBox],
+    ) -> Result<Option<NativeGridWords>, Box<dyn std::error::Error>> {
+        match self {
+            Self::Pdf(source) => {
+                source.native_words_with_grid_owners(page_num, width, height, cell_bounds)
             }
             _ => Ok(None),
         }

@@ -4,6 +4,162 @@ use super::*;
 use crate::dto::TableCell;
 use crate::table_grid::{GridLine, TableGrid};
 
+#[test]
+#[ignore = "run separately: pdfium-render permits only one binding initialization per process"]
+fn source_grid_owner_survives_word_projection_and_matrix_json() {
+    let _guard = crate::native::pdfium_test_lock().lock().unwrap();
+    let directory = tempfile::tempdir().unwrap();
+    let input = directory.path().join("subpixel-grid-owner.pdf");
+    let dll = std::env::var_os("OCR_TEST_PDFIUM_LIBRARY")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| {
+            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("runtime/pdfium/7881/bin/pdfium.dll")
+        });
+    let pdfium = Pdfium::new(Pdfium::bind_to_library(&dll).unwrap());
+    let mut document = pdfium.create_new_pdf().unwrap();
+    let font = document.fonts_mut().helvetica();
+    let mut page = document
+        .pages_mut()
+        .create_page_at_end(PdfPagePaperSize::new_custom(
+            PdfPoints::new(400.0),
+            PdfPoints::new(300.0),
+        ))
+        .unwrap();
+    page.objects_mut()
+        .create_text_object(
+            PdfPoints::new(120.0),
+            PdfPoints::new(145.0),
+            "A",
+            font,
+            PdfPoints::new(18.0),
+        )
+        .unwrap();
+    document.save_to_file(&input).unwrap();
+    drop(page);
+    drop(document);
+    let source = PdfiumPageSource {
+        pdfium,
+        path: input.clone(),
+        pdfium_dll: dll,
+        total: 1,
+        dpi: 72.0,
+    };
+    let canonical = source.extract_native_text(1).unwrap();
+    // The fixture uses one Helvetica A at x=120 and 18pt. Its exact source
+    // font centre lies left of the refined edge, while the integer ink box
+    // centre lies right of the raster edge. Exercise the real PDF transform.
+    let document = source.pdfium.load_pdf_from_file(&input, None).unwrap();
+    let page = document.pages().get(0).unwrap();
+    let text = page.text().unwrap();
+    let bounds = text.chars().get(0).unwrap().loose_bounds().unwrap();
+    let font_box = grid_geometry::precise_device_bounds(
+        &page,
+        PdfWordBounds {
+            left: bounds.left().value,
+            bottom: bounds.bottom().value,
+            right: bounds.right().value,
+            top: bounds.top().value,
+        },
+        800,
+        600,
+    )
+    .unwrap();
+    let font_center = (font_box.x0 + font_box.x1) / 2.0;
+    drop(text);
+    let raster_seam = font_center - 0.75;
+    let cells = [
+        BoundingBox::new(0.0, 0.0, raster_seam, 600.0),
+        BoundingBox::new(raster_seam, 0.0, 800.0, 600.0),
+    ];
+    let source_seam = font_center + 0.1;
+    let mut page = page;
+    page.objects_mut()
+        .create_path_object_line(
+            PdfPoints::new((source_seam / 2.0) as f32),
+            PdfPoints::new(0.0),
+            PdfPoints::new((source_seam / 2.0) as f32),
+            PdfPoints::new(300.0),
+            PdfColor::BLACK,
+            PdfPoints::new(0.5),
+        )
+        .unwrap();
+    document.save_to_file(&input).unwrap();
+    let refined = grid_geometry::refine_cell_bounds(&page, &cells, 800, 600);
+    assert_eq!(glyph_cell_owner(&font_box, &refined), Some(0));
+    let words = source
+        .native_words_for_grid_cells(1, 800, 600, &cells)
+        .unwrap()
+        .unwrap();
+    assert_eq!(words.len(), 1);
+    assert_eq!(words[0].text, "A");
+    let mut grid = TableGrid {
+        bbox: BoundingBox::new(0.0, 0.0, 800.0, 600.0),
+        horizontal_lines: [0.0, 600.0]
+            .into_iter()
+            .map(|position| GridLine {
+                position,
+                start: 0.0,
+                end: 800.0,
+            })
+            .collect(),
+        vertical_lines: [0.0, raster_seam, 800.0]
+            .into_iter()
+            .map(|position| GridLine {
+                position,
+                start: 0.0,
+                end: 600.0,
+            })
+            .collect(),
+        intersections: vec![],
+        cells: cells
+            .iter()
+            .enumerate()
+            .map(|(i, bbox)| TableCell::grid(0, i as u32, bbox.clone()))
+            .collect(),
+        confidence: 1.0,
+    };
+    let owned = source
+        .native_words_with_grid_owners(1, 800, 600, &cells)
+        .unwrap()
+        .unwrap();
+    assert_eq!(
+        serde_json::to_value(&owned.words).unwrap(),
+        serde_json::to_value(&words).unwrap()
+    );
+    assert_eq!(owned.cell_owners.as_ref().unwrap(), &[Some(0)]);
+    let metrics =
+        grid.assign_native_words_with_owners(&owned.words, owned.cell_owners.as_ref().unwrap());
+    eprintln!("font_center={font_center} raster_seam={raster_seam} refined_seam={} word_bbox={:?} assigned={:?}", refined[0].x1, words[0].bbox, grid.cells.iter().map(|cell| &cell.text).collect::<Vec<_>>());
+    assert_eq!(metrics.words_assigned, 1);
+    let json = serde_json::to_value(grid.to_matrix()).unwrap();
+    assert_eq!(
+        json["rows"][0][0]["text"], "A",
+        "source owner must survive ink projection"
+    );
+    assert_eq!(json["rows"][0][1]["text"], "");
+    assert_eq!(
+        json["rows"][0][0]["bbox"],
+        serde_json::to_value(&cells[0]).unwrap()
+    );
+    assert_eq!(json["rows"][0][0]["confidence"], 1.0);
+    assert_eq!(source.extract_native_text(1).unwrap(), canonical);
+    assert_eq!(words[0].confidence, 1.0);
+    // A tiny font fringe must not pull an outside caption into a table.
+    let fringe = [BoundingBox::new(
+        0.0,
+        font_box.y1 - 0.05,
+        800.0,
+        font_box.y1 + 20.0,
+    )];
+    assert_eq!(glyph_cell_owner(&font_box, &fringe), Some(0));
+    let outside = source
+        .native_words_with_grid_owners(1, 800, 600, &fringe)
+        .unwrap()
+        .unwrap();
+    assert_eq!(outside.words[0].text, "A");
+    assert_eq!(outside.cell_owners, Some(vec![None]));
+}
+
 fn glyph(value: char, x: f32, y: f32, width: f32) -> PdfTextGlyph {
     PdfTextGlyph {
         value,

@@ -1,0 +1,35 @@
+name: HEIC-RS isolated observations (not release qualification)
+
+on:
+  push:
+    branches: [experiment/heic-rs-rc2]
+  pull_request:
+    paths:
+      - 'tools/heic-rs-evaluation/**'
+      - '.github/workflows/heic-rs-evaluation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  observations:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec
+        with:
+          toolchain: 1.97.1
+          components: rustfmt
+      - name: Check bounded derivative and unmodified decoder reference
+        run: |
+          python3 -m unittest discover -s tools/heic-rs-evaluation/tests -p 'test_pipeline_ab.py'
+          cargo fmt --manifest-path tools/heic-rs-evaluation/Cargo.toml --all --check
+          cargo test --locked --manifest-path tools/heic-rs-evaluation/Cargo.toml -p heic-rs@0.1.4-ocr.1 --no-default-features --features std --lib --target-dir /tmp/heic-rs-evaluation
+          cargo test --locked --manifest-path tools/heic-rs-evaluation/Cargo.toml -p heic-rs@0.1.4-ocr.1 --no-default-features --features std,parallel --lib resource_limit --target-dir /tmp/heic-rs-evaluation
+          cargo test --locked --manifest-path tools/heic-rs-evaluation/Cargo.toml --features upstream-reference --target-dir /tmp/heic-rs-evaluation -- --nocapture
+      # These bounded-derivative tests preserve unmodified baseline observations.
+      # They are NOT a native OCR or binary release qualification gate.

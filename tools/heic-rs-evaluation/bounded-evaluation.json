@@ -1,0 +1,402 @@
+{
+  "schema_version": 1,
+  "scope": "Isolated local heic-rs derivative; algorithmic HEVC image-buffer gate and named synthetic decoder comparisons only",
+  "date": "2026-11-07",
+  "branch": "experiment/heic-rs-rc2",
+  "parent_head": "2d6d26cce5fc45045ce42d1eca2b4ae831268093",
+  "disposition": "SCOPED_PREALLOCATION_AND_EXTENDED_FORMAT_TESTS_PASS; PRODUCTION_ADAPTER_AND_RC2_HELD",
+  "host": "Windows x64",
+  "rustc": "1.97.1 (8bab26f4f 2026-07-14)",
+  "cargo": "1.97.1 (c980f4866 2026-06-30)",
+  "upstream": {
+    "version": "0.1.4",
+    "local_version": "0.1.4-ocr.1",
+    "archive_sha256": "8883c3bfa6b4ff19a40e52a6dc051c5612cbe21bf408fc6d4875e8dfd777cb66",
+    "packaged_vcs": "999470f514c8e9a1a7c37ea44ba70cc32b1308fe",
+    "cache_originals_rehashed": 92,
+    "cache_mismatches": 0
+  },
+  "limits": {
+    "status": "PASS_AT_STATED_ALGORITHMIC_SCOPE",
+    "units": "Some(N) independently caps output canvas pixels and aggregate untrimmed HEVC luma sample sites, NOT heap bytes",
+    "gate": "Serial complete requested primary/grid/alpha occurrence preflight before pool/dispatch and Geometry/Picture/filter buffers; repeated references charged repeatedly; max across every supplied SPS including overwritten definitions",
+    "overflow": "checked product/sum; typed rejection",
+    "per_codec_defence": "Limited public seam rejects before slice RBSP copy; selected SPS rechecked before Geometry",
+    "none": "Explicit opt-out from caller ceilings; not qualified for untrusted input",
+    "evidence": "Actual cfg(test) Geometry/Picture constructor entry counters zero on rejected cases; positive controls nonzero; no giant allocation or OOM",
+    "metadata_input_bytes": "Not capped by this patch; retain independent file/input limits",
+    "peak_heap_or_rss": "NOT_MEASURED",
+    "small_forged_ispe": {
+      "container": [
+        16,
+        16
+      ],
+      "public_cropped_sps": [
+        64,
+        64
+      ],
+      "raw_sps": [
+        160,
+        64
+      ],
+      "max_pixels": 256,
+      "new_error": "ResourceLimit { stage: CodedPicture, required: 10240, limit: 256 }",
+      "strict_tested": [
+        false,
+        true
+      ],
+      "unmodified_error": "PixelLimit { pixels: 4096, max_pixels: 256 }"
+    }
+  },
+  "gates": [
+    {
+      "name": "fmt",
+      "status": "PASS",
+      "exit_code": 0,
+      "elapsed_ms": 355
+    },
+    {
+      "name": "vendor-std",
+      "status": "PASS",
+      "exit_code": 0,
+      "passed": 83,
+      "elapsed_ms": 769
+    },
+    {
+      "name": "vendor-parallel-resource",
+      "status": "PASS",
+      "exit_code": 0,
+      "passed": 10,
+      "filtered": 74,
+      "elapsed_ms": 218
+    },
+    {
+      "name": "vendor-no-std",
+      "status": "PASS",
+      "exit_code": 0,
+      "elapsed_ms": 123
+    },
+    {
+      "name": "pure-upstream",
+      "status": "PASS",
+      "exit_code": 0,
+      "unit": 11,
+      "extended": 6,
+      "elapsed_ms": 3637
+    },
+    {
+      "name": "native-upstream",
+      "status": "PASS",
+      "exit_code": 0,
+      "unit": 13,
+      "extended": 7,
+      "elapsed_ms": 4181
+    },
+    {
+      "name": "scoped-clippy",
+      "status": "PASS",
+      "exit_code": 0,
+      "scope": "evaluator all targets --no-deps, native-reference,upstream-reference, -D warnings",
+      "elapsed_ms": 783
+    }
+  ],
+  "logs": {
+    "scope": "Private raw logs retained locally; only names and checksums are public",
+    "files": [
+      {
+        "path": "fmt.log",
+        "size": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "native-upstream.log",
+        "size": 8106,
+        "sha256": "0b67ec32c22617315681616e73aa3fa81a742a20ada5ec379c481bfd80a3348c"
+      },
+      {
+        "path": "pure-upstream.log",
+        "size": 4852,
+        "sha256": "443410dc6f669aed72a41138e05289a43da55f7d61e6b3196e924d158c770efe"
+      },
+      {
+        "path": "scoped-clippy.log",
+        "size": 199,
+        "sha256": "eb4bc829d362c01beac6a4f5c43fafcd7a3772cb25223544a61a0ee7c3c677a7"
+      },
+      {
+        "path": "vendor-no-std.log",
+        "size": 73,
+        "sha256": "dab4e4707b2e6fdbdead361b4487be475974a047edea846dd92bac44f319f872"
+      },
+      {
+        "path": "vendor-parallel-resource.log",
+        "size": 1319,
+        "sha256": "98887296f03c4d4a9b162cbb8bb78ff72c0978c3831f45e7a0689613498b745a"
+      },
+      {
+        "path": "vendor-std.log",
+        "size": 7057,
+        "sha256": "ab9aafe55587c2ef564520472fc64e6dc04eed4ba10b49ac3de1e201ab1e0cec"
+      }
+    ]
+  },
+  "formats": {
+    "main10": "Real profile2 VPS/SPS/hvcC and 10-bit samples; RGB8/RGB16 checked",
+    "alpha": "Real auxiliary monochrome HEVC; alpha128, disabled-alpha255, original RGB preserved; aggregate14336 raw sites",
+    "rotations": "Non-square 90/180/270 metadata; byte-exact independent pixel-index mapping plus transforms-disabled controls",
+    "mirrors": "Both imir axes; published0.1.4 swapped-axis defect reproduced and local parser corrected; fixtures unchanged"
+  },
+  "comparison": {
+    "original_six_vs_unmodified": "PASS_BYTE_IDENTICAL",
+    "native_reference": "Existing libheif1.23.1; libheif-rs2.7.0; x64-windows-static-md; strict=true, HDR8, transforms enabled, threads1; security limits unchanged",
+    "native_original_fixture_decodes": {
+      "success": 5,
+      "failed": 1,
+      "failed_fixture": "flat-white-16",
+      "reason": "Unchanged native SecurityLimitExceeded; raw image160x64 above6400"
+    },
+    "native_extended_fixture_decodes": {
+      "success": 7,
+      "failed": 0
+    },
+    "independent_png_reference": "Existing research-only heif-convert/libheif1.23.2; libde2651.1.1; two frozen PNGs; no tool binaries distributed",
+    "metrics": "bounded-pixel-metrics.json"
+  },
+  "dependency_graph": {
+    "default_normal": [
+      "heic-rs v0.1.4-ocr.1 (local path; std only)"
+    ],
+    "rayon_selected_by_default": false,
+    "native_selected_by_default": false,
+    "upstream_reference": "Optional pinned unmodified registry0.1.4; no implicit production fallback",
+    "production_root": "UNCHANGED"
+  },
+  "input_hashes": [
+    {
+      "path": "Cargo.lock",
+      "size": 13543,
+      "sha256": "85c22208704e17305b865b9f05d6b64d95db153aeb7051e07fff7b7e1775eff2"
+    },
+    {
+      "path": "Cargo.toml",
+      "size": 819,
+      "sha256": "7e9bc45e0a104102706595e6cfea4e2222f8f8bb7aa4a37a176d5470cc016f77"
+    },
+    {
+      "path": "fixtures/checker-1024.heic",
+      "size": 2566,
+      "sha256": "f24a3b6ae495605e179bd34ae282047dcc4581819eb53041db34c9fdb66648cd"
+    },
+    {
+      "path": "fixtures/checker-1024.ref.png",
+      "size": 18300,
+      "sha256": "26b302d18d5c0e932a69092dafe4ac25d63814514c63718a08325fd84b38d5d4"
+    },
+    {
+      "path": "fixtures/checker-64.heic",
+      "size": 679,
+      "sha256": "772a9b8fab3022ea95eb0b1d069053448f9602fad7829b33506877039a6af2c5"
+    },
+    {
+      "path": "fixtures/checker-64.ref.png",
+      "size": 854,
+      "sha256": "aa89bda71d2359691d32362923967ff4839e8a4f7d54641b10c647c9fbf9aa2c"
+    },
+    {
+      "path": "fixtures/extended/flat-alpha128-64.heic",
+      "size": 663,
+      "sha256": "be642c699dfa1ca175b026a5eab706f70103b66152a950cd19cf5346743018c6"
+    },
+    {
+      "path": "fixtures/extended/flat-alpha128-64.libheif-1.23.2.png",
+      "size": 225,
+      "sha256": "340618955f7c1f1288568b7399e6479ee827a6c6addb20a7483f9f1f991ebf16"
+    },
+    {
+      "path": "fixtures/extended/gradient-imir0.heic",
+      "size": 4309,
+      "sha256": "d781c4fd167cd8ee13801753702da6dcf6d7bc0488a9193564606ec1f3d36e6e"
+    },
+    {
+      "path": "fixtures/extended/gradient-imir1.heic",
+      "size": 4309,
+      "sha256": "a30710c5f81064aef672e996d609643541218c49162945e1be47d8c3bfc6b137"
+    },
+    {
+      "path": "fixtures/extended/gray-main10-64.heic",
+      "size": 343,
+      "sha256": "a89e36be51e534f457fe4020c8ee5204afcb25831d01f5ca5676fe9cb2c698b9"
+    },
+    {
+      "path": "fixtures/extended/gray-main10-64.libheif-1.23.2.png",
+      "size": 223,
+      "sha256": "268297eb7548cc9bbe6ccc1a39852559e09cfc83009121eb59085e346334e7ec"
+    },
+    {
+      "path": "fixtures/extended/strips-irot180.heic",
+      "size": 458,
+      "sha256": "8d2fc0d83cd4e380cb543cf7ef795b9cd15187dd43fdcd4950b67c346672da3f"
+    },
+    {
+      "path": "fixtures/extended/strips-irot270.heic",
+      "size": 458,
+      "sha256": "0859fbd6a287752811f3ca37205fbdefed329714be82d2511daf5fa07407f16b"
+    },
+    {
+      "path": "fixtures/extended/strips-irot90.heic",
+      "size": 458,
+      "sha256": "2227bc8c3f52cfeef217f46149353e76fe60b83cc4d5ffbbfd1dfbbe374bebfb"
+    },
+    {
+      "path": "fixtures/flat-64.heic",
+      "size": 488,
+      "sha256": "832f19c74d689d7b9d235f5dfe6e81ed824d60900f0360d1953b413b736816ac"
+    },
+    {
+      "path": "fixtures/flat-64.ref.png",
+      "size": 832,
+      "sha256": "39969b10938938add37de1249227d5f5a52dc9fac2c28e41a6fc0ceab494c4ca"
+    },
+    {
+      "path": "fixtures/flat-white-16.heic",
+      "size": 485,
+      "sha256": "96bb56231cd2a98bc26f9f734681ea0b0a6dbcde597a761e50a9d40e6a4e608d"
+    },
+    {
+      "path": "fixtures/flat-white-16.ref.png",
+      "size": 666,
+      "sha256": "335d832597da25cc454cd0494b01dd3bcb30f7f29f7952ff63dab892870b64f5"
+    },
+    {
+      "path": "fixtures/gradient-512.heic",
+      "size": 4378,
+      "sha256": "a618edb8cc6f7b53ee61bc44178014bf16c51dfb55a592be35c83611d7a236f8"
+    },
+    {
+      "path": "fixtures/gradient-512.ref.png",
+      "size": 196113,
+      "sha256": "73b26354e73a448af511c1638840eb35614f5ba51f25bc64cc99836b49abdafe"
+    },
+    {
+      "path": "fixtures/rgb-strips-96.heic",
+      "size": 527,
+      "sha256": "6e65bccd51ff2effdfce99ac4275b9f79c85bba51b5875d7fa455e1412821c25"
+    },
+    {
+      "path": "fixtures/rgb-strips-96.ref.png",
+      "size": 785,
+      "sha256": "b3a619b185d4cdfb1aafb419fec4f054d86853bb6a65e5d044527e84579407bb"
+    },
+    {
+      "path": "src/lib.rs",
+      "size": 19526,
+      "sha256": "afeec996f14cf497db12f2986ef9842ae3cec1b023dc576289769eb7db962d17"
+    },
+    {
+      "path": "tests/common/container.rs",
+      "size": 6600,
+      "sha256": "c1ce9b5a8b6623497fa2c881aabbd328ff4b3272ecbccc6abc9bb5f312a2285d"
+    },
+    {
+      "path": "tests/common/generate_extended.rs",
+      "size": 3276,
+      "sha256": "8102efc965803db95b2f5fe669e8e893018767f4a2c34d9d559b6a9fea88eac0"
+    },
+    {
+      "path": "tests/common/native_reference.rs",
+      "size": 2652,
+      "sha256": "4f9740e7c3267bd7fe1bdffb8d92d549c2ee324eb5cb6614eb6405fd876912b4"
+    },
+    {
+      "path": "tests/extended_formats.rs",
+      "size": 17020,
+      "sha256": "e849b47b00d1839cc1c9118234214ce6ddae87a9d09a70d9d713ce1fdf6fc224"
+    },
+    {
+      "path": "vendor-patch.diff",
+      "size": 19931,
+      "sha256": "7f8f39aeb248f3288ed13d56c84ecd4a740e7b7706493a42accb8e709f03ac91"
+    },
+    {
+      "path": "vendor-upstream-manifest.json",
+      "size": 14685,
+      "sha256": "9bb5ccf70bbdb287326db2a55bc8807256b74ccaccc8b1e157bf9b731f5574d9"
+    },
+    {
+      "path": ".gitattributes",
+      "size": 39,
+      "sha256": "5e6b8c4c057a2cd876c49f848ce59ee2cacfdddedc002e285e15daaad1abb76f"
+    },
+    {
+      "path": "BOUNDED_HEIC_RESEARCH.md",
+      "size": 9035,
+      "sha256": "65603896363f1768cb98e52c68b8cb23ac3380657a552d565e41af59382f001e"
+    },
+    {
+      "path": "provenance_extended.md",
+      "size": 9304,
+      "sha256": "8e5886499cc53bebf6d9d33e9b8b7fe7139650b54d23f96a9090e93c6058cfd9"
+    },
+    {
+      "path": "vendor-current-manifest.json",
+      "size": 15578,
+      "sha256": "579217ff682b6a530a6f2e12d662b4284d6d7737af644147399bc537402904a2"
+    }
+  ],
+  "vendor_manifest": "vendor-current-manifest.json",
+  "test_executables": [
+    {
+      "gate": "vendor-std",
+      "filename": "heic_rs-f592806d7af6fabf.exe",
+      "size": 1891840,
+      "sha256": "781183608cfb740eb9eab3a8797c344231c2c70836f468bb36802a404bdc1613",
+      "production_ocr_executable": false
+    },
+    {
+      "gate": "vendor-parallel-resource",
+      "filename": "heic_rs-e6b23a9d23dd7837.exe",
+      "size": 2380288,
+      "sha256": "c76394b83942f28ea12b89e4d3e101ffc12db86516934fcf58bbe634cf7dacd9",
+      "production_ocr_executable": false
+    },
+    {
+      "gate": "pure-upstream",
+      "filename": "heic_rs_evaluation-0235b92aa111ea76.exe",
+      "size": 3422208,
+      "sha256": "61734b6f2eaeefce83b05a14776f3f6c06c5155b7edf0ed48a82b2cd1756c880",
+      "production_ocr_executable": false
+    },
+    {
+      "gate": "pure-upstream",
+      "filename": "extended_formats-8fecb1eca8b54a21.exe",
+      "size": 3341312,
+      "sha256": "e374eef16b2a589ad508b9554e5ce7cc1bf449f7011bdc311ed1edc7c4657c48",
+      "production_ocr_executable": false
+    },
+    {
+      "gate": "native-upstream",
+      "filename": "heic_rs_evaluation-c49ab6d22b61f260.exe",
+      "size": 5099008,
+      "sha256": "f6df8d174b37dd077451fcba6a2a4d7f712d37a85c56a41dc2a03fc84015f57f",
+      "production_ocr_executable": false
+    },
+    {
+      "gate": "native-upstream",
+      "filename": "extended_formats-b903e1f8a8a10ecd.exe",
+      "size": 5006848,
+      "sha256": "2d8b7086863c11037a63000f22829036ad9127634f139c136d1ed0e7f591e14f",
+      "production_ocr_executable": false
+    }
+  ],
+  "not_run": [
+    "Exact heap/RSS ceiling",
+    "General hostile HEIF parser proof",
+    "Sequences/overlays/broad HEIF corpus",
+    "Fine-font OCR holdout/full production adapter",
+    "New OCR release executable or40-PDF candidate qualification",
+    "Windows Sandbox: NOT RUN — DEFERRED BY OWNER",
+    "Separate clean Windows x64: NOT RUN — DEFERRED BY OWNER"
+  ],
+  "release_status": "WINDOWS PORTABLE RELEASE — BLOCKED: LICENSING",
+  "implementation_commit": "e5fe3d045bf559d3644a6f6c198a4acda0a3b681"
+}

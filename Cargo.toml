@@ -25,6 +25,10 @@ raster-input = [
 ]
 webp-input = ["image/webp"]
 heif-input = ["dep:libheif-rs"]
+# Research-only opt-in override of the HEIF source. `native` alone remains
+# unchanged. This first A/B integration does not remove the native dependency
+# graph or claim a distributable LGPL-free executable.
+heic-rs-input = ["native", "dep:heic-rs"]
 djvu-input = ["dep:djvu-rs"]
 pdfium-c-probe = ["dep:libloading"]
 native-diagnostics = ["native"]
@@ -45,6 +49,7 @@ thiserror = "2"
 libloading = { version = "0.8", optional = true }
 tiff = { version = "0.11.3", optional = true, default-features = false, features = ["deflate", "fax", "jpeg", "lzw", "webp"] }
 libheif-rs = { version = "2.7.0", optional = true, default-features = false, features = ["v1_19"] }
+heic-rs = { version = "=0.1.4-ocr.1", path = "tools/heic-rs-evaluation/vendor/heic-rs", optional = true, default-features = false, features = ["std"] }
 djvu-rs = { version = "=0.27.0", optional = true, default-features = false, features = ["std"] }
 
 [dev-dependencies]

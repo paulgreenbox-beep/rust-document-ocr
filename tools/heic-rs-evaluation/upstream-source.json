@@ -1,0 +1,117 @@
+{
+  "schema_version": 1,
+  "repository": "https://github.com/tbraun96/heic-rs",
+  "source_commit": "999470f514c8e9a1a7c37ea44ba70cc32b1308fe",
+  "source_tag": "v0.1.4",
+  "crate": "heic-rs",
+  "version": "0.1.4",
+  "registry_checksum_sha256": "8883c3bfa6b4ff19a40e52a6dc051c5612cbe21bf408fc6d4875e8dfd777cb66",
+  "registry_index": "https://github.com/rust-lang/crates.io-index/blob/master/he/ic/heic-rs",
+  "published_package_vcs": {
+    "status": "VERIFIED",
+    "archive_size": 209012,
+    "archive_sha256": "8883c3bfa6b4ff19a40e52a6dc051c5612cbe21bf408fc6d4875e8dfd777cb66",
+    "git_sha1": "999470f514c8e9a1a7c37ea44ba70cc32b1308fe",
+    "path_in_vcs": "",
+    "cargo_vcs_info_sha256": "87b8892c73c788d04c68a54063a3a289cd390e92e460f30b50080be23dd27e08"
+  },
+  "fixtures_provenance": "Generated synthetic PNG pixels; Apple sips HEIC encoding and reference decoding. No third-party photographs. Selected corpus covers only 8-bit 4:2:0; no alpha or nonzero irot/imir fixture.",
+  "files": [
+    {
+      "path": "tests/fixtures/checker-1024.heic",
+      "destination": "fixtures/checker-1024.heic",
+      "size": 2566,
+      "git_blob_sha1": "d7bc4b6177bf664e11bcdc21d44345517857ff7e"
+    },
+    {
+      "path": "tests/fixtures/checker-1024.ref.png",
+      "destination": "fixtures/checker-1024.ref.png",
+      "size": 18300,
+      "git_blob_sha1": "39d78f9efdc16682169cdb255cdc56ece51c7e69"
+    },
+    {
+      "path": "tests/fixtures/checker-64.heic",
+      "destination": "fixtures/checker-64.heic",
+      "size": 679,
+      "git_blob_sha1": "7559f275ac22fd1b1874f8e6caa113593432993f"
+    },
+    {
+      "path": "tests/fixtures/checker-64.ref.png",
+      "destination": "fixtures/checker-64.ref.png",
+      "size": 854,
+      "git_blob_sha1": "51514bc13867d8a82f4aa8da307af6fae69e0250"
+    },
+    {
+      "path": "tests/fixtures/flat-64.heic",
+      "destination": "fixtures/flat-64.heic",
+      "size": 488,
+      "git_blob_sha1": "0fdc852f2b40c4684db7d3ea87d36d439ec2bdba"
+    },
+    {
+      "path": "tests/fixtures/flat-64.ref.png",
+      "destination": "fixtures/flat-64.ref.png",
+      "size": 832,
+      "git_blob_sha1": "5e9f52c9a1dd69884e70ef34736967c9abcefb56"
+    },
+    {
+      "path": "tests/fixtures/flat-white-16.heic",
+      "destination": "fixtures/flat-white-16.heic",
+      "size": 485,
+      "git_blob_sha1": "8c8d1e8aaa2342f07d52c2603aaa8447122c4e97"
+    },
+    {
+      "path": "tests/fixtures/flat-white-16.ref.png",
+      "destination": "fixtures/flat-white-16.ref.png",
+      "size": 666,
+      "git_blob_sha1": "a8d4c16103878f22a575a66706e1c021eed7d3ee"
+    },
+    {
+      "path": "tests/fixtures/gradient-512.heic",
+      "destination": "fixtures/gradient-512.heic",
+      "size": 4378,
+      "git_blob_sha1": "a19fef1d067a7cdf60d0d61b659dd47a93726e36"
+    },
+    {
+      "path": "tests/fixtures/gradient-512.ref.png",
+      "destination": "fixtures/gradient-512.ref.png",
+      "size": 196113,
+      "git_blob_sha1": "8e646ac869dd38d7f6463bb5603be0346ad719b0"
+    },
+    {
+      "path": "tests/fixtures/rgb-strips-96.heic",
+      "destination": "fixtures/rgb-strips-96.heic",
+      "size": 527,
+      "git_blob_sha1": "b6bfc4419102d269311f3ad21da5777d58a6c770"
+    },
+    {
+      "path": "tests/fixtures/rgb-strips-96.ref.png",
+      "destination": "fixtures/rgb-strips-96.ref.png",
+      "size": 785,
+      "git_blob_sha1": "7ba62f5af6125313f9d5f87d4673d87134d2b6ac"
+    },
+    {
+      "path": "LICENSE-APACHE",
+      "destination": "upstream/LICENSE-APACHE",
+      "size": 10847,
+      "git_blob_sha1": "16fe87b06e802f094b3fbb0894b137bca2b16ef1"
+    },
+    {
+      "path": "LICENSE-MIT",
+      "destination": "upstream/LICENSE-MIT",
+      "size": 1069,
+      "git_blob_sha1": "a266d5b6d1f3ac0930b3526b11def5d4b3b06a63"
+    },
+    {
+      "path": "NOTICE",
+      "destination": "upstream/NOTICE",
+      "size": 1021,
+      "git_blob_sha1": "f3a4c636ea23c42925721558e534f6e85bc2bd74"
+    },
+    {
+      "path": "tests/fixtures/README.md",
+      "destination": "upstream/FIXTURES-README.md",
+      "size": 3504,
+      "git_blob_sha1": "8b48e396fe1944571cc6e68a3a80394fc51f77c7"
+    }
+  ]
+}

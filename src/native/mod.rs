@@ -1,5 +1,7 @@
 #[cfg(feature = "djvu-input")]
 pub mod djvu_source;
+#[cfg(feature = "heic-rs-input")]
+pub mod heic_rs_source;
 #[cfg(feature = "heif-input")]
 pub mod heif_source;
 pub mod input_source;

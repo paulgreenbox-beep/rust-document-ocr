@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1240" height="1754" viewBox="0 0 1240 1754" role="img" aria-label="Synthetic form fixture">
+  <rect width="1240" height="1754" fill="#f4f0e6"/>
+  <rect x="58" y="58" width="1124" height="1638" rx="18" fill="#fffdfa" stroke="#cdc3b3" stroke-width="3"/>
+  <text x="110" y="160" font-family="Arial, sans-serif" font-size="54" font-weight="700" fill="#201a16">Demo Intake Form</text>
+  <text x="110" y="215" font-family="Arial, sans-serif" font-size="24" fill="#62564b">Synthetic document for upload and PDF conversion tests</text>
+  <g stroke="#8f7f69" stroke-width="3" fill="none">
+    <rect x="110" y="280" width="1020" height="120" rx="12"/>
+    <rect x="110" y="442" width="490" height="110" rx="12"/>
+    <rect x="640" y="442" width="490" height="110" rx="12"/>
+    <rect x="110" y="598" width="1020" height="110" rx="12"/>
+    <rect x="110" y="754" width="1020" height="360" rx="12"/>
+  </g>
+  <g font-family="Arial, sans-serif" fill="#2d241c">
+    <text x="132" y="325" font-size="26" font-weight="700">Full Name</text>
+    <text x="132" y="486" font-size="26" font-weight="700">Date</text>
+    <text x="662" y="486" font-size="26" font-weight="700">Reference</text>
+    <text x="132" y="642" font-size="26" font-weight="700">Email Address</text>
+    <text x="132" y="798" font-size="26" font-weight="700">Notes</text>
+  </g>
+  <g stroke="#c9beae" stroke-width="2">
+    <line x1="140" y1="850" x2="1100" y2="850"/>
+    <line x1="140" y1="910" x2="1100" y2="910"/>
+    <line x1="140" y1="970" x2="1100" y2="970"/>
+    <line x1="140" y1="1030" x2="1100" y2="1030"/>
+  </g>
+  <g font-family="Arial, sans-serif" fill="#4e443c">
+    <text x="112" y="1228" font-size="24" font-weight="700">Checklist</text>
+    <rect x="112" y="1270" width="34" height="34" fill="#fffdfa" stroke="#8f7f69"/>
+    <rect x="112" y="1335" width="34" height="34" fill="#fffdfa" stroke="#8f7f69"/>
+    <rect x="112" y="1400" width="34" height="34" fill="#fffdfa" stroke="#8f7f69"/>
+    <text x="170" y="1298" font-size="24">Identity verified</text>
+    <text x="170" y="1363" font-size="24">Address confirmed</text>
+    <text x="170" y="1428" font-size="24">Consent received</text>
+  </g>
+</svg>

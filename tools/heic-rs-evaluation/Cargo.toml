@@ -1,0 +1,24 @@
+[package]
+name = "heic-rs-evaluation"
+version = "0.0.0"
+edition = "2024"
+rust-version = "1.88"
+publish = false
+license = "MIT"
+
+[dependencies]
+heic-rs = { version = "=0.1.4-ocr.1", path = "vendor/heic-rs", default-features = false, features = ["std"] }
+heic-rs-upstream = { package = "heic-rs", version = "=0.1.4", optional = true, default-features = false, features = ["std"] }
+libheif-rs = { version = "=2.7.0", optional = true, default-features = false, features = ["v1_19"] }
+
+[dev-dependencies]
+image = { version = "=0.25.10", default-features = false, features = ["png"] }
+
+[features]
+default = []
+native-reference = ["dep:libheif-rs"]
+upstream-reference = ["dep:heic-rs-upstream"]
+fixture-generation = ["heic-rs/bench"]
+
+# Deliberately independent of the production OCR package and native toolchain.
+[workspace]

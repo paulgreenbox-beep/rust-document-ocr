@@ -14,7 +14,7 @@ use crate::native::pdfium_render_ffi::{
 };
 use crate::page_analysis::{NativeTextLayer, NativeTextLayout, PageOrientation};
 use crate::page_source::{
-    dimensions_within_pixel_limit, PageSource, RenderedPage, RenderedPageRegion,
+    dimensions_within_pixel_limit, NativeGridWords, PageSource, RenderedPage, RenderedPageRegion,
 };
 
 /// A sequential PDF page source backed by the system Pdfium library.
@@ -575,6 +575,10 @@ fn native_words_from_glyphs_with_owners(
         if geometry_split {
             builder.flush_into(&mut raw_words);
         }
+        builder.grid_owner = match owner {
+            GlyphGridOwner::Cell(index) => Some(index),
+            _ => None,
+        };
         builder.push(glyph, classified_owner != GlyphGridOwner::Unpositioned);
         last_owner = owner;
         suppress_geometry_split = false;
@@ -774,6 +778,17 @@ impl PdfiumPageSource {
         height: u32,
         cell_bounds: &[BoundingBox],
     ) -> Result<Vec<Word>, Box<dyn std::error::Error>> {
+        self.extract_native_grid_words(page_num, width, height, cell_bounds)
+            .map(|result| result.words)
+    }
+
+    fn extract_native_grid_words(
+        &self,
+        page_num: u32,
+        width: u32,
+        height: u32,
+        cell_bounds: &[BoundingBox],
+    ) -> Result<NativeGridWords, Box<dyn std::error::Error>> {
         if page_num == 0 || page_num > self.total {
             return Err(format!("page {page_num} out of range (total {})", self.total).into());
         }
@@ -876,10 +891,10 @@ impl PdfiumPageSource {
                     f64::from(y1),
                 )))
             };
+        let owner_cells = grid_geometry::refine_cell_bounds(&page, cell_bounds, width, height);
         let raw_words = if cell_bounds.is_empty() {
             native_words_from_glyphs(&glyphs, fallback_boundaries)
         } else {
-            let owner_cells = grid_geometry::refine_cell_bounds(&page, cell_bounds, width, height);
             let mut owners = Vec::with_capacity(glyphs.len());
             for glyph in &glyphs {
                 let bounds = match glyph.bounds {
@@ -901,13 +916,33 @@ impl PdfiumPageSource {
             native_words_from_glyphs_with_owners(&glyphs, fallback_boundaries, &owners)
         };
         let mut words = Vec::with_capacity(raw_words.len());
+        let mut cell_owners =
+            (!cell_bounds.is_empty()).then(|| Vec::with_capacity(raw_words.len()));
         for raw in raw_words {
             let Some(bounds) = project_positioned_word_bounds(&raw, &pixel_bounds)? else {
                 continue;
             };
+            // Preserve the native path's outside-caption rejection using
+            // precise ink geometry. This is a union containment gate, not a
+            // second cell choice that could undo source glyph ownership.
+            if let Some(owners) = &mut cell_owners {
+                owners.push(raw.grid_owner.filter(|_| {
+                    let precise = raw.bounds.or(raw.font_bounds).and_then(|bounds| {
+                        grid_geometry::precise_device_bounds(&page, bounds, width, height)
+                    });
+                    let membership_bounds = precise.as_ref().unwrap_or(&bounds);
+                    let (x, y) = (
+                        (membership_bounds.x0 + membership_bounds.x1) / 2.0,
+                        (membership_bounds.y0 + membership_bounds.y1) / 2.0,
+                    );
+                    owner_cells
+                        .iter()
+                        .any(|cell| x >= cell.x0 && x <= cell.x1 && y >= cell.y0 && y <= cell.y1)
+                }));
+            }
             words.push(Word::new(raw.text, bounds, 1.0));
         }
-        Ok(words)
+        Ok(NativeGridWords { words, cell_owners })
     }
 
     pub(crate) fn page_dimensions_points(
@@ -1188,6 +1223,17 @@ impl PageSource for PdfiumPageSource {
             .map(Some)
     }
 
+    fn native_words_with_grid_owners(
+        &self,
+        page_num: u32,
+        width: u32,
+        height: u32,
+        cell_bounds: &[BoundingBox],
+    ) -> Result<Option<NativeGridWords>, Box<dyn std::error::Error>> {
+        self.extract_native_grid_words(page_num, width, height, cell_bounds)
+            .map(Some)
+    }
+
     fn render_table_thumbnail(
         &mut self,
         page_num: u32,
@@ -1241,6 +1287,7 @@ struct NativeWordBuilder {
     last_glyph: Option<PdfWordBounds>,
     last_source_glyph: Option<PdfTextGlyph>,
     has_positioned_glyph: bool,
+    grid_owner: Option<usize>,
 }
 
 impl NativeWordBuilder {
@@ -1293,6 +1340,7 @@ impl NativeWordBuilder {
                 text: std::mem::take(&mut self.text),
                 bounds: self.bounds.take(),
                 font_bounds: self.font_bounds.take(),
+                grid_owner: self.grid_owner.take(),
             });
         }
         self.bounds = None;
@@ -1300,6 +1348,7 @@ impl NativeWordBuilder {
         self.last_glyph = None;
         self.last_source_glyph = None;
         self.has_positioned_glyph = false;
+        self.grid_owner = None;
     }
 }
 
@@ -1308,6 +1357,7 @@ struct RawNativeWord {
     text: String,
     bounds: Option<PdfWordBounds>,
     font_bounds: Option<PdfWordBounds>,
+    grid_owner: Option<usize>,
 }
 
 fn project_positioned_word_bounds<E>(
