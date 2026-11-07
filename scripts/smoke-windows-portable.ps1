@@ -1,7 +1,18 @@
 [CmdletBinding()]
-param([Parameter(Mandatory)][string]$PackageRoot,[string]$BaselineManifest,[string]$BaselineRoot,[string]$PythonPath)
+param(
+    [Parameter(Mandatory)][string]$PackageRoot,
+    [string]$BaselineManifest,
+    [string]$BaselineRoot,
+    [string]$PythonPath,
+    [string]$ExpectedBaselineManifestSha256,
+    [switch]$RequireVersionedBaseline
+)
 $ErrorActionPreference='Stop'
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot 'portable-baseline.ps1')
+if ([bool]$BaselineManifest -ne [bool]$BaselineRoot) { throw 'Supply both BaselineManifest and BaselineRoot for semantic comparison' }
+if (($RequireVersionedBaseline -or $ExpectedBaselineManifestSha256) -and !$BaselineManifest) { throw 'Bound comparison requires a baseline manifest and tree' }
+if ($BaselineRoot -and (!$PythonPath -or ![IO.Path]::IsPathFullyQualified($PythonPath))) { throw 'Semantic baseline comparison requires absolute maintainer PythonPath (not a user runtime dependency)' }
 $package=[IO.Path]::GetFullPath($PackageRoot)
 & (Join-Path $package 'verify.ps1') -Root $package
 $workspace=Join-Path ([IO.Path]::GetTempPath()) ('OCR проверка с пробелами '+[guid]::NewGuid().ToString('N'))
@@ -10,8 +21,6 @@ $copy=Join-Path $workspace 'Программа OCR'
 Copy-Item -LiteralPath $package -Destination $copy -Recurse
 $oldPath=$env:PATH; $oldTess=$env:TESSDATA_PREFIX; $oldPdf=$env:PDFIUM_DYNAMIC_LIB_PATH
 $results=@(); $negativeResults=@()
-if ($BaselineRoot -and (!$PythonPath -or ![IO.Path]::IsPathRooted($PythonPath))) { throw 'Semantic baseline comparison requires absolute maintainer PythonPath (not a user runtime dependency)' }
-if ($BaselineManifest -and !$BaselineRoot) { throw 'BaselineManifest alone is not semantic comparison; supply BaselineRoot' }
 $candidateRoot=Join-Path $workspace 'candidate'
 New-Item -ItemType Directory -Path $candidateRoot | Out-Null
 function Invoke-BoundedPortable([string[]]$Arguments,[string]$Log) {
@@ -110,8 +119,12 @@ try {
     } finally { Pop-Location }
     $status='EXECUTION PASS; BASELINE NOT RUN'
     if ($BaselineRoot) {
-        & $PythonPath (Join-Path $PSScriptRoot 'compare_audit_results.py') --baseline $BaselineRoot --candidate $candidateRoot --report-dir (Join-Path $workspace 'comparison')
-        if ($LASTEXITCODE) { throw 'Semantic OCR/geometry/API/export baseline regression' }
+        $binding=@{ManifestPath=$BaselineManifest;BaselineRoot=$BaselineRoot;SnapshotRoot=(Join-Path $workspace 'verified-baseline');ExpectedManifestSha256=$ExpectedBaselineManifestSha256;RequireVersionedManifest=[bool]$RequireVersionedBaseline}
+        Invoke-PortableBaselineComparison @binding -Compare {
+            param($verifiedRoot)
+            & $PythonPath (Join-Path $PSScriptRoot 'compare_audit_results.py') --baseline $verifiedRoot --candidate $candidateRoot --report-dir (Join-Path $workspace 'comparison')
+            if ($LASTEXITCODE) { throw 'Semantic OCR/geometry/API/export baseline regression' }
+        }
         $status='PASS'
     }
     @{status=$status;environment='controlled process-local PATH; not a clean Windows VM';workspace=$workspace;fixtures=$results;negative_tests='PASS';negative_test_details=$negativeResults;semantic_ocr_table_gate='requires accepted baseline; output existence alone is not OCR/table acceptance'} | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath (Join-Path $workspace 'smoke-report.json') -Encoding utf8

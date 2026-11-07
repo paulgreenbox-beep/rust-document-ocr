@@ -15,6 +15,8 @@ $ErrorActionPreference='Stop'
 Set-StrictMode -Version Latest
 $repo=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 . (Join-Path $PSScriptRoot 'portable-pe.ps1')
+. (Join-Path $PSScriptRoot 'portable-baseline.ps1')
+. (Join-Path $PSScriptRoot 'portable-archive.ps1')
 $dest=[IO.Path]::GetFullPath($Destination)
 $approved=[IO.Path]::GetFullPath($ApprovedOutputRoot).TrimEnd('\')
 if (!$dest.StartsWith($approved+'\',[StringComparison]::OrdinalIgnoreCase) -or $dest.StartsWith($repo+'\',[StringComparison]::OrdinalIgnoreCase) -or $dest -eq $repo) { throw 'Destination must be outside sources, strictly below ApprovedOutputRoot' }
@@ -35,6 +37,16 @@ foreach ($c in $m.static_components) {
 }
 if ($CreateZip -and ($m.distribution_status -ne 'verified' -or !$BaselineManifest -or !$BaselineRoot -or !$PythonPath)) { throw 'ZIP requires verified global rights, accepted baseline manifest/tree and maintainer Python' }
 if ($CreateZip -and !$CleanEnvironmentReceipt) { throw 'ZIP requires an independently recorded clean Windows x64 smoke receipt' }
+if ($CreateZip) { Assert-PortableArchiveDestination -FinalPath "$dest.zip" }
+if ([bool]$BaselineManifest -ne [bool]$BaselineRoot) { throw 'Supply both BaselineManifest and BaselineRoot for semantic comparison' }
+$baselineSha=$null
+if ($BaselineManifest) {
+    if (!$PythonPath -or ![IO.Path]::IsPathFullyQualified($PythonPath)) { throw 'Semantic comparison requires absolute maintainer PythonPath' }
+    $BaselineManifest=[IO.Path]::GetFullPath($BaselineManifest)
+    $BaselineRoot=[IO.Path]::GetFullPath($BaselineRoot)
+    $baseline=Get-PortableBaselineEvidence -ManifestPath $BaselineManifest -BaselineRoot $BaselineRoot -RequireVersionedManifest:$CreateZip
+    $baselineSha=$baseline.ManifestSha256
+}
 $seen=@{}
 foreach ($c in $m.components) { foreach ($f in $c.files) {
     $key=$f.path.Replace('\','/').ToLowerInvariant()
@@ -50,7 +62,7 @@ try {
     if (!(Test-Path -LiteralPath $exe)) { throw 'Native executable missing' }
     if ($CreateZip) {
         $clean=Get-Content -LiteralPath $CleanEnvironmentReceipt -Raw | ConvertFrom-Json
-        if ($clean.status -ne 'PASS' -or $clean.environment -ne 'clean-windows-x64' -or $clean.exe_sha256 -ne (Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash -or $clean.baseline_sha256 -ne (Get-FileHash -LiteralPath $BaselineManifest -Algorithm SHA256).Hash -or $clean.runtime_manifest_sha256 -ne (Get-FileHash -LiteralPath $RuntimeManifest -Algorithm SHA256).Hash) { throw 'Clean Windows receipt must bind exact executable, runtime inventory and accepted baseline' }
+        if ($clean.status -ne 'PASS' -or $clean.environment -ne 'clean-windows-x64' -or $clean.exe_sha256 -ne (Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash -or $clean.baseline_sha256 -ne $baselineSha -or $clean.runtime_manifest_sha256 -ne (Get-FileHash -LiteralPath $RuntimeManifest -Algorithm SHA256).Hash) { throw 'Clean Windows receipt must bind exact executable, runtime inventory and accepted baseline' }
     }
     if ($SkipBuild) {
         if (!$BuildReceipt) { throw 'SkipBuild requires a hash-bound native build receipt' }
@@ -114,20 +126,20 @@ try {
     $sourceFiles=@(Get-ChildItem -LiteralPath (Join-Path $repo 'src') -Recurse -File -Filter '*.rs' | Sort-Object FullName | ForEach-Object {
         @{path=$_.FullName.Substring($repo.Length+1).Replace('\','/');sha256=(Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash}
     })
-    $provenance=@{git_head=$head;git_dirty=($dirtyEntries.Count -gt 0);cargo_lock_sha256=(Get-FileHash -LiteralPath (Join-Path $repo 'Cargo.lock') -Algorithm SHA256).Hash;runtime_inventory_sha256=(Get-FileHash -LiteralPath $RuntimeManifest -Algorithm SHA256).Hash;baseline_manifest_sha256=$null;source_files=$sourceFiles;source_snapshot_scope='Packaging-time source snapshot; does not by itself attest which sources produced a reused executable.';toolchain=$toolchain}
-    if ($BaselineManifest) { $provenance.baseline_manifest_sha256=(Get-FileHash -LiteralPath $BaselineManifest -Algorithm SHA256).Hash }
+    $provenance=@{git_head=$head;git_dirty=($dirtyEntries.Count -gt 0);cargo_lock_sha256=(Get-FileHash -LiteralPath (Join-Path $repo 'Cargo.lock') -Algorithm SHA256).Hash;runtime_inventory_sha256=(Get-FileHash -LiteralPath $RuntimeManifest -Algorithm SHA256).Hash;baseline_manifest_sha256=$baselineSha;source_files=$sourceFiles;source_snapshot_scope='Packaging-time source snapshot; does not by itself attest which sources produced a reused executable.';toolchain=$toolchain}
     $out=@{schema_version=1;version=$version;distribution_status=$m.distribution_status;components=$publicComponents;static_components=$m.static_components;files=$files;pe_imports=$closure;dynamic_dependencies=@('pdfium.dll');caveat='PE closure cannot prove statically linked third-party contents or arbitrary runtime LoadLibrary names; component review and real smoke remain mandatory.';build=@{native=$true;offline=$true;locked=$true;reused_build=[bool]$SkipBuild};smoke='NOT RUN'}
     $out.provenance=$provenance
     $out | ConvertTo-Json -Depth 30 | Set-Content -LiteralPath (Join-Path $dest 'release-manifest.json') -Encoding utf8
-    & (Join-Path $PSScriptRoot 'smoke-windows-portable.ps1') -PackageRoot $dest -BaselineManifest $BaselineManifest -BaselineRoot $BaselineRoot -PythonPath $PythonPath
+    $smokeArgs=@{BaselineManifest=$BaselineManifest;BaselineRoot=$BaselineRoot;PythonPath=$PythonPath;ExpectedBaselineManifestSha256=$baselineSha;RequireVersionedBaseline=[bool]$CreateZip}
+    $smokeScript=Join-Path $PSScriptRoot 'smoke-windows-portable.ps1'
+    & $smokeScript -PackageRoot $dest @smokeArgs
     $out.smoke=if ($BaselineRoot) { 'PASS: controlled PATH, accepted semantic baseline; clean Windows evidence is separate' } else { 'EXECUTION PASS; BASELINE NOT RUN; NOT RELEASE ACCEPTANCE' }
     $out | ConvertTo-Json -Depth 30 | Set-Content -LiteralPath (Join-Path $dest 'release-manifest.json') -Encoding utf8
     if ($CreateZip) {
-        $zip="$dest.zip"; if (Test-Path -LiteralPath $zip) { throw 'ZIP exists' }
-        Compress-Archive -LiteralPath $dest -DestinationPath $zip
-        $extract=Join-Path $approved ('zip-smoke-'+[guid]::NewGuid().ToString('N'))
-        Expand-Archive -LiteralPath $zip -DestinationPath $extract
-        & (Join-Path $PSScriptRoot 'smoke-windows-portable.ps1') -PackageRoot (Join-Path $extract (Split-Path $dest -Leaf)) -BaselineManifest $BaselineManifest -BaselineRoot $BaselineRoot -PythonPath $PythonPath
-        Get-FileHash -LiteralPath $zip -Algorithm SHA256
+        $finalizedManifestHash=(Get-FileHash -LiteralPath (Join-Path $dest 'release-manifest.json') -Algorithm SHA256).Hash
+        Publish-PortableArchive -PackageRoot $dest -FinalPath "$dest.zip" -ExpectedManifestSha256 $finalizedManifestHash -Smoke {
+            param($extractedPackage)
+            & $smokeScript -PackageRoot $extractedPackage @smokeArgs
+        }
     }
 } finally { Pop-Location }

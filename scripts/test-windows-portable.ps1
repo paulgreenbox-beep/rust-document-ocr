@@ -7,10 +7,14 @@ foreach ($file in @(Get-ChildItem -LiteralPath $PSScriptRoot -Filter '*portable*
     [Management.Automation.Language.Parser]::ParseFile($file.FullName,[ref]$tokens,[ref]$errors) | Out-Null
     if ($errors.Count) { throw "Parse failure: $($file.Name): $errors" }
 }
+Write-Output 'PASS: PowerShell syntax'
 . (Join-Path $PSScriptRoot 'portable-pe.ps1')
-function Expect-Rejection([scriptblock]$Action,[string]$Label) {
+function Expect-Rejection([scriptblock]$Action,[string]$Label,[string]$ExpectedError) {
     $rejected=$false
-    try { & $Action | Out-Null } catch { $rejected=$true }
+    try { & $Action | Out-Null } catch {
+        if ($ExpectedError -and $_.Exception.Message -notlike "*$ExpectedError*") { throw }
+        $rejected=$true
+    }
     if (!$rejected) { throw "Expected rejection: $Label" }
     Write-Output "PASS: $Label"
 }
@@ -27,7 +31,7 @@ try {
     $blocked=Join-Path $work 'blocked.json'
     @{schema_version=1;distribution_status='blocked';components=@(@{id='test';version='1';source_url='https://example.invalid/pinned';license='UNKNOWN';distribution_status='blocked';license_review='not reviewed';notices=@('licenses/test.txt');files=@()});static_components=@(@{id='static-test';version='1';source_url='https://example.invalid/pinned';license='UNKNOWN';distribution_status='blocked';license_review='not reviewed';notices=@('licenses/test.txt');sha256=('0'*64)})} | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $blocked
     $dest=Join-Path $work 'must-not-exist'
-    Expect-Rejection { & (Join-Path $PSScriptRoot 'build-windows-portable.ps1') -RuntimeManifest $blocked -Destination $dest -ApprovedOutputRoot $work -CreateZip } 'blocked rights before payload/build'
+    Expect-Rejection { & (Join-Path $PSScriptRoot 'build-windows-portable.ps1') -RuntimeManifest $blocked -Destination $dest -ApprovedOutputRoot $work -CreateZip } 'blocked rights before payload/build' 'Unverified distribution rights'
     if ((Test-Path -LiteralPath $dest) -or (Test-Path -LiteralPath "$dest.zip")) { throw 'Blocked licensing created payload or ZIP' }
     $payload=Join-Path $work 'payload'; New-Item -ItemType Directory -Path (Join-Path $payload 'tessdata') -Force | Out-Null
     $files=@()
@@ -42,6 +46,8 @@ try {
     Expect-Rejection { & (Join-Path $repo 'deploy/windows-portable/verify.ps1') -Root $payload } 'changed payload hash'
     @{schema_version=1;files=@(@{path='../escape';sha256=('0'*64)})} | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $manifest
     Expect-Rejection { & (Join-Path $repo 'deploy/windows-portable/verify.ps1') -Root $payload } 'manifest path traversal'
+    & (Join-Path $PSScriptRoot 'test-portable-baseline.ps1') -WorkRoot $work
+    & (Join-Path $PSScriptRoot 'test-portable-archive.ps1') -WorkRoot $work
     Write-Output 'Portable source-only checks PASS (not native OCR acceptance)'
 } finally {
     # Deliberately retain owned synthetic test evidence; no recursive deletion.

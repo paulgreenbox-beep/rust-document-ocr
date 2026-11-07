@@ -70,10 +70,37 @@ is release/native/offline/locked. Reuse of an existing EXE requires a hash-bound
 `-BuildReceipt` with `-SkipBuild`; an arbitrary EXE is not accepted as a native
 build. No installed OCR service is stopped or replaced.
 
-The accepted baseline tree must contain `text-table` and `raster` outputs from
-the two committed synthetic PDFs. The semantic comparator ignores timings and
-volatile Office metadata, not text, cell values, confidence or geometry.
-Python is a **maintainer comparison tool**, not an end-user requirement.
+### Accepted synthetic baseline
+
+Supply both the manifest and tree, or omit both for execution-only validation.
+The tree is exactly two directories, `text-table` and `raster`, from the two
+committed synthetic PDFs. Each must contain `result.json`, `result.v1.json`,
+`result.docx` and `result.xlsx`. Keep the manifest and any logs **outside**
+that tree. Extra files or directories (including hidden entries), symlinks,
+junctions, missing files and modified bytes are rejected.
+
+For ZIP qualification the separately approved UTF-8 JSON manifest has exactly
+two fields: integer `schema_version: 1` and a `files` array of eight records.
+Each record has exactly `path`, `size` (positive integer bytes) and `sha256`
+(64 hex digits). For example, one of the eight records is for
+`text-table/result.v1.json`. Use the literal fixture/output names above and
+forward slashes; no aliases, traversal or duplicate paths are accepted.
+The manifest is independent of the tree's absolute location; a different
+directory with different files is not an accepted baseline.
+
+Keep historical manifests unchanged. The known unversioned local RC1 shape
+(scope, EXE/runtime hashes, and eight file path/hash records without sizes)
+can still be checked for local comparison, but cannot qualify a ZIP. Prepare a
+**new** v1 manifest from approved bytes with recorded sizes and have the
+release owner approve it. A real clean-Windows receipt must bind its exact
+manifest SHA-256, not the old receipt or the directory name.
+
+The packager preflights the file set before building and passes that exact
+manifest SHA-256 to both smoke runs. The smoke verifies and copies all eight
+files, and only then invokes the comparator on the verified snapshot. The
+semantic comparator ignores timings and volatile Office metadata, not text,
+cell values, confidence or geometry. Python is a **maintainer comparison
+tool**, not an end-user requirement.
 
 ## Smoke and package verification
 
@@ -102,8 +129,15 @@ they do not need Cargo, Rust, vcpkg, Visual Studio or global PATH edits.
 
 `-CreateZip` requires verified global and per-component rights, a semantic
 baseline, and an independently recorded `-CleanEnvironmentReceipt` binding the
-exact EXE, input inventory and baseline hashes. The script extracts and smokes
-the ZIP again. Without these conditions it must fail closed. The manual
+exact EXE, input inventory and versioned baseline manifest hashes. The
+packager writes a uniquely named provisional archive beside the final ZIP
+on the same volume. It checks the archive entries, extracts into a new
+diagnostic directory, verifies the full staged file set, sizes and hashes
+(including the finalized release manifest), and repeats smoke and semantic
+comparison. Only then does it rename the verified archive to the final ZIP
+without overwrite and report its SHA-256. Failures retain diagnostic evidence
+and do not promote a provisional archive. An existing final ZIP is never
+replaced. Without the required rights and receipts it must fail closed. The manual
 `.github/workflows/release-windows.yml` operates only on a dedicated,
 pre-provisioned `ocr-portable-rc` self-hosted runner and uploads no binaries.
 It is not dispatched automatically and creates no public GitHub Release.
@@ -112,6 +146,11 @@ Before publication, review the exact PDFium build and bundled third-party
 notices, all native/static dependencies, LGPL corresponding-source/relink
 requirements, traineddata terms and MSVC redistribution rights. MIT on this
 repository is not a blanket license for the executable.
+
+Run the synthetic PowerShell checks with
+`pwsh -NoProfile -File scripts/test-windows-portable.ps1`. They exercise the
+baseline and ZIP transaction without OCR, a clean-Windows receipt, or a
+distributable payload. They are not binary release qualification.
 
 ## Licensing references
 
