@@ -124,6 +124,43 @@ impl TableGrid {
     /// Intersection area wins; a word-centre fallback handles tiny or
     /// anti-aliased OCR boxes that only touch a cell edge.
     pub fn assign_words(&mut self, words: &[Word]) -> TableAssignmentMetrics {
+        self.assign_words_with_membership(words, false, None)
+    }
+
+    /// Native words have source ink geometry. A small font-box/descender
+    /// overlap must not pull an outside caption into an adjacent item cell.
+    /// The raster OCR assignment policy remains unchanged.
+    pub(crate) fn assign_native_words(&mut self, words: &[Word]) -> TableAssignmentMetrics {
+        self.assign_words_with_membership(words, true, None)
+    }
+
+    /// Source-bound local cell indices are authoritative even if integer ink
+    /// projection moves a centre across a raster seam. None means outside.
+    pub(crate) fn assign_native_words_with_owners(
+        &mut self,
+        words: &[Word],
+        owners: &[Option<usize>],
+    ) -> TableAssignmentMetrics {
+        assert_eq!(words.len(), owners.len());
+        self.assign_words_with_membership(words, true, Some(owners))
+    }
+
+    pub(crate) fn native_word_is_assignable(&self, word: &Word) -> bool {
+        let (x, y) = box_center(&word.bbox);
+        boxes_overlap(&word.bbox, &self.bbox)
+            && self.cells.iter().any(|cell| {
+                cell.bbox
+                    .as_ref()
+                    .is_some_and(|bbox| point_in_box(x, y, bbox))
+            })
+    }
+
+    fn assign_words_with_membership(
+        &mut self,
+        words: &[Word],
+        require_center: bool,
+        owners: Option<&[Option<usize>]>,
+    ) -> TableAssignmentMetrics {
         for cell in &mut self.cells {
             cell.text.clear();
             cell.confidence = 0.0;
@@ -143,17 +180,32 @@ impl TableGrid {
             detector_confidence: self.confidence,
         };
 
-        for word in words {
-            if !boxes_overlap(&word.bbox, &self.bbox) {
+        for (word_index, word) in words.iter().enumerate() {
+            let bound_owner = owners.and_then(|owners| owners[word_index]);
+            if bound_owner.is_none() && !boxes_overlap(&word.bbox, &self.bbox) {
                 continue;
             }
             metrics.ocr_words_total += 1;
 
+            if owners.is_some() {
+                if let Some(index) = bound_owner.filter(|index| *index < assigned.len()) {
+                    assigned[index].push(word);
+                    metrics.words_assigned += 1;
+                } else {
+                    metrics.words_unassigned += 1;
+                }
+                continue;
+            }
+
             let mut best: Option<(usize, f64)> = None;
+            let (center_x, center_y) = box_center(&word.bbox);
             for (index, cell) in self.cells.iter().enumerate() {
                 let Some(cell_box) = cell.bbox.as_ref() else {
                     continue;
                 };
+                if require_center && !point_in_box(center_x, center_y, cell_box) {
+                    continue;
+                }
                 let score = intersection_area(&word.bbox, cell_box);
                 if score > 0.0 && best.is_none_or(|(_, current)| score > current) {
                     best = Some((index, score));
@@ -182,7 +234,11 @@ impl TableGrid {
                 metrics.empty_cells += 1;
                 continue;
             }
-            cell.text = words_to_cell_text(&cell_words);
+            cell.text = if require_center {
+                native_words_to_cell_text(&cell_words)
+            } else {
+                words_to_cell_text(&cell_words)
+            };
             cell.confidence = cell_words.iter().map(|word| word.confidence).sum::<f32>()
                 / cell_words.len() as f32;
         }
@@ -845,6 +901,7 @@ fn grids_from_candidate_cells(
     image_height: u32,
     config: &GridDetectionConfig,
 ) -> Vec<TableGrid> {
+    let edge_support = candidate_edge_support(candidates);
     let mut visited = vec![false; candidates.len()];
     let mut grids = Vec::new();
     for start in 0..candidates.len() {
@@ -863,7 +920,14 @@ fn grids_from_candidate_cells(
 
             let cell = &candidates[index];
             for (neighbor, other) in candidates.iter().enumerate() {
-                if !visited[neighbor] && cells_share_an_edge(cell, other) {
+                if !visited[neighbor]
+                    && cells_share_supported_edge(
+                        cell,
+                        other,
+                        edge_support[index],
+                        edge_support[neighbor],
+                    )
+                {
                     queue.push_back(neighbor);
                 }
             }
@@ -882,21 +946,115 @@ fn grids_from_candidate_cells(
     grids
 }
 
+const CELL_EDGE_TOLERANCE: f64 = 0.01;
+
+#[derive(Clone, Copy)]
+struct CandidateEdgeSupport {
+    horizontal_sides_tiled: bool,
+    vertical_sides_tiled: bool,
+}
+
+fn candidate_edge_support(candidates: &[CandidateCell]) -> Vec<CandidateEdgeSupport> {
+    candidates
+        .iter()
+        .map(|cell| {
+            let bbox = &cell.bbox;
+            let mut top = Vec::new();
+            let mut bottom = Vec::new();
+            let mut left = Vec::new();
+            let mut right = Vec::new();
+            for other in candidates {
+                let other = &other.bbox;
+                let x_overlap = (bbox.x0.max(other.x0), bbox.x1.min(other.x1));
+                if x_overlap.0 < x_overlap.1 {
+                    if (bbox.y0 - other.y1).abs() < CELL_EDGE_TOLERANCE {
+                        top.push(x_overlap);
+                    }
+                    if (bbox.y1 - other.y0).abs() < CELL_EDGE_TOLERANCE {
+                        bottom.push(x_overlap);
+                    }
+                }
+                let y_overlap = (bbox.y0.max(other.y0), bbox.y1.min(other.y1));
+                if y_overlap.0 < y_overlap.1 {
+                    if (bbox.x0 - other.x1).abs() < CELL_EDGE_TOLERANCE {
+                        left.push(y_overlap);
+                    }
+                    if (bbox.x1 - other.x0).abs() < CELL_EDGE_TOLERANCE {
+                        right.push(y_overlap);
+                    }
+                }
+            }
+            CandidateEdgeSupport {
+                horizontal_sides_tiled: edge_is_empty_or_tiled(&mut top, bbox.x0, bbox.x1)
+                    && edge_is_empty_or_tiled(&mut bottom, bbox.x0, bbox.x1),
+                vertical_sides_tiled: edge_is_empty_or_tiled(&mut left, bbox.y0, bbox.y1)
+                    && edge_is_empty_or_tiled(&mut right, bbox.y0, bbox.y1),
+            }
+        })
+        .collect()
+}
+
+fn edge_is_empty_or_tiled(intervals: &mut [(f64, f64)], start: f64, end: f64) -> bool {
+    if intervals.is_empty() {
+        return true;
+    }
+    intervals.sort_by(|left, right| left.0.total_cmp(&right.0));
+    let mut covered_until = start;
+    for &(interval_start, interval_end) in intervals.iter() {
+        if interval_start > covered_until + CELL_EDGE_TOLERANCE {
+            return false;
+        }
+        covered_until = covered_until.max(interval_end);
+    }
+    covered_until >= end - CELL_EDGE_TOLERANCE
+}
+
+fn cells_share_supported_edge(
+    left: &CandidateCell,
+    right: &CandidateCell,
+    left_support: CandidateEdgeSupport,
+    right_support: CandidateEdgeSupport,
+) -> bool {
+    if !cells_share_an_edge(left, right) {
+        return false;
+    }
+    let left = &left.bbox;
+    let right = &right.bbox;
+    let horizontal_edge = (left.y1 - right.y0).abs() < CELL_EDGE_TOLERANCE
+        || (right.y1 - left.y0).abs() < CELL_EDGE_TOLERANCE;
+    // Equal complete edges retain their established connectivity. A spanning
+    // cell may join subdivided edges only when every occupied parallel side
+    // is fully tiled. Otherwise a blank page-frame region can bridge a data
+    // table to a narrower title block and make both fail density validation.
+    // An empty outer side is allowed; no candidate is removed or resized.
+    if horizontal_edge {
+        ((left.x0 - right.x0).abs() < CELL_EDGE_TOLERANCE
+            && (left.x1 - right.x1).abs() < CELL_EDGE_TOLERANCE)
+            || (left_support.horizontal_sides_tiled && right_support.horizontal_sides_tiled)
+    } else {
+        ((left.y0 - right.y0).abs() < CELL_EDGE_TOLERANCE
+            && (left.y1 - right.y1).abs() < CELL_EDGE_TOLERANCE)
+            || (left_support.vertical_sides_tiled && right_support.vertical_sides_tiled)
+    }
+}
+
 fn cells_share_an_edge(left: &CandidateCell, right: &CandidateCell) -> bool {
-    const EDGE_TOLERANCE: f64 = 0.01;
     let left_box = &left.bbox;
     let right_box = &right.bbox;
-    let same_vertical_span = (left_box.y0 - right_box.y0).abs() < EDGE_TOLERANCE
-        && (left_box.y1 - right_box.y1).abs() < EDGE_TOLERANCE;
-    let same_horizontal_span = (left_box.x0 - right_box.x0).abs() < EDGE_TOLERANCE
-        && (left_box.x1 - right_box.x1).abs() < EDGE_TOLERANCE;
+    // A closed cell can span several neighboring columns or rows. Requiring
+    // equal edge lengths disconnects a full-width separator from every cell
+    // above/below it, leaving otherwise valid header/body rows as strips.
+    // Only a strictly positive shared interval joins cells; corner contacts
+    // and gaps still cannot connect unrelated tables.
+    let vertical_overlap = left_box.y0.max(right_box.y0) < left_box.y1.min(right_box.y1);
+    let horizontal_overlap = left_box.x0.max(right_box.x0) < left_box.x1.min(right_box.x1);
 
-    (same_vertical_span
-        && ((left_box.x1 - right_box.x0).abs() < EDGE_TOLERANCE
-            || (right_box.x1 - left_box.x0).abs() < EDGE_TOLERANCE))
-        || (same_horizontal_span
-            && ((left_box.y1 - right_box.y0).abs() < EDGE_TOLERANCE
-                || (right_box.y1 - left_box.y0).abs() < EDGE_TOLERANCE))
+    (vertical_overlap
+        && ((left_box.x1 - right_box.x0).abs() < CELL_EDGE_TOLERANCE
+            || (right_box.x1 - left_box.x0).abs() < CELL_EDGE_TOLERANCE))
+        || (horizontal_overlap
+            && ((left_box.y1 - right_box.y0).abs() < CELL_EDGE_TOLERANCE
+                || (right_box.y1 - left_box.y0).abs() < CELL_EDGE_TOLERANCE))
 }
 
 fn table_from_cell_component(
@@ -932,14 +1090,15 @@ fn table_from_cell_component(
         let candidate = &candidates[index];
         let row = position_index(&ys, candidate.bbox.y0)?;
         let column = position_index(&xs, candidate.bbox.x0)?;
-        // Span inference is intentionally conservative in v1: a cell exists
-        // only when all four borders were observed. Missing internal borders
-        // are not merged unless a dedicated pass can prove their extent.
-        cells.push(TableCell::grid(
-            row as u32,
-            column as u32,
-            candidate.bbox.clone(),
-        ));
+        let end_row = position_index(&ys, candidate.bbox.y1)?;
+        let end_column = position_index(&xs, candidate.bbox.x1)?;
+        // These are spans of an already observed, closed four-border cell,
+        // not guesses that merge content across missing rules. For example,
+        // a full-width separator retains its actual extent in the matrix.
+        let mut cell = TableCell::grid(row as u32, column as u32, candidate.bbox.clone());
+        cell.row_span = (end_row - row) as u32;
+        cell.col_span = (end_column - column) as u32;
+        cells.push(cell);
     }
     cells.sort_by_key(|cell| (cell.row, cell.column));
 
@@ -1027,11 +1186,13 @@ fn stable_positions(mut positions: Vec<f64>, min_spacing: f64) -> Vec<f64> {
     positions.sort_by(|left, right| left.total_cmp(right));
     let mut stable: Vec<(f64, u32, f64)> = Vec::new();
     for position in positions {
-        if let Some((sum, count, last)) = stable.last_mut() {
-            if (position - *last).abs() < min_spacing {
+        if let Some((sum, count, first)) = stable.last_mut() {
+            // Bound the whole cluster, not just each successive gap. A chain
+            // of nearby axes from an unrelated table or drawing stamp can
+            // otherwise drag a real rule beyond the boundary-match tolerance.
+            if (position - *first).abs() < min_spacing {
                 *sum += position;
                 *count += 1;
-                *last = position;
                 continue;
             }
         }
@@ -1087,6 +1248,17 @@ fn point_in_box(x: f64, y: f64, bbox: &BoundingBox) -> bool {
 }
 
 fn words_to_cell_text(words: &[&Word]) -> String {
+    words_to_cell_text_with_geometry(words, false)
+}
+
+fn native_words_to_cell_text(words: &[&Word]) -> String {
+    words_to_cell_text_with_geometry(words, true)
+}
+
+fn words_to_cell_text_with_geometry(words: &[&Word], ink_geometry: bool) -> String {
+    if words.is_empty() {
+        return String::new();
+    }
     let mut sorted = words.to_vec();
     sorted.sort_by(|left, right| {
         left.bbox
@@ -1103,26 +1275,70 @@ fn words_to_cell_text(words: &[&Word]) -> String {
     let median_height = heights[heights.len() / 2];
     let line_tolerance = (median_height * 0.6).max(3.0);
 
-    let mut lines: Vec<(f64, Vec<&Word>)> = Vec::new();
+    let mut lines: Vec<(f64, f64, Vec<&Word>)> = Vec::new();
     for word in sorted {
-        if lines
+        let chosen = if ink_geometry {
+            let mut best: Option<(usize, f64, f64)> = None;
+            for (index, (top, bottom, members)) in lines.iter().enumerate() {
+                if let Some((overlap, distance)) = native_line_score(word, *top, *bottom, members) {
+                    if best.is_none_or(|(_, current_overlap, current_distance)| {
+                        overlap > current_overlap
+                            || (overlap == current_overlap && distance < current_distance)
+                    }) {
+                        best = Some((index, overlap, distance));
+                    }
+                }
+            }
+            best.map(|(index, _, _)| index)
+        } else if lines
             .last()
-            .is_some_and(|(anchor, _)| (word.bbox.y0 - *anchor).abs() <= line_tolerance)
+            .is_some_and(|(anchor, _, _)| (word.bbox.y0 - *anchor).abs() <= line_tolerance)
         {
-            lines.last_mut().expect("line exists").1.push(word);
+            Some(lines.len() - 1)
         } else {
-            lines.push((word.bbox.y0, vec![word]));
+            None
+        };
+        if let Some(index) = chosen {
+            let line = &mut lines[index];
+            line.1 = line.1.max(word.bbox.y1);
+            line.2.push(word);
+        } else {
+            lines.push((word.bbox.y0, word.bbox.y1, vec![word]));
         }
     }
 
     lines
         .into_iter()
-        .map(|(_, mut line)| {
+        .map(|(_, _, mut line)| {
             line.sort_by(|left, right| left.bbox.x0.total_cmp(&right.bbox.x0));
             line_words_to_cell_text(&line)
         })
         .collect::<Vec<_>>()
         .join("\n")
+}
+
+/// Ink rectangles vary with capitals, descenders and punctuation even on one
+/// baseline. Strong vertical overlap establishes a line. A weaker overlap
+/// needs a physically adjacent, non-overprinting word as additional evidence;
+/// this must not pull a remote overflow tag into another bilingual line.
+fn native_line_score(word: &Word, top: f64, bottom: f64, members: &[&Word]) -> Option<(f64, f64)> {
+    let bbox = &word.bbox;
+    let height = bbox.y1 - bbox.y0;
+    let smaller = height.min(bottom - top);
+    if smaller <= 0.0 {
+        return None;
+    }
+    let overlap = (bbox.y1.min(bottom) - bbox.y0.max(top)).max(0.0) / smaller;
+    let adjacent_support = members.iter().any(|neighbor| {
+        let other = &neighbor.bbox;
+        let small_height = height.min(other.y1 - other.y0);
+        let shared = (bbox.y1.min(other.y1) - bbox.y0.max(other.y0)).max(0.0);
+        let disjoint_x = bbox.x1 <= other.x0 || other.x1 <= bbox.x0;
+        let gap = (bbox.x0 - other.x1).max(other.x0 - bbox.x1).max(0.0);
+        small_height > 0.0 && disjoint_x && shared >= small_height * 0.5 && gap <= small_height
+    });
+    (overlap >= 2.0 / 3.0 || adjacent_support)
+        .then_some((overlap, ((bbox.y0 + bbox.y1 - top - bottom) / 2.0).abs()))
 }
 
 /// Repairs only strongly evidenced letter fragmentation inside one table-cell
@@ -1386,6 +1602,208 @@ mod tests {
         );
     }
 
+    fn separated_header_and_single_body_row() -> GrayImage {
+        let mut image = GrayImage::from_pixel(500, 400, Luma([255]));
+        for y in [20, 80, 110, 250] {
+            for x in 20..=470 {
+                image.put_pixel(x, y, Luma([0]));
+            }
+        }
+        for column in 0..=9 {
+            let x = 20 + column * 50;
+            for y in 20..=250 {
+                if column == 0 || column == 9 || y <= 80 || y >= 110 {
+                    image.put_pixel(x, y, Luma([0]));
+                }
+            }
+        }
+        image
+    }
+
+    #[test]
+    fn detects_single_body_row_below_full_width_separator() {
+        let detection = detect_table_grids(&separated_header_and_single_body_row());
+        // Both ruled rows have real vertical separators. The intervening
+        // full-width empty band must not make them disappear as "strips".
+        let grid = detection
+            .grids
+            .iter()
+            .find(|grid| grid.rows() == 3 && grid.columns() == 9)
+            .expect("the observed spanning separator must connect header and body rows");
+        assert_eq!(grid.cells.len(), 19);
+        assert_eq!(grid.cells.iter().filter(|cell| cell.row == 2).count(), 9);
+        let separator = grid.cells.iter().find(|cell| cell.row == 1).unwrap();
+        assert_eq!((separator.row_span, separator.col_span), (1, 9));
+        let body_quantity = Word::new("41", BoundingBox::new(373.0, 120.0, 390.0, 135.0), 1.0);
+        let mut assigned = grid.clone();
+        let metrics = assigned.assign_words(&[body_quantity]);
+        assert_eq!(metrics.words_assigned, 1);
+        assert_eq!(
+            assigned
+                .cells
+                .iter()
+                .find(|cell| cell.row == 2 && cell.column == 7)
+                .unwrap()
+                .text,
+            "41"
+        );
+    }
+
+    #[test]
+    fn rejects_isolated_single_row_and_single_column_strips() {
+        for (rows, columns) in [(1, 9), (9, 1)] {
+            assert!(
+                detect_table_grids(&ruled_grid_with_dimensions(rows, columns))
+                    .grids
+                    .is_empty()
+            );
+        }
+    }
+
+    #[test]
+    fn partial_shared_edges_connect_but_corner_contacts_do_not() {
+        let spanning = CandidateCell {
+            bbox: BoundingBox::new(20.0, 80.0, 470.0, 110.0),
+        };
+        let below = CandidateCell {
+            bbox: BoundingBox::new(70.0, 110.0, 120.0, 250.0),
+        };
+        let corner = CandidateCell {
+            bbox: BoundingBox::new(470.0, 110.0, 520.0, 250.0),
+        };
+        let separated = CandidateCell {
+            bbox: BoundingBox::new(70.0, 111.0, 120.0, 250.0),
+        };
+        assert!(cells_share_an_edge(&spanning, &below));
+        assert!(cells_share_an_edge(&below, &spanning));
+        assert!(!cells_share_an_edge(&spanning, &corner));
+        assert!(!cells_share_an_edge(&spanning, &separated));
+    }
+
+    #[test]
+    fn records_spans_only_for_observed_closed_cell_bounds() {
+        let candidates = [
+            (20.0, 20.0, 40.0, 60.0),
+            (40.0, 20.0, 60.0, 40.0),
+            (60.0, 20.0, 80.0, 40.0),
+            (40.0, 40.0, 60.0, 60.0),
+            (60.0, 40.0, 80.0, 60.0),
+        ]
+        .map(|(x0, y0, x1, y1)| CandidateCell {
+            bbox: BoundingBox::new(x0, y0, x1, y1),
+        });
+        let grids = grids_from_candidate_cells(
+            &candidates,
+            200,
+            100,
+            &GridDetectionConfig::for_image(200, 100),
+        );
+        assert_eq!(grids.len(), 1);
+        let grid = &grids[0];
+        assert_eq!((grid.rows(), grid.columns(), grid.cells.len()), (2, 3, 5));
+        let spanning = grid.cells.iter().find(|cell| cell.column == 0).unwrap();
+        assert_eq!((spanning.row_span, spanning.col_span), (2, 1));
+        assert!(grid
+            .cells
+            .iter()
+            .filter(|cell| cell.column != 0)
+            .all(|cell| cell.row_span == 1 && cell.col_span == 1));
+        let matrix = grid.to_matrix();
+        assert_eq!(matrix.rows[0][0].row_span, 2);
+        let covered_slot = &matrix.rows[1][0];
+        assert!(covered_slot.bbox.is_none());
+        assert_eq!((covered_slot.row, covered_slot.column), (1, 0));
+    }
+
+    #[test]
+    fn partial_frame_bridge_preserves_separate_data_and_title_grids() {
+        let mut boxes = Vec::new();
+        for y in [20.0, 60.0, 70.0, 80.0].windows(2) {
+            for x in [
+                20.0, 50.0, 180.0, 240.0, 275.0, 320.0, 340.0, 360.0, 385.0, 425.0,
+            ]
+            .windows(2)
+            {
+                boxes.push((x[0], y[0], x[1], y[1]));
+            }
+        }
+        // A real closed but blank frame region touches all data columns at
+        // its top, and only a small title-block footprint at its bottom.
+        boxes.push((20.0, 80.0, 425.0, 300.0));
+        for y in [300.0, 305.0, 310.0, 315.0].windows(2) {
+            for x in [240.0, 250.0, 260.0, 270.0, 280.0, 295.0, 305.0].windows(2) {
+                boxes.push((x[0], y[0], x[1], y[1]));
+            }
+        }
+        for transpose in [false, true] {
+            for scale in [1.0, 2.5] {
+                let transform = |(x0, y0, x1, y1): (f64, f64, f64, f64)| {
+                    if transpose {
+                        BoundingBox::new(y0 * scale, x0 * scale, y1 * scale, x1 * scale)
+                    } else {
+                        BoundingBox::new(x0 * scale, y0 * scale, x1 * scale, y1 * scale)
+                    }
+                };
+                let candidates: Vec<_> = boxes
+                    .iter()
+                    .copied()
+                    .map(|bbox| CandidateCell {
+                        bbox: transform(bbox),
+                    })
+                    .collect();
+                let all: Vec<_> = (0..candidates.len()).collect();
+                let config = GridDetectionConfig::for_image(1500, 1500);
+                // Joining everything really would fail the unchanged .45
+                // coverage gate; the fix must preserve the two observed grids.
+                assert!(
+                    table_from_cell_component(&all, &candidates, 1500, 1500, &config).is_none()
+                );
+                let grids = grids_from_candidate_cells(&candidates, 1500, 1500, &config);
+                assert_eq!(grids.len(), 2);
+                let data = grids
+                    .iter()
+                    .find(|grid| grid.bbox == transform((20.0, 20.0, 425.0, 80.0)))
+                    .expect("data grid must not be lost or expanded into the frame");
+                let title = grids
+                    .iter()
+                    .find(|grid| grid.bbox == transform((240.0, 300.0, 305.0, 315.0)))
+                    .expect("the actual title grid must be retained separately");
+                assert_eq!((data.cells.len(), title.cells.len()), (27, 18));
+                assert!(data
+                    .cells
+                    .iter()
+                    .chain(&title.cells)
+                    .all(|cell| { cell.row_span == 1 && cell.col_span == 1 }));
+            }
+        }
+    }
+
+    #[test]
+    fn complete_shared_edges_do_not_require_parallel_side_tiling() {
+        let candidates = [
+            (20.0, 20.0, 80.0, 40.0),
+            (20.0, 40.0, 80.0, 60.0),
+            (20.0, 60.0, 40.0, 80.0),
+        ]
+        .map(|(x0, y0, x1, y1)| CandidateCell {
+            bbox: BoundingBox::new(x0, y0, x1, y1),
+        });
+        let support = candidate_edge_support(&candidates);
+        assert!(!support[1].horizontal_sides_tiled);
+        assert!(cells_share_supported_edge(
+            &candidates[0],
+            &candidates[1],
+            support[0],
+            support[1],
+        ));
+        assert!(!cells_share_supported_edge(
+            &candidates[1],
+            &candidates[2],
+            support[1],
+            support[2],
+        ));
+    }
+
     #[test]
     fn assigns_each_word_to_one_cell() {
         let mut detection = detect_table_grids(&ruled_grid());
@@ -1405,6 +1823,125 @@ mod tests {
         assert_eq!(metrics.duplicate_assignments, 0);
         assert_eq!(grid.to_matrix().rows[0][0].text, "north");
         assert_eq!(grid.to_matrix().rows[0][1].text, "east");
+    }
+
+    #[test]
+    fn native_ink_lines_use_adjacent_lowercase_support_but_not_remote_tags() {
+        let words = [
+            Word::new("first", BoundingBox::new(50.0, 10.0, 80.0, 18.0), 1.0),
+            Word::new("lowercase", BoundingBox::new(85.0, 13.0, 120.0, 21.0), 1.0),
+            Word::new("tag", BoundingBox::new(0.0, 18.0, 20.0, 26.0), 1.0),
+            Word::new("second", BoundingBox::new(50.0, 28.0, 110.0, 38.0), 1.0),
+        ];
+        assert_eq!(
+            native_words_to_cell_text(&words.iter().collect::<Vec<_>>()),
+            "first lowercase\ntag\nsecond"
+        );
+        let bounds = &words[0].bbox;
+        assert!(native_line_score(&words[1], bounds.y0, bounds.y1, &[&words[0]]).is_some());
+        let mut remote = words[1].clone();
+        remote.bbox.x0 = 160.0;
+        remote.bbox.x1 = 190.0;
+        assert!(native_line_score(&remote, bounds.y0, bounds.y1, &[&words[0]]).is_none());
+    }
+
+    #[test]
+    fn native_ink_reading_order_keeps_punctuation_on_its_line_and_overflow_between_lines() {
+        let words = [
+            Word::new("upper", BoundingBox::new(30.0, 10.0, 80.0, 22.0), 1.0),
+            Word::new("tag", BoundingBox::new(0.0, 16.5, 20.0, 26.0), 1.0),
+            Word::new("lower", BoundingBox::new(30.0, 27.0, 80.0, 39.0), 1.0),
+        ];
+        assert_eq!(
+            native_words_to_cell_text(&words.iter().collect::<Vec<_>>()),
+            "upper\ntag\nlower"
+        );
+        let punctuation = [
+            Word::new("left", BoundingBox::new(0.0, 10.0, 30.0, 22.0), 1.0),
+            Word::new("-", BoundingBox::new(35.0, 17.0, 40.0, 18.0), 1.0),
+            Word::new("right", BoundingBox::new(45.0, 10.0, 80.0, 22.0), 1.0),
+        ];
+        assert_eq!(
+            native_words_to_cell_text(&punctuation.iter().collect::<Vec<_>>()),
+            "left - right"
+        );
+        assert_eq!(native_words_to_cell_text(&[]), "");
+    }
+
+    #[test]
+    fn native_ink_late_punctuation_returns_to_an_earlier_line() {
+        let words = [
+            Word::new("upper", BoundingBox::new(30.0, 10.0, 80.0, 22.0), 1.0),
+            Word::new("tag", BoundingBox::new(0.0, 16.5, 20.0, 26.0), 1.0),
+            Word::new("-", BoundingBox::new(85.0, 17.0, 90.0, 18.0), 1.0),
+        ];
+        assert_eq!(
+            native_words_to_cell_text(&words.iter().collect::<Vec<_>>()),
+            "upper -\ntag"
+        );
+    }
+
+    #[test]
+    fn native_assignment_rejects_outside_caption_fringe_and_keeps_legitimate_note() {
+        let mut grid = TableGrid {
+            bbox: BoundingBox::new(0.0, 0.0, 100.0, 20.0),
+            horizontal_lines: vec![
+                GridLine {
+                    position: 0.0,
+                    start: 0.0,
+                    end: 100.0,
+                },
+                GridLine {
+                    position: 20.0,
+                    start: 0.0,
+                    end: 100.0,
+                },
+            ],
+            vertical_lines: vec![
+                GridLine {
+                    position: 0.0,
+                    start: 0.0,
+                    end: 20.0,
+                },
+                GridLine {
+                    position: 100.0,
+                    start: 0.0,
+                    end: 20.0,
+                },
+            ],
+            intersections: Vec::new(),
+            cells: vec![TableCell::grid(
+                0,
+                0,
+                BoundingBox::new(0.0, 0.0, 100.0, 20.0),
+            )],
+            confidence: 1.0,
+        };
+        let words = [
+            Word::new(
+                "outside caption",
+                BoundingBox::new(5.0, -14.0, 80.0, 1.0),
+                1.0,
+            ),
+            Word::new("NOTE", BoundingBox::new(10.0, 3.0, 50.0, 11.0), 1.0),
+            Word::new("item", BoundingBox::new(10.0, 12.0, 45.0, 23.0), 1.0),
+        ];
+        let legacy = grid.clone().assign_words(&words);
+        assert_eq!(
+            legacy.words_assigned, 3,
+            "the OCR assignment path stays unchanged"
+        );
+        let metrics = grid.assign_native_words(&words);
+        assert_eq!(metrics.ocr_words_total, 3);
+        assert_eq!(metrics.words_assigned, 2);
+        assert_eq!(metrics.words_unassigned, 1);
+        assert!(!grid.native_word_is_assignable(&words[0]));
+        assert!(grid.native_word_is_assignable(&words[1]));
+        assert_eq!(grid.cells[0].text, "NOTE\nitem");
+        assert_eq!(
+            words[0].text, "outside caption",
+            "source words must not be rewritten"
+        );
     }
 
     #[test]
@@ -1900,6 +2437,55 @@ mod tests {
             .collect();
         dimensions.sort_unstable();
         assert_eq!(dimensions, vec![(2, 2), (2, 2)]);
+    }
+
+    #[test]
+    fn stable_axis_clusters_do_not_chain_beyond_min_spacing() {
+        assert_eq!(
+            stable_positions(vec![121.0, 100.0, 109.5], 12.0),
+            vec![104.75, 121.0]
+        );
+        // Nearby phases of one physical rule still share a canonical axis.
+        assert_eq!(
+            stable_positions(vec![100.0, 103.0, 106.0], 12.0),
+            vec![103.0]
+        );
+    }
+
+    #[test]
+    fn distant_title_block_axes_do_not_erase_body_separator() {
+        let mut image = GrayImage::from_pixel(500, 400, Luma([255]));
+        for &y in &[20, 100, 180] {
+            for x in 20..=180 {
+                image.put_pixel(x, y, Luma([0]));
+            }
+        }
+        for &x in &[20, 100, 180] {
+            for y in 20..=180 {
+                image.put_pixel(x, y, Luma([0]));
+            }
+        }
+        // These unrelated lower-page rules yield axes 109.5 and 121. Their
+        // successive gaps from the body's x=100 separator are both <12, but
+        // combining all three moves that separator >10 pixels off its rule.
+        for &x in &[109, 110, 121] {
+            for y in 240..=360 {
+                image.put_pixel(x, y, Luma([0]));
+            }
+        }
+        let detection = detect_table_grids(&image);
+        assert_eq!(detection.vertical_mask.get_pixel(100, 60)[0], 255);
+        assert!(detection
+            .vertical_lines
+            .iter()
+            .any(|line| line.position == 100.0 && line.start <= 20.0 && line.end >= 180.0));
+        assert!(
+            detection
+                .grids
+                .iter()
+                .any(|grid| { grid.rows() == 2 && grid.columns() == 2 && grid.bbox.y1 <= 181.0 }),
+            "a distant stamp must not remove the body's observed separator"
+        );
     }
 
     #[test]

@@ -1,5 +1,7 @@
 //! Pdfium-backed page source for real PDF rendering.
 
+mod grid_geometry;
+
 use std::path::{Path, PathBuf};
 
 use image::GrayImage;
@@ -12,7 +14,7 @@ use crate::native::pdfium_render_ffi::{
 };
 use crate::page_analysis::{NativeTextLayer, NativeTextLayout, PageOrientation};
 use crate::page_source::{
-    dimensions_within_pixel_limit, PageSource, RenderedPage, RenderedPageRegion,
+    dimensions_within_pixel_limit, NativeGridWords, PageSource, RenderedPage, RenderedPageRegion,
 };
 
 /// A sequential PDF page source backed by the system Pdfium library.
@@ -58,6 +60,9 @@ struct PdfTextGlyph {
     origin: Option<(f32, f32)>,
     angle_radians: Option<f32>,
     bounds: Option<PdfWordBounds>,
+    /// Actual ink for positioned-word geometry; font metrics remain in bounds
+    /// for control-run/space analysis and never change canonical page text.
+    ink_bounds: Option<PdfWordBounds>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -368,15 +373,124 @@ fn resolve_pdf_control_runs(glyphs: &[PdfTextGlyph], fallback_boundaries: bool) 
     output
 }
 
+/// A canonical CAD token may cross text objects, but its positioned words must
+/// not acquire a bounding box spanning unrelated columns. Check both directions
+/// along the local text axis; cross-line displacement alone is deliberately not
+/// a boundary because stacked/backtracking CAD glyphs rely on that behavior.
+fn positioned_glyphs_are_disjoint(previous: PdfTextGlyph, next: PdfTextGlyph) -> bool {
+    let (Some(previous_bounds), Some(next_bounds), Some(angle), Some(next_angle)) = (
+        previous.bounds.filter(PdfWordBounds::is_valid),
+        next.bounds.filter(PdfWordBounds::is_valid),
+        previous.angle_radians,
+        next.angle_radians,
+    ) else {
+        return false;
+    };
+    if !angle.is_finite()
+        || !next_angle.is_finite()
+        || angular_difference(angle, next_angle) > CONTROL_ANGLE_TOLERANCE_RADIANS
+    {
+        return false;
+    }
+    let (along_x, along_y) = (angle.cos(), angle.sin());
+    let previous_along = projected_extent(previous_bounds, along_x, along_y);
+    let next_along = projected_extent(next_bounds, along_x, along_y);
+    let previous_cross = projected_extent(previous_bounds, -along_y, along_x);
+    let next_cross = projected_extent(next_bounds, -along_y, along_x);
+    let scale = (previous_cross.1 - previous_cross.0)
+        .max(next_cross.1 - next_cross.0)
+        .max(1.0);
+    let gap = (next_along.0 - previous_along.1).max(previous_along.0 - next_along.1);
+    gap / scale > CONTROL_WORD_GAP_THRESHOLD
+}
+
 fn native_words_from_glyphs(
     glyphs: &[PdfTextGlyph],
     fallback_boundaries: bool,
+) -> Vec<RawNativeWord> {
+    native_words_from_glyphs_with_owners(glyphs, fallback_boundaries, &[])
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum GlyphGridOwner {
+    Unpositioned,
+    Outside,
+    Cell(usize),
+}
+
+fn observed_word_space_boundary(
+    previous: PdfTextGlyph,
+    next: PdfTextGlyph,
+    spaces: &[PdfTextGlyph],
+) -> bool {
+    let Some(geometry) = control_run_geometry(previous, next) else {
+        return false;
+    };
+    if geometry.cross_line_distance > CONTROL_LINE_CHANGE_THRESHOLD {
+        return false;
+    }
+    let Some(angle) = previous.angle_radians else {
+        return false;
+    };
+    let normal = (-angle.sin(), angle.cos());
+    let previous_bounds = previous.bounds.unwrap();
+    let next_bounds = next.bounds.unwrap();
+    let cross = projected_extent(previous_bounds, normal.0, normal.1);
+    let next_cross = projected_extent(next_bounds, normal.0, normal.1);
+    // A superscript immediately before a separator must not select the small
+    // superscript's space metrics instead of the regular neighboring text.
+    let height = (cross.1 - cross.0)
+        .max(next_cross.1 - next_cross.0)
+        .max(1.0);
+    let previous_along = projected_extent(previous_bounds, angle.cos(), angle.sin());
+    let next_along = projected_extent(next_bounds, angle.cos(), angle.sin());
+    // Some PDF font matrices advance opposite to GetCharAngle's axis. A
+    // visible gap is the same evidence in either direction, as for the
+    // existing disjoint-positioned-run guard.
+    let gap = (next_along.0 - previous_along.1).max(previous_along.0 - next_along.1) / height;
+    let mut ratios = spaces
+        .iter()
+        .filter_map(|space| {
+            let b = space.bounds?;
+            let a = space.angle_radians?;
+            if !a.is_finite() || angular_difference(angle, a) > CONTROL_ANGLE_TOLERANCE_RADIANS {
+                return None;
+            }
+            let cross = projected_extent(b, normal.0, normal.1);
+            let space_height = cross.1 - cross.0;
+            if (space_height / height - 1.0).abs() > 0.10 {
+                return None;
+            }
+            let along = projected_extent(b, angle.cos(), angle.sin());
+            let ratio = (along.1 - along.0) / space_height;
+            (ratio.is_finite() && ratio > 0.0).then_some(ratio)
+        })
+        .collect::<Vec<_>>();
+    // Infer a space only from repeated explicit spaces of the same local
+    // orientation/height, never from a language rule or the value of a token.
+    ratios.len() >= 3 && percentile(&mut ratios, 0.5).is_some_and(|space| gap >= 0.90 * space)
+}
+
+fn native_words_from_glyphs_with_owners(
+    glyphs: &[PdfTextGlyph],
+    fallback_boundaries: bool,
+    owners: &[GlyphGridOwner],
 ) -> Vec<RawNativeWord> {
     let profile = control_run_profile(glyphs);
     let mut raw_words = Vec::new();
     let mut builder = NativeWordBuilder::default();
     let mut suppress_geometry_split = false;
     let mut index = 0usize;
+    let mut last_owner = GlyphGridOwner::Outside;
+    let spaces = if owners.is_empty() {
+        Vec::new()
+    } else {
+        glyphs
+            .iter()
+            .copied()
+            .filter(|glyph| glyph.value == ' ' && glyph.bounds.is_some())
+            .collect::<Vec<_>>()
+    };
 
     while index < glyphs.len() {
         let glyph = glyphs[index];
@@ -387,11 +501,24 @@ fn native_words_from_glyphs(
             }
             let boundary =
                 classify_control_run(glyphs, run_start, index, profile, fallback_boundaries);
-            if boundary == PdfTextBoundary::None {
+            let disjoint_positioned_run = run_start
+                .checked_sub(1)
+                .and_then(|previous| glyphs.get(previous))
+                .zip(glyphs.get(index))
+                .is_some_and(|(&previous, &next)| positioned_glyphs_are_disjoint(previous, next));
+            let visible_space = !spaces.is_empty()
+                && run_start
+                    .checked_sub(1)
+                    .and_then(|previous| glyphs.get(previous))
+                    .zip(glyphs.get(index))
+                    .is_some_and(|(&previous, &next)| {
+                        observed_word_space_boundary(previous, next, &spaces)
+                    });
+            if boundary == PdfTextBoundary::None && !disjoint_positioned_run && !visible_space {
                 // CAD exporters can place control glyphs between the letters of
-                // one logical word. Suppress the otherwise equivalent geometry
-                // split for the next glyph so page text and positioned words
-                // follow exactly the same boundary decision.
+                // one logical word. Preserve local stacked runs, but never
+                // suppress a strong forward/reverse jump to another column.
+                // Canonical page text is resolved independently and unchanged.
                 suppress_geometry_split = true;
             } else {
                 builder.flush_into(&mut raw_words);
@@ -402,24 +529,90 @@ fn native_words_from_glyphs(
         if glyph.value.is_whitespace() {
             builder.flush_into(&mut raw_words);
             suppress_geometry_split = false;
+            last_owner = GlyphGridOwner::Outside;
             index += 1;
             continue;
         }
 
-        if !suppress_geometry_split
-            && glyph
-                .bounds
-                .as_ref()
-                .is_some_and(|bounds| builder.should_split_before(bounds))
-        {
+        // Unknown geometry must not discard a mapped character by creating an
+        // unpositioned singleton. Keep its existing neighboring token context.
+        let classified_owner = owners
+            .get(index)
+            .copied()
+            .unwrap_or(GlyphGridOwner::Outside);
+        let owner = match classified_owner {
+            GlyphGridOwner::Unpositioned => last_owner,
+            owner => owner,
+        };
+        if owner != last_owner && builder.has_positioned_glyph {
+            // Grid ownership is decided for each source glyph, before any
+            // union box can swallow another row, column or a drawing stamp.
+            // Pending characters with unknown geometry inherit the first
+            // positioned neighbor instead of becoming discarded singletons.
+            builder.flush_into(&mut raw_words);
+            suppress_geometry_split = false;
+        }
+        if !owners.is_empty() && owner == GlyphGridOwner::Outside {
+            // Unowned material (margins, headings, stamps outside detected
+            // grids) must stay spatially local. A giant unowned union could
+            // otherwise overlap real cells even though none of its glyphs do.
+            suppress_geometry_split = false;
+        }
+
+        let geometry_split = if owners.is_empty() {
+            !suppress_geometry_split
+                && glyph
+                    .bounds
+                    .as_ref()
+                    .is_some_and(|bounds| builder.should_split_before(bounds))
+        } else if builder.has_positioned_glyph {
+            // Inside a confirmed grid, physical lines and local text axes
+            // govern positioned words, not page-wide logical CAD stacking.
+            builder.should_split_grid_before(glyph)
+        } else {
+            false
+        };
+        if geometry_split {
             builder.flush_into(&mut raw_words);
         }
-        builder.push(glyph.value, glyph.bounds);
+        builder.grid_owner = match owner {
+            GlyphGridOwner::Cell(index) => Some(index),
+            _ => None,
+        };
+        builder.push(glyph, classified_owner != GlyphGridOwner::Unpositioned);
+        last_owner = owner;
         suppress_geometry_split = false;
         index += 1;
     }
     builder.flush_into(&mut raw_words);
     raw_words
+}
+
+fn glyph_cell_owner(bounds: &BoundingBox, cells: &[BoundingBox]) -> Option<usize> {
+    let mut best = None;
+    let mut best_area = 0.0_f64;
+    let mut best_cell_area = f64::INFINITY;
+    for (index, cell) in cells.iter().enumerate() {
+        let area = (bounds.x1.min(cell.x1) - bounds.x0.max(cell.x0)).max(0.0)
+            * (bounds.y1.min(cell.y1) - bounds.y0.max(cell.y0)).max(0.0);
+        let cell_area = (cell.x1 - cell.x0).max(0.0) * (cell.y1 - cell.y0).max(0.0);
+        if area > best_area || (area > 0.0 && area == best_area && cell_area < best_cell_area) {
+            best = Some(index);
+            best_area = area;
+            best_cell_area = cell_area;
+        }
+    }
+    best
+}
+
+fn positioned_character_value(value: char, confirmed_hyphen: bool) -> char {
+    // PDFium marks a real line-end hyphen with U+0002. Keep its visible glyph
+    // in table geometry only; canonical page dehyphenation remains unchanged.
+    if value == '\u{2}' && confirmed_hyphen {
+        '-'
+    } else {
+        value
+    }
 }
 
 impl PdfiumPageSource {
@@ -525,6 +718,7 @@ impl PdfiumPageSource {
                     origin,
                     angle_radians: character.angle_radians().ok(),
                     bounds,
+                    ink_bounds: None,
                 }
             })
             .collect::<Vec<_>>();
@@ -574,6 +768,27 @@ impl PdfiumPageSource {
         width: u32,
         height: u32,
     ) -> Result<Vec<Word>, Box<dyn std::error::Error>> {
+        self.extract_native_words_with_cells(page_num, width, height, &[])
+    }
+
+    fn extract_native_words_with_cells(
+        &self,
+        page_num: u32,
+        width: u32,
+        height: u32,
+        cell_bounds: &[BoundingBox],
+    ) -> Result<Vec<Word>, Box<dyn std::error::Error>> {
+        self.extract_native_grid_words(page_num, width, height, cell_bounds)
+            .map(|result| result.words)
+    }
+
+    fn extract_native_grid_words(
+        &self,
+        page_num: u32,
+        width: u32,
+        height: u32,
+        cell_bounds: &[BoundingBox],
+    ) -> Result<NativeGridWords, Box<dyn std::error::Error>> {
         if page_num == 0 || page_num > self.total {
             return Err(format!("page {page_num} out of range (total {})", self.total).into());
         }
@@ -606,11 +821,26 @@ impl PdfiumPageSource {
                     })
                     .filter(PdfWordBounds::is_valid);
                 let origin = character.origin().ok().map(|(x, y)| (x.value, y.value));
+                let ink_bounds = (!cell_bounds.is_empty())
+                    .then(|| {
+                        character
+                            .tight_bounds()
+                            .ok()
+                            .map(|bounds| PdfWordBounds {
+                                left: bounds.left().value,
+                                bottom: bounds.bottom().value,
+                                right: bounds.right().value,
+                                top: bounds.top().value,
+                            })
+                            .filter(PdfWordBounds::is_valid)
+                    })
+                    .flatten();
                 PdfTextGlyph {
                     value: character.unicode_char().unwrap_or('\u{fffd}'),
                     origin,
                     angle_radians: character.angle_radians().ok(),
                     bounds,
+                    ink_bounds,
                 }
             })
             .collect::<Vec<_>>();
@@ -620,42 +850,99 @@ impl PdfiumPageSource {
             glyphs.len(),
             insertable_pdf_control_run_count(&glyphs),
         );
-        let raw_words = native_words_from_glyphs(&glyphs, fallback_boundaries);
-
+        let mut glyphs = glyphs;
+        for (glyph, character) in glyphs.iter_mut().zip(page_text.chars().iter()) {
+            if glyph.value == '\u{2}' {
+                glyph.value =
+                    positioned_character_value(glyph.value, character.is_hyphen().unwrap_or(false));
+            }
+        }
         let render_config = PdfRenderConfig::new().set_fixed_size(render_width, render_height);
+        let pixel_bounds =
+            |bounds: PdfWordBounds| -> Result<Option<BoundingBox>, Box<dyn std::error::Error>> {
+                let corners = [
+                    (bounds.left, bounds.bottom),
+                    (bounds.left, bounds.top),
+                    (bounds.right, bounds.bottom),
+                    (bounds.right, bounds.top),
+                ];
+                let mut xs = [0_i32; 4];
+                let mut ys = [0_i32; 4];
+                for (index, (x, y)) in corners.into_iter().enumerate() {
+                    let (pixel_x, pixel_y) = page.points_to_pixels(
+                        PdfPoints::new(x),
+                        PdfPoints::new(y),
+                        &render_config,
+                    )?;
+                    xs[index] = pixel_x;
+                    ys[index] = pixel_y;
+                }
+                let x0 = xs.into_iter().min().unwrap_or(0).clamp(0, render_width);
+                let x1 = xs.into_iter().max().unwrap_or(0).clamp(0, render_width);
+                let y0 = ys.into_iter().min().unwrap_or(0).clamp(0, render_height);
+                let y1 = ys.into_iter().max().unwrap_or(0).clamp(0, render_height);
+                if x1 <= x0 || y1 <= y0 {
+                    return Ok(None);
+                }
+                Ok(Some(BoundingBox::new(
+                    f64::from(x0),
+                    f64::from(y0),
+                    f64::from(x1),
+                    f64::from(y1),
+                )))
+            };
+        let owner_cells = grid_geometry::refine_cell_bounds(&page, cell_bounds, width, height);
+        let raw_words = if cell_bounds.is_empty() {
+            native_words_from_glyphs(&glyphs, fallback_boundaries)
+        } else {
+            let mut owners = Vec::with_capacity(glyphs.len());
+            for glyph in &glyphs {
+                let bounds = match glyph.bounds {
+                    Some(bounds) => {
+                        match grid_geometry::precise_device_bounds(&page, bounds, width, height) {
+                            Some(bounds) => Some(bounds),
+                            None => pixel_bounds(bounds)?,
+                        }
+                    }
+                    None => None,
+                };
+                owners.push(match bounds.as_ref() {
+                    None => GlyphGridOwner::Unpositioned,
+                    Some(bounds) => glyph_cell_owner(bounds, &owner_cells)
+                        .map(GlyphGridOwner::Cell)
+                        .unwrap_or(GlyphGridOwner::Outside),
+                });
+            }
+            native_words_from_glyphs_with_owners(&glyphs, fallback_boundaries, &owners)
+        };
         let mut words = Vec::with_capacity(raw_words.len());
+        let mut cell_owners =
+            (!cell_bounds.is_empty()).then(|| Vec::with_capacity(raw_words.len()));
         for raw in raw_words {
-            let Some(bounds) = raw.bounds else {
+            let Some(bounds) = project_positioned_word_bounds(&raw, &pixel_bounds)? else {
                 continue;
             };
-            let corners = [
-                (bounds.left, bounds.bottom),
-                (bounds.left, bounds.top),
-                (bounds.right, bounds.bottom),
-                (bounds.right, bounds.top),
-            ];
-            let mut xs = [0_i32; 4];
-            let mut ys = [0_i32; 4];
-            for (index, (x, y)) in corners.into_iter().enumerate() {
-                let (pixel_x, pixel_y) =
-                    page.points_to_pixels(PdfPoints::new(x), PdfPoints::new(y), &render_config)?;
-                xs[index] = pixel_x;
-                ys[index] = pixel_y;
+            // Preserve the native path's outside-caption rejection using
+            // precise ink geometry. This is a union containment gate, not a
+            // second cell choice that could undo source glyph ownership.
+            if let Some(owners) = &mut cell_owners {
+                owners.push(raw.grid_owner.filter(|_| {
+                    let precise = raw.bounds.or(raw.font_bounds).and_then(|bounds| {
+                        grid_geometry::precise_device_bounds(&page, bounds, width, height)
+                    });
+                    let membership_bounds = precise.as_ref().unwrap_or(&bounds);
+                    let (x, y) = (
+                        (membership_bounds.x0 + membership_bounds.x1) / 2.0,
+                        (membership_bounds.y0 + membership_bounds.y1) / 2.0,
+                    );
+                    owner_cells
+                        .iter()
+                        .any(|cell| x >= cell.x0 && x <= cell.x1 && y >= cell.y0 && y <= cell.y1)
+                }));
             }
-            let x0 = xs.into_iter().min().unwrap_or(0).clamp(0, render_width);
-            let x1 = xs.into_iter().max().unwrap_or(0).clamp(0, render_width);
-            let y0 = ys.into_iter().min().unwrap_or(0).clamp(0, render_height);
-            let y1 = ys.into_iter().max().unwrap_or(0).clamp(0, render_height);
-            if x1 <= x0 || y1 <= y0 {
-                continue;
-            }
-            words.push(Word::new(
-                raw.text,
-                BoundingBox::new(f64::from(x0), f64::from(y0), f64::from(x1), f64::from(y1)),
-                1.0,
-            ));
+            words.push(Word::new(raw.text, bounds, 1.0));
         }
-        Ok(words)
+        Ok(NativeGridWords { words, cell_owners })
     }
 
     pub(crate) fn page_dimensions_points(
@@ -925,6 +1212,28 @@ impl PageSource for PdfiumPageSource {
             .map(Some)
     }
 
+    fn native_words_for_grid_cells(
+        &self,
+        page_num: u32,
+        width: u32,
+        height: u32,
+        cell_bounds: &[BoundingBox],
+    ) -> Result<Option<Vec<Word>>, Box<dyn std::error::Error>> {
+        self.extract_native_words_with_cells(page_num, width, height, cell_bounds)
+            .map(Some)
+    }
+
+    fn native_words_with_grid_owners(
+        &self,
+        page_num: u32,
+        width: u32,
+        height: u32,
+        cell_bounds: &[BoundingBox],
+    ) -> Result<Option<NativeGridWords>, Box<dyn std::error::Error>> {
+        self.extract_native_grid_words(page_num, width, height, cell_bounds)
+            .map(Some)
+    }
+
     fn render_table_thumbnail(
         &mut self,
         page_num: u32,
@@ -974,7 +1283,11 @@ impl PdfWordBounds {
 struct NativeWordBuilder {
     text: String,
     bounds: Option<PdfWordBounds>,
+    font_bounds: Option<PdfWordBounds>,
     last_glyph: Option<PdfWordBounds>,
+    last_source_glyph: Option<PdfTextGlyph>,
+    has_positioned_glyph: bool,
+    grid_owner: Option<usize>,
 }
 
 impl NativeWordBuilder {
@@ -990,11 +1303,34 @@ impl NativeWordBuilder {
         changed_line || large_forward_gap
     }
 
-    fn push(&mut self, value: char, glyph_bounds: Option<PdfWordBounds>) {
-        self.text.push(value);
-        if let Some(bounds) = glyph_bounds {
-            self.bounds = Some(self.bounds.map_or(bounds, |current| current.union(bounds)));
+    fn should_split_grid_before(&self, next: PdfTextGlyph) -> bool {
+        let Some(previous) = self.last_source_glyph else {
+            return false;
+        };
+        match control_run_geometry(previous, next) {
+            Some(geometry) => {
+                geometry.cross_line_distance > CONTROL_LINE_CHANGE_THRESHOLD
+                    || positioned_glyphs_are_disjoint(previous, next)
+            }
+            None => next
+                .bounds
+                .as_ref()
+                .is_some_and(|bounds| self.should_split_before(bounds)),
+        }
+    }
+
+    fn push(&mut self, glyph: PdfTextGlyph, has_pixel_geometry: bool) {
+        self.text.push(glyph.value);
+        if let Some(bounds) = glyph.bounds {
+            self.font_bounds = Some(
+                self.font_bounds
+                    .map_or(bounds, |current| current.union(bounds)),
+            );
+            let ink = glyph.ink_bounds.unwrap_or(bounds);
+            self.bounds = Some(self.bounds.map_or(ink, |current| current.union(ink)));
             self.last_glyph = Some(bounds);
+            self.last_source_glyph = Some(glyph);
+            self.has_positioned_glyph |= has_pixel_geometry;
         }
     }
 
@@ -1003,10 +1339,16 @@ impl NativeWordBuilder {
             output.push(RawNativeWord {
                 text: std::mem::take(&mut self.text),
                 bounds: self.bounds.take(),
+                font_bounds: self.font_bounds.take(),
+                grid_owner: self.grid_owner.take(),
             });
         }
         self.bounds = None;
+        self.font_bounds = None;
         self.last_glyph = None;
+        self.last_source_glyph = None;
+        self.has_positioned_glyph = false;
+        self.grid_owner = None;
     }
 }
 
@@ -1014,6 +1356,22 @@ impl NativeWordBuilder {
 struct RawNativeWord {
     text: String,
     bounds: Option<PdfWordBounds>,
+    font_bounds: Option<PdfWordBounds>,
+    grid_owner: Option<usize>,
+}
+
+fn project_positioned_word_bounds<E>(
+    word: &RawNativeWord,
+    mut project: impl FnMut(PdfWordBounds) -> Result<Option<BoundingBox>, E>,
+) -> Result<Option<BoundingBox>, E> {
+    // Valid PDF ink may still round to zero device pixels. Do not lose a
+    // mapped character merely because its thin ink is subpixel at grid DPI.
+    for bounds in [word.bounds, word.font_bounds].into_iter().flatten() {
+        if let Some(projected) = project(bounds)? {
+            return Ok(Some(projected));
+        }
+    }
+    Ok(None)
 }
 
 pub(crate) fn target_width_for_dpi(
@@ -1204,6 +1562,9 @@ fn pack_gray_rows(
 }
 
 #[cfg(test)]
+mod pdfium_source_glyph_tests;
+
+#[cfg(test)]
 mod tests {
     use super::{
         bgra_to_gray, control_run_profile, insertable_pdf_control_run_count,
@@ -1239,6 +1600,7 @@ mod tests {
                 right,
                 top,
             }),
+            ink_bounds: None,
         }
     }
 
@@ -1248,6 +1610,7 @@ mod tests {
             origin: None,
             angle_radians: None,
             bounds: None,
+            ink_bounds: None,
         }
     }
 

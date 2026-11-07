@@ -80,6 +80,9 @@ jobs:
       - name: Test native feature (offline, serialized)
         run: cargo test --offline --locked --features native -j 1 -- --test-threads=1
 
+      - name: Test source-owned cell projection in a separate PDFium process
+        run: cargo test --offline --locked --features native --lib source_grid_owner_survives_word_projection_and_matrix_json -j 1 -- --ignored --test-threads=1
+
       - name: Run synthetic raster end-to-end smoke test
         shell: pwsh
         run: |
