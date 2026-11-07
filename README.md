@@ -4,6 +4,15 @@ Rust Document OCR is a local, CPU-first document pipeline written in Rust. The
 Cargo package and library crate are named `ocr-pipeline`, version `0.1.0`.
 This documentation does not claim a stable `1.0` release.
 
+The `experiment/heic-rs-rc2` branch contains an isolated decoder evaluation,
+not a promoted RC2. The existing HEIF backend remains enabled for native OCR;
+the experimental preallocation/format qualification is incomplete. See the
+[progress report](RC1_TO_RC2_PROGRESS_REPORT.md) and
+[research release notes](RELEASE_NOTES_HEIC_RESEARCH.md).
+Windows Sandbox and separate clean Windows x64 are each
+**NOT RUN — DEFERRED BY OWNER**. Binary distribution remains
+**BLOCKED: LICENSING**; no source-only test substitutes for those gates.
+
 The engine reads PDF, raster image, TIFF, HEIF, and DjVu inputs, extracts usable
 PDF text where available, runs Tesseract when OCR is needed, detects table
 geometry, and exports JSON, DOCX, and XLSX files. It is a command-line program
