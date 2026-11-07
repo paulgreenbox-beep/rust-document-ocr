@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "source_commit": "999470f514c8e9a1a7c37ea44ba70cc32b1308fe",
+  "files": [
+    {
+      "path": "fixtures/checker-1024.heic",
+      "sha256": "f24a3b6ae495605e179bd34ae282047dcc4581819eb53041db34c9fdb66648cd"
+    },
+    {
+      "path": "fixtures/checker-1024.ref.png",
+      "sha256": "26b302d18d5c0e932a69092dafe4ac25d63814514c63718a08325fd84b38d5d4"
+    },
+    {
+      "path": "fixtures/checker-64.heic",
+      "sha256": "772a9b8fab3022ea95eb0b1d069053448f9602fad7829b33506877039a6af2c5"
+    },
+    {
+      "path": "fixtures/checker-64.ref.png",
+      "sha256": "aa89bda71d2359691d32362923967ff4839e8a4f7d54641b10c647c9fbf9aa2c"
+    },
+    {
+      "path": "fixtures/flat-64.heic",
+      "sha256": "832f19c74d689d7b9d235f5dfe6e81ed824d60900f0360d1953b413b736816ac"
+    },
+    {
+      "path": "fixtures/flat-64.ref.png",
+      "sha256": "39969b10938938add37de1249227d5f5a52dc9fac2c28e41a6fc0ceab494c4ca"
+    },
+    {
+      "path": "fixtures/flat-white-16.heic",
+      "sha256": "96bb56231cd2a98bc26f9f734681ea0b0a6dbcde597a761e50a9d40e6a4e608d"
+    },
+    {
+      "path": "fixtures/flat-white-16.ref.png",
+      "sha256": "335d832597da25cc454cd0494b01dd3bcb30f7f29f7952ff63dab892870b64f5"
+    },
+    {
+      "path": "fixtures/gradient-512.heic",
+      "sha256": "a618edb8cc6f7b53ee61bc44178014bf16c51dfb55a592be35c83611d7a236f8"
+    },
+    {
+      "path": "fixtures/gradient-512.ref.png",
+      "sha256": "73b26354e73a448af511c1638840eb35614f5ba51f25bc64cc99836b49abdafe"
+    },
+    {
+      "path": "fixtures/rgb-strips-96.heic",
+      "sha256": "6e65bccd51ff2effdfce99ac4275b9f79c85bba51b5875d7fa455e1412821c25"
+    },
+    {
+      "path": "fixtures/rgb-strips-96.ref.png",
+      "sha256": "b3a619b185d4cdfb1aafb419fec4f054d86853bb6a65e5d044527e84579407bb"
+    },
+    {
+      "path": "upstream/LICENSE-APACHE",
+      "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+    },
+    {
+      "path": "upstream/LICENSE-MIT",
+      "sha256": "b1919069bdd26147c90fcb6795feb340f3324c224438e17132584bef17543a22"
+    },
+    {
+      "path": "upstream/NOTICE",
+      "sha256": "c16bd7c1ab22165a83295d602a0fec289035b13fbc7345b41a020c339020b96a"
+    },
+    {
+      "path": "upstream/FIXTURES-README.md",
+      "sha256": "61bf90039596c6ca4dabab2d72e0eced2f345c885427f0c56706108607bfdacb"
+    }
+  ]
+}

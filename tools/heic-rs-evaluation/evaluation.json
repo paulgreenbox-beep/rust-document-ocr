@@ -1,0 +1,181 @@
+{
+  "schema_version": 1,
+  "scope": "Isolated decoder observations with optional native A/B reference; not production OCR or RC2 release qualification",
+  "disposition": "HOLD_PREALLOCATION_GATE_UNQUALIFIED",
+  "host": "Windows x64",
+  "rustc": "1.97.1 (8bab26f4f 2026-07-14)",
+  "cargo": "1.97.1 (c980f4866 2026-06-30)",
+  "published_package_verification": "PASS",
+  "format_check": "PASS",
+  "observation_tests": {
+    "status": "PASS",
+    "exit_code": 0,
+    "passed": 9,
+    "failed": 0,
+    "fixture_decodes": 6,
+    "reference_png_comparisons": 6,
+    "warnings": [
+      "Nonfatal incremental-cache hard-link fallback; tests still exit 0"
+    ]
+  },
+  "preallocation_gate": {
+    "status": "UNQUALIFIED",
+    "evidence": "Small runtime mismatch observation plus matched checksum-verified published source allocation call trace. Not a peak-memory measurement or established old-decoder regression.",
+    "declared_ispe": [
+      16,
+      16
+    ],
+    "public_sps_probe": [
+      64,
+      64
+    ],
+    "configured_max_pixels": 256,
+    "candidate_observed_error": "PixelLimit { pixels: 4096, max_pixels: 256 }",
+    "strict": true,
+    "threads": 1,
+    "native_handle": [
+      16,
+      16
+    ],
+    "native_metadata_precheck_allows": true,
+    "native_decode_error": "MemoryAllocationError/SecurityLimitExceeded: Image size 160x64 exceeds maximum image size 6400",
+    "native_security_limits": "UNCHANGED",
+    "peak_internal_allocation": "NOT_MEASURED"
+  },
+  "not_run": [
+    "cropping-specific reproduction",
+    "10-bit",
+    "alpha",
+    "nonzero orientation metadata",
+    "sequences",
+    "overlay",
+    "native OCR build",
+    "production adapter",
+    "VM",
+    "RC2 candidate release"
+  ],
+  "artifact_hashes": [
+    {
+      "path": "Cargo.toml",
+      "sha256": "ce20a7382860fa13bfa7f352f1a002058526cfcd12f50a06cae844b746875288"
+    },
+    {
+      "path": "Cargo.lock",
+      "sha256": "f471e6d2ce97ecdde6264a8751d2ae426b0e627640d3c0006013a62b445a8a5a"
+    },
+    {
+      "path": "src/lib.rs",
+      "sha256": "d11552a1f1d39a380949bba23015aac637ecba64abf29906ec7536f8d7580b6a"
+    },
+    {
+      "path": "evidence/test-png-final.log",
+      "sha256": "4787790c5c4f9ef381663ad667df9acdbd1ed27f7c283a116ecab1637eb07eca"
+    },
+    {
+      "path": "evidence/test-native-reference.log",
+      "sha256": "0a25a72cd9e67b6cbc1c08e5a2bb8f0e2b42f5229d6545d6e2cad67ed10c61fc"
+    },
+    {
+      "path": "evidence/test-native-reference-attempt2.log",
+      "sha256": "8248e444316abe2ee8d54af73b6fe9224e17e29d46e2e037cc36f392ee00968f"
+    },
+    {
+      "path": "evidence/test-native-reference-attempt3.log",
+      "sha256": "13bb498e7ff9328e66ad442d72d3120ad501c530136423c0bea2e01b13455996"
+    }
+  ],
+  "relative_old_decoder_regression": "NOT_ESTABLISHED",
+  "native_reference_observation_tests": {
+    "status": "PASS",
+    "exit_code": 0,
+    "passed": 2,
+    "failed": 0,
+    "native_fixture_decode_successes": 5,
+    "native_fixture_decode_failures": 1,
+    "fixture_decode_gate": "PARTIAL: white16 native decode rejected, not successful",
+    "library_version": "1.23.1",
+    "libheif_rs": "2.7.0",
+    "libheif_sys": "5.3.0+1.23.0",
+    "triplet": "x64-windows-static-md",
+    "native_security_limits": "UNCHANGED",
+    "decode_options": {
+      "ignore_transformations": false,
+      "convert_hdr_to_8bit": true,
+      "strict_decoding": true,
+      "threads": 1,
+      "layout": "RGBA8; opaque RGB channels extracted for comparison"
+    },
+    "prior_attempts": [
+      {
+        "log": "evidence/test-native-reference.log",
+        "exit_code": 101,
+        "reason": "Probe version-array formatting compile error, corrected in probe only"
+      },
+      {
+        "log": "evidence/test-native-reference-attempt2.log",
+        "exit_code": 101,
+        "reason": "Stopped on white16 native security rejection; final test records all outcomes without changing settings"
+      }
+    ]
+  },
+  "dependency_graph": {
+    "default_normal": [
+      "heic-rs v0.1.4"
+    ],
+    "dev_only_image": {
+      "version": "0.25.10",
+      "default_features": false,
+      "features": [
+        "png"
+      ]
+    },
+    "native_reference_normal": [
+      "heic-rs v0.1.4",
+      "libheif-rs v2.7.0",
+      "cfg-if v1.0.5",
+      "enumn v0.1.14 (proc-macro)",
+      "proc-macro2 v1.0.107",
+      "unicode-ident v1.0.27",
+      "quote v1.0.47",
+      "proc-macro2 v1.0.107 (*)",
+      "syn v2.0.119",
+      "proc-macro2 v1.0.107 (*)",
+      "quote v1.0.47 (*)",
+      "unicode-ident v1.0.27",
+      "four-cc v0.4.0",
+      "libc v0.2.191",
+      "libheif-sys v5.3.0+1.23.0",
+      "cfg-if v1.0.5",
+      "libc v0.2.191"
+    ],
+    "production_ocr_features": "UNCHANGED; no full native OCR chain removal claimed"
+  },
+  "test_executables": [
+    {
+      "sha256": "3e9174f5f072a72733cb9cdf50b98dfc0cfb188b71f626716365d0eb76e4147f",
+      "filename": "heic_rs_evaluation-30b6e6056a360dc5.exe",
+      "production_ocr_executable": false,
+      "label": "pure-unit-tests-debug",
+      "size": 2627584
+    },
+    {
+      "sha256": "929b8531e5e6afbc8f8a5dc5de0b7b914660d69a8d56553d285a356b7742d441",
+      "filename": "heic_rs_evaluation-e5f88d8f6896692a.exe",
+      "production_ocr_executable": false,
+      "label": "native-reference-unit-tests-debug",
+      "size": 4305408
+    }
+  ],
+  "native_library_hashes": [
+    {
+      "sha256": "041f516be7f146b687226af6aefa8de485a941aa995390afe2b87e8c0fa4ff0f",
+      "size": 195293736,
+      "name": "heif.lib"
+    },
+    {
+      "sha256": "31f871774382e4732dfcad572c43dec79543baad860615d76c455b5d26c5f14c",
+      "size": 19605590,
+      "name": "libde265.lib"
+    }
+  ]
+}
