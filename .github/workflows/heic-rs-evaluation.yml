@@ -24,9 +24,11 @@ jobs:
         with:
           toolchain: 1.97.1
           components: rustfmt
-      - name: Check and test the isolated published decoder
+      - name: Check bounded derivative and unmodified decoder reference
         run: |
-          cargo fmt --manifest-path tools/heic-rs-evaluation/Cargo.toml --check
-          cargo test --locked --manifest-path tools/heic-rs-evaluation/Cargo.toml --target-dir /tmp/heic-rs-evaluation -- --nocapture
-      # A passing observation suite intentionally records the unapproved
-      # allocation boundary. It is NOT a native OCR or binary release gate.
+          cargo fmt --manifest-path tools/heic-rs-evaluation/Cargo.toml --all --check
+          cargo test --locked --manifest-path tools/heic-rs-evaluation/Cargo.toml -p heic-rs@0.1.4-ocr.1 --no-default-features --features std --lib --target-dir /tmp/heic-rs-evaluation
+          cargo test --locked --manifest-path tools/heic-rs-evaluation/Cargo.toml -p heic-rs@0.1.4-ocr.1 --no-default-features --features std,parallel --lib resource_limit --target-dir /tmp/heic-rs-evaluation
+          cargo test --locked --manifest-path tools/heic-rs-evaluation/Cargo.toml --features upstream-reference --target-dir /tmp/heic-rs-evaluation -- --nocapture
+      # These bounded-derivative tests preserve unmodified baseline observations.
+      # They are NOT a native OCR or binary release qualification gate.

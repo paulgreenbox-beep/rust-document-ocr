@@ -1,5 +1,5 @@
-//! Isolated observations of the published decoder, not an OCR adapter or release gate.
-//! A passing observation test does not approve the decoder's allocation contract.
+//! Isolated tests of a bounded research derivative and the published baseline.
+//! These tests do not approve a production OCR adapter or binary release.
 
 #[cfg(test)]
 mod tests {
@@ -8,6 +8,9 @@ mod tests {
     use heic_rs::{DecodeOptions, Error, PixelLayout};
 
     const FLAT: &[u8] = include_bytes!("../fixtures/flat-64.heic");
+    // These reviewed fixtures include cropped coded pictures. This explicit
+    // test-only RAW aggregate cap is distinct from the asserted display size.
+    const FIXTURE_RAW_BUDGET: u64 = 4 * 1024 * 1024;
 
     fn reference_png(name: &str) -> &'static [u8] {
         match name {
@@ -42,7 +45,7 @@ mod tests {
         assert!(!info.has_alpha, "{name}: this corpus has no alpha");
         let options = DecodeOptions::default()
             .with_layout(PixelLayout::Rgb8)
-            .with_max_pixels(Some(u64::from(width) * u64::from(height)))
+            .with_max_pixels(Some(FIXTURE_RAW_BUDGET))
             .with_strict(true)
             .with_threads(Some(1));
         let image = heic_rs::decode(bytes, &options).expect("reviewed fixture must decode");
@@ -182,7 +185,7 @@ mod tests {
     }
 
     #[test]
-    fn observe_small_ispe_reaches_post_decode_pixel_limit() {
+    fn small_ispe_is_rejected_by_raw_picture_limit() {
         let bytes = small_ispe_mutation();
         let info = heic_rs::probe(&bytes).expect("published probe accepts modified ispe");
         assert_eq!((info.coded_width, info.coded_height), (16, 16));
@@ -193,28 +196,100 @@ mod tests {
         let hvcc = props.hvcc.as_ref().expect("HEVC configuration");
         let actual = heic_rs::hevc::probe(&hvcc.parameter_sets()).expect("SPS probe");
         assert_eq!((actual.width, actual.height), (64, 64));
-        let options = DecodeOptions::default()
+        let raw = heic_rs::hevc::probe_coded(&hvcc.parameter_sets()).expect("raw SPS probe");
+        let required = raw.max_raw_pixels;
+        assert!(required >= 4096);
+        for strict in [false, true] {
+            let options = DecodeOptions::default()
+                .with_max_pixels(Some(256))
+                .with_strict(strict)
+                .with_threads(Some(1));
+            let error =
+                heic_rs::decode(&bytes, &options).expect_err("raw SPS exceeds the tiny cap");
+            assert!(
+                matches!(error, Error::ResourceLimit {
+                    stage: heic_rs::ResourceStage::CodedPicture,
+                    required: actual_required,
+                    limit: 256
+                } if actual_required == required),
+                "unexpected early rejection: {error:?}"
+            );
+            println!("BOUNDED RESOURCE: strict={strict} {error:?}");
+        }
+    }
+
+    #[test]
+    #[cfg(feature = "upstream-reference")]
+    fn unpatched_small_ispe_baseline_still_reaches_late_pixel_check() {
+        let options = heic_rs_upstream::DecodeOptions::default()
             .with_max_pixels(Some(256))
             .with_strict(true)
             .with_threads(Some(1));
-        let error =
-            heic_rs::decode(&bytes, &options).expect_err("actual output exceeds the tiny limit");
-        assert!(
-            matches!(
-                error,
-                Error::PixelLimit {
-                    pixels: 4096,
-                    max_pixels: 256
-                }
+        let error = heic_rs_upstream::decode(&small_ispe_mutation(), &options).unwrap_err();
+        assert!(matches!(
+            error,
+            heic_rs_upstream::Error::PixelLimit {
+                pixels: 4096,
+                max_pixels: 256
+            }
+        ));
+        println!("UNMODIFIED 0.1.4 BASELINE: {error:?}; old observation retained");
+    }
+
+    #[test]
+    #[cfg(feature = "upstream-reference")]
+    fn bounded_patch_does_not_change_six_original_fixture_pixels() {
+        for (name, bytes) in [
+            (
+                "white",
+                include_bytes!("../fixtures/flat-white-16.heic").as_slice(),
             ),
-            "unexpected observed error: {error:?}"
-        );
-        println!(
-            "RESOURCE OBSERVATION: declared ispe=16x16, SPS=64x64, max_pixels=256; decode returned {error:?}"
-        );
-        println!(
-            "PREALLOCATION GATE: UNQUALIFIED. Pinned source allocates the SPS-sized Picture before the colour conversion check producing this error. This is not an established regression relative to the old native decoder."
-        );
+            ("flat", FLAT),
+            (
+                "checker",
+                include_bytes!("../fixtures/checker-64.heic").as_slice(),
+            ),
+            (
+                "strips",
+                include_bytes!("../fixtures/rgb-strips-96.heic").as_slice(),
+            ),
+            (
+                "gradient",
+                include_bytes!("../fixtures/gradient-512.heic").as_slice(),
+            ),
+            (
+                "grid",
+                include_bytes!("../fixtures/checker-1024.heic").as_slice(),
+            ),
+        ] {
+            let bounded = heic_rs::decode(
+                bytes,
+                &DecodeOptions::default()
+                    .with_layout(PixelLayout::Rgb8)
+                    .with_max_pixels(Some(FIXTURE_RAW_BUDGET))
+                    .with_strict(true)
+                    .with_threads(Some(1)),
+            )
+            .unwrap();
+            let original = heic_rs_upstream::decode(
+                bytes,
+                &heic_rs_upstream::DecodeOptions::default()
+                    .with_layout(heic_rs_upstream::PixelLayout::Rgb8)
+                    .with_max_pixels(Some(FIXTURE_RAW_BUDGET))
+                    .with_strict(true)
+                    .with_threads(Some(1)),
+            )
+            .unwrap();
+            assert_eq!(
+                (bounded.width, bounded.height),
+                (original.width, original.height),
+                "{name}"
+            );
+            assert_eq!(
+                bounded.data, original.data,
+                "{name}: patch must not change accepted pixels"
+            );
+        }
     }
 
     #[test]
@@ -240,7 +315,10 @@ mod tests {
     }
 
     #[cfg(feature = "native-reference")]
-    fn native_rgb(bytes: &[u8]) -> Result<(String, (u32, u32), (u32, u32), Vec<u8>), String> {
+    type NativeRgbObservation = (String, (u32, u32), (u32, u32), Vec<u8>);
+
+    #[cfg(feature = "native-reference")]
+    fn native_rgb(bytes: &[u8]) -> Result<NativeRgbObservation, String> {
         use libheif_rs::{
             ColorSpace, DecodingOptions, HeifContext, LibHeif, RgbChroma, StreamReader,
         };

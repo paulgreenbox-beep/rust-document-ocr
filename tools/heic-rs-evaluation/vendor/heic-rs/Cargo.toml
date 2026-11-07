@@ -1,0 +1,21 @@
+[package]
+name = "heic-rs"
+version = "0.1.4-ocr.1"
+edition = "2024"
+rust-version = "1.85"
+license = "MIT OR Apache-2.0"
+description = "Local research derivative of heic-rs 0.1.4 with pre-allocation decode limits"
+publish = false
+
+[lib]
+name = "heic_rs"
+path = "src/lib.rs"
+
+[features]
+default = ["std", "parallel"]
+std = []
+parallel = ["std", "dep:rayon"]
+bench = []
+
+[dependencies]
+rayon = { version = "1.10", optional = true }

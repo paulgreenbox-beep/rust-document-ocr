@@ -1,0 +1,77 @@
+[package]
+name = "heic-rs"
+version = "0.1.4"
+edition = "2024"
+rust-version = "1.85"
+license = "MIT OR Apache-2.0"
+description = "Pure-Rust HEIC/HEIF image decoder: no C, no unsafe, no_std-friendly, wasm-ready"
+repository = "https://github.com/tbraun96/heic-rs"
+homepage = "https://github.com/tbraun96/heic-rs"
+documentation = "https://docs.rs/heic-rs"
+readme = "README.md"
+keywords = ["heic", "heif", "image", "decoder", "hevc"]
+categories = ["multimedia::images", "encoding", "no-std", "wasm"]
+exclude = [
+    "tests/fixtures/*.heic",
+    "tests/fixtures/*.png",
+    "tests/fixtures/fuzz/*",
+    ".github/*",
+    # The fuzz targets are their own crate and no part of the library.
+    "fuzz/*",
+    # The README's charts ship (crates.io resolves relative links against the repository,
+    # but a vendored copy should still be able to draw them). What it makes them from does not.
+    "assets/fonts/*",
+    "assets/og-image.png",
+    "assets/og-image.html",
+]
+
+[lib]
+name = "heic_rs"
+path = "src/lib.rs"
+
+[features]
+default = ["std", "parallel"]
+std = []
+# Decode grid tiles and convert colour on a thread pool. std-only: the no_std
+# and wasm builds have nowhere to put the threads, and must not see rayon.
+parallel = ["std", "dep:rayon"]
+# Exposes the decoder's internal stages to `benches/`. Not public API.
+bench = []
+
+[dependencies]
+rayon = { version = "1.10", optional = true }
+
+[dev-dependencies]
+criterion = { version = "0.7", default-features = false, features = ["cargo_bench_support"] }
+
+[[bench]]
+name = "decode"
+harness = false
+
+[[bench]]
+name = "hevc"
+harness = false
+required-features = ["bench"]
+
+[[example]]
+name = "decode"
+required-features = ["std"]
+
+[[example]]
+name = "probe"
+required-features = ["std"]
+
+[[example]]
+name = "to_png"
+required-features = ["std"]
+
+[[example]]
+name = "throughput"
+required-features = ["std"]
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[profile.bench]
+debug = true
