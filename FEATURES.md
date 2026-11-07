@@ -59,6 +59,12 @@ Stamp source: [table_grid.rs](src/table_grid.rs),
 [table_semantics.rs](src/table_semantics.rs), [pipeline.rs](src/pipeline.rs).
 Named classifier controls are in the first module; export contract controls are
 in [semantic_table_contract.rs](tests/semantic_table_contract.rs).
+The generated searchable-PDF integration control in
+[technical_document_capabilities.rs](tests/technical_document_capabilities.rs)
+connects real PDFium NativeText, body/title grids, geometry/confidence and
+JSON/DOCX/XLSX projections. It is not a scanned-stamp OCR or EG79 accuracy test.
+Overall real-world stamp recognition remains
+**IMPLEMENTED — VALIDATION INCOMPLETE**, not a universal PASS.
 
 ### EG79: retained technical component, not a universal stamp model
 
