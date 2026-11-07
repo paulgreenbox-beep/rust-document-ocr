@@ -8,6 +8,15 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 $project = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../..'))
+if (git -C $project status --porcelain=v1) { throw 'Feature matrix requires clean committed sources' }
+if ($LASTEXITCODE -ne 0) { throw 'Cannot inspect source status' }
+if ($Jobs -lt 1 -or $Jobs -gt 16) { throw 'Invalid job limit' }
+$hostInfo = (& rustc -Vv | Out-String).Trim()
+if ($LASTEXITCODE -ne 0) { throw 'Cannot identify Rust host' }
+$hostTriple = [regex]::Match($hostInfo, '(?m)^host: (.+)$').Groups[1].Value.Trim()
+if (!$GraphOnly -and $hostTriple -ne 'x86_64-pc-windows-msvc') {
+    throw 'Native matrix compilation requires the Windows x64 MSVC host; use GraphOnly elsewhere'
+}
 if (Test-Path -LiteralPath $EvidenceRoot) { throw 'Fresh evidence root required' }
 if (!$GraphOnly -and (!$TargetDir -or ![IO.Path]::IsPathFullyQualified($TargetDir))) {
     throw 'Compilation requires an explicit absolute research target directory'
@@ -27,6 +36,8 @@ $receipt = [ordered]@{
     git_tree_sha = (git -C $project rev-parse 'HEAD^{tree}').Trim()
     cargo_lock_sha256 = (Get-FileHash -LiteralPath (Join-Path $project 'Cargo.lock')).Hash.ToLowerInvariant()
     target = 'x86_64-pc-windows-msvc'
+    rustc_host = $hostTriple
+    rustc_version = $hostInfo
     graph_only = [bool]$GraphOnly
     cases = @()
 }
@@ -67,6 +78,11 @@ try {
     }
     if ((Get-FileHash -LiteralPath 'Cargo.lock').Hash.ToLowerInvariant() -ne $receipt.cargo_lock_sha256) {
         throw 'Lockfile changed during locked matrix verification'
+    }
+    if ((git rev-parse HEAD).Trim() -ne $receipt.source_sha -or
+        (git rev-parse 'HEAD^{tree}').Trim() -ne $receipt.git_tree_sha -or
+        (git status --porcelain=v1)) {
+        throw 'Source HEAD/tree or working files changed during matrix verification'
     }
     [IO.File]::WriteAllText((Join-Path $evidence 'feature-matrix.json'), ($receipt | ConvertTo-Json -Depth 20))
 } finally { Pop-Location }

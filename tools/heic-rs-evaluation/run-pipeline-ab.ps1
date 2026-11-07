@@ -5,6 +5,7 @@ param(
     [Parameter(Mandatory)][string]$Tessdata,
     [Parameter(Mandatory)][string]$Pdfium,
     [Parameter(Mandatory)][string]$OutputRoot,
+    [ValidateSet('release', 'debug', 'not-recorded')][string]$BuildProfile = 'not-recorded',
     [int]$TimeoutSeconds = 120
 )
 $ErrorActionPreference = 'Stop'
@@ -102,7 +103,8 @@ foreach ($case in $cases) {
         } finally { $process.Dispose() }
     }
 }
-$receipt = @{ schema_version = 1; scope = 'Research-only debug-build full pipeline A/B, not release qualification';
+$receipt = @{ schema_version = 1; scope = 'Research-only full pipeline A/B, not distribution or clean-Windows qualification';
+    build_profile = $BuildProfile;
     settings = @{ languages = 'rus+eng'; ocr_dpi = 300; grid_dpi = 100; max_page_workers = 4;
         enable_cell_ocr_fallback = $true; omp_thread_limit = 1; timeout_seconds = $TimeoutSeconds };
     binaries = @($variants.Keys | Sort-Object | ForEach-Object {

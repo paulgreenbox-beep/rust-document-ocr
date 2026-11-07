@@ -121,7 +121,8 @@ def main() -> None:
         results.append(row)
         print(f"{case}: {row['status']}; native chars={row['native'].get('characters')}, heic-rs chars={row['heic_rs'].get('characters')}")
     report = {"schema_version": 1,
-              "scope": "Research debug-build pipeline A/B; timings illustrative, not release performance qualification",
+        "scope": "Research pipeline A/B; timings illustrative, not distribution or performance qualification",
+        "build_profile": receipt.get("build_profile", "not-recorded"),
               "token_metric": "Casefold Unicode word multiset against upstream synthetic SVG source; no OCR-confusion substitutions",
               "binary_identity": receipt["binaries"], "settings": receipt["settings"], "cases": results}
     args.output.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
