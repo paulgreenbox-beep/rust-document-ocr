@@ -1,0 +1,14 @@
+# Project Rust modules: copyright review
+
+The executable under review is from source commit [`3185a5f5f1c79a5036b2a0c6d63e6334c4f66f26`](https://github.com/paulgreenbox-beep/rust-document-ocr/tree/3185a5f5f1c79a5036b2a0c6d63e6334c4f66f26). The root [LICENSE](../../../LICENSE) is MIT, stating `Copyright (c) 2026 Киселюк Павел Геннадьевич`. It was introduced in [the public-source preparation commit](https://github.com/paulgreenbox-beep/rust-document-ocr/commit/91a715c9bf172bd929b9d2122175cc57434758f1). Its Git blob at the compiled revision is `2efc5bfce4060939008f4e2adee93e361e52593a`. The candidate's project notice is `licenses/crate-ocr-pipeline-0.1.0-LICENSE`; the notice inventory verifies its packaged bytes. Keep the project MIT text with the release.
+
+| Reviewed area | Source at compiled revision | Git blob |
+| --- | --- | --- |
+| Ruled grid, dimensions and technical title-block geometry | [table_grid.rs](../../../src/table_grid.rs) | `939581f3bfecf90cd7154319d32c9708a25bf7e8` |
+| Semantics and title-block label evidence | [table_semantics.rs](../../../src/table_semantics.rs) | `5af8d0ae8f91fe86c210f734006b410b6384c5ea` |
+| Borderless table inference | [borderless_table.rs](../../../src/borderless_table.rs) | `2e40754e3d76e5f5d41b7df9c14ac344b0eeea6f` |
+| Table reconstruction | [reconstruction.rs](../../../src/reconstruction.rs) | `1ae48a9a01c79e463e779a0f8155346bdde864b3` |
+| Native glyphs and table-cell assignment | [pdfium_source.rs](../../../src/native/pdfium_source.rs) and [grid_geometry.rs](../../../src/native/pdfium_source/grid_geometry.rs) | `219c7abbad8cf9c64da5687e2738e75952866fd2`, `e7b8daceef39c77b1a52e7bb9792ec1adb46514e` |
+| XLSX table and title-block export | [export_xlsx.rs](../../../src/export_xlsx.rs) | `9a64d2f248e84196ee6a86d6c7033ad277da6465` |
+
+The public history records [the title-block label change](https://github.com/paulgreenbox-beep/rust-document-ocr/commit/f771d6d0c556f69d9392c5e5e4d141cd7822f72f), [positioned glyph assignment](https://github.com/paulgreenbox-beep/rust-document-ocr/commit/5040b4266478d86ba04179c44c025fd1105408b4), and [source-cell ownership](https://github.com/paulgreenbox-beep/rust-document-ocr/commit/8c2991556a2e9686e1610fe4207725e8edac5a38). The scoped review of these modules did not find separate license/copyright headers or an identified third-party code import. Git history and a scoped header check are **not** proof of authorship, assignment, or absence of copied material. The root MIT text does not cover separately licensed dependencies, decoder modifications received under their own terms, model inputs, or externally supplied drawings/fonts. The publisher must confirm authority to distribute the listed project source and its compiled form under MIT, and identify any other contributors or separately licensed parts not recorded here. Evidence or authorization may be recorded privately; it need not be uploaded to the public repository.

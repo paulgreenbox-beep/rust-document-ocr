@@ -25,7 +25,7 @@ silently promoted. No actual historical object/link receipt is claimed.
 | 03 FreeType | `CANDIDATE_SOURCE_EVIDENCE` | Full fthash MIT supplied; FTL credit in draft; retained scope open. |
 | 04 ICU and bundled Unicode/data notices | `CANDIDATE_SOURCE_EVIDENCE` | Full composite original retained; actual units/data scope open. |
 | 05 JPEG / libjpeg-turbo / IJG | `CANDIDATE_SOURCE_EVIDENCE` | Original terms retained; explicit IJG product credit; SIMD/API scope open. |
-| 06 OpenJPEG | `CANDIDATE_SOURCE_EVIDENCE` | Existing four supplements plus additional file notices; LUT/full-body/historical scope open. |
+| 06 OpenJPEG | `CANDIDATE_SOURCE_EVIDENCE` | Component/file notices and [candidate LUT generator terms](recipient/supplements/openjpeg-lut-generator-notices.txt); exact historical generated-data and retained scope open. |
 | 07 zlib | `CANDIDATE_SOURCE_EVIDENCE` | Review any distinct notices in selected SIMD/source files; no generic claim that header extraction is defective. |
 | 08 LittleCMS | `CANDIDATE_SOURCE_EVIDENCE` | File-specific coverage of vendored modified component. |
 | 09 AGG 2.3 | `CANDIDATE_SOURCE_EVIDENCE` | Candidate metadata says MIT, but text is noncanonical; exact SPDX matching remains explicit. Actual retained AGG source scope; source includes PDFium downstream patches. |
@@ -36,8 +36,8 @@ silently promoted. No actual historical object/link receipt is claimed.
 | 14 TIFF / libtiff | `NOTICE_ONLY` | Any additional file-specific holders if TIFF actually linked. Do not call this MIT or declare entire TIFF coverage complete. |
 | 15 simdutf | `NOTICE_ONLY` | Historical inclusion not proven; keep existing notice. |
 | 16 LLVM libc | `CANDIDATE_SOURCE_EVIDENCE` | Actual retained headers/objects and any separately licensed portions. Coverage of libc++/compiler-rt cannot be inferred from this filename. |
-| 17 LLVM libc++ | `CANDIDATE_SOURCE_EVIDENCE` | Candidate static libc++; applicable LLVM/legacy/runtime mapping open. |
-| 18 Clang compiler-rt builtins | `CANDIDATE_SOURCE_EVIDENCE` | Candidate builtins path; not compiler-rt atomic; actual archive/version unknown. |
+| 17 LLVM libc++ | `CANDIDATE_SOURCE_EVIDENCE` | [Candidate license and exceptions](recipient/supplements/llvm-libcxx-LICENSE.TXT); actual retained scope and file-specific terms open. |
+| 18 Clang compiler-rt builtins | `CANDIDATE_SOURCE_EVIDENCE` | [Candidate license and exceptions](recipient/supplements/llvm-compiler-rt-LICENSE.TXT); not compiler-rt atomic; actual archive/version unknown. |
 | 19 Microsoft static CRT | `CANDIDATE_SOURCE_EVIDENCE` | Candidate /MT path, distinct from app-local MSVC DLLs; rights unresolved. |
 | 20 Skia | `CANDIDATE_SOURCE_EVIDENCE` | Candidate nonselection is not proof of absence from historical DLL. No affirmative license expression invented for an unreviewed inclusion. |
 | 21 Brotli | `CANDIDATE_SOURCE_EVIDENCE` | Candidate nonselection is not proof of absence from historical DLL. No affirmative license expression invented for an unreviewed inclusion. |

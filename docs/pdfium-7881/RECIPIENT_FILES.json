@@ -1,0 +1,200 @@
+{
+  "schema_version": 1,
+  "status": "PREPARED FOR OWNER REVIEW — NOT REDISTRIBUTION APPROVAL",
+  "package_destination": "licenses/pdfium/",
+  "artifact": {
+    "name": "pdfium.dll",
+    "version": "151.0.7881.0",
+    "api": 7881,
+    "architecture": "AMD64",
+    "bytes": 7211520,
+    "sha256": "79d4676b656cfb1abcea88f9ade3b4b0826c5200382db5f4ec72a636c598c118"
+  },
+  "archive": {
+    "name": "pdfium-win-x64.tgz",
+    "sha256": "73cc0de638ac2095e7445bf56a38200a5b7c7ca0e9f4ba144598f2457377ac08",
+    "producer_revision": "867b3ecc32163d715e84708c51fae5f031254985",
+    "release_url": "https://github.com/bblanchon/pdfium-binaries/releases/tag/chromium%2F7881"
+  },
+  "layout_note": "Paths are relative to recipient/ and are the intended paths below licenses/pdfium/. Copy these exact bytes plus NOTICE.md. Metadata is not a packager input.",
+  "proof_limits": "No historical checkout, resolved build/toolchain receipt, or retained-member map established. Candidate supplements are not assertions of linked inclusion.",
+  "files": [
+    {
+      "path": "licenses/abseil.txt",
+      "bytes": 11564,
+      "sha256": "f54fff0b905df5b3464527c652a30e903b172d6dcab4d89b5e6f105d5e4a4603",
+      "role": "producer_original"
+    },
+    {
+      "path": "licenses/agg23.txt",
+      "bytes": 725,
+      "sha256": "c110d3ea2ad77467ce0dcff7d3337e6c8be8049a5103f4b9bd5fd911a77972e5",
+      "role": "producer_original"
+    },
+    {
+      "path": "licenses/fast_float.txt",
+      "bytes": 1106,
+      "sha256": "bf1b57355feca8fce77ee95f48002f8d4789fb71b30ec7599c06cda4901fbb2b",
+      "role": "producer_original"
+    },
+    {
+      "path": "licenses/freetype.txt",
+      "bytes": 6741,
+      "sha256": "f4b133e25df1f86ad3ffea453aa0e613f0474f34778dbbb3e437e7b2724937d8",
+      "role": "producer_original"
+    },
+    {
+      "path": "licenses/icu.txt",
+      "bytes": 28286,
+      "sha256": "93679f4389d53b6835d89843f251844fb9bc455b35bab036d3c8e7abe497a47a",
+      "role": "producer_original"
+    },
+    {
+      "path": "licenses/lcms.txt",
+      "bytes": 1353,
+      "sha256": "7312b68c5b25e9bf2b828706fb4e29588f22705112f411fd42e1f7d84c3d139a",
+      "role": "producer_original"
+    },
+    {
+      "path": "licenses/libjpeg_turbo.ijg",
+      "bytes": 13059,
+      "sha256": "db16a04128171879c60708d171b88d97345a2dd20f9bfc173680a4497c73f704",
+      "role": "producer_original"
+    },
+    {
+      "path": "licenses/libjpeg_turbo.md",
+      "bytes": 5755,
+      "sha256": "be2b2b5ab168bce87bc3e31f2a5c5adba4b7f6e9e51d618e958d1d46972ebd95",
+      "role": "producer_original"
+    },
+    {
+      "path": "licenses/libopenjpeg.txt",
+      "bytes": 1794,
+      "sha256": "c5ab0890a737c2dfa7ba675036554f6d17741d98629b0c2a145354d00617e6b2",
+      "role": "producer_original"
+    },
+    {
+      "path": "licenses/libpng.txt",
+      "bytes": 5479,
+      "sha256": "452390433ba0f88aa3e2b122c647741b72a0c117cd6ed7a329b49785aecb5511",
+      "role": "producer_original"
+    },
+    {
+      "path": "licenses/libtiff.txt",
+      "bytes": 1139,
+      "sha256": "92b72ba97e6c2749c2a94bc0ef646b47080217f1e772a482b33cf5a5f98a6506",
+      "role": "producer_original"
+    },
+    {
+      "path": "LICENSE",
+      "bytes": 1184,
+      "sha256": "8854f4388f1ca13b3ad9baa42e95f5546b4c0b17109c159256d3eca7be39b09b",
+      "role": "producer_original"
+    },
+    {
+      "path": "licenses/llvm-libc.txt",
+      "bytes": 15418,
+      "sha256": "3b6226c32e168c83b891d8d6f0d3c29c2116dc3ef93dc93c307b54f279ecf383",
+      "role": "producer_original"
+    },
+    {
+      "path": "licenses/pdfium.txt",
+      "bytes": 12818,
+      "sha256": "961eacd9633fff6d051db7208b755e9210e30efac7adec3e6a6d52798f0ccf0e",
+      "role": "producer_original"
+    },
+    {
+      "path": "licenses/simdutf.txt",
+      "bytes": 1077,
+      "sha256": "c172a0ba936ff31230febb5dad869e25cb7c1a07480c7a381be8cf011bb52719",
+      "role": "producer_original"
+    },
+    {
+      "path": "licenses/zlib.txt",
+      "bytes": 1332,
+      "sha256": "33fd641c9f3b0e0be64bc78fea9e94807674cdd70c48477599226cb8956565fe",
+      "role": "producer_original"
+    },
+    {
+      "path": "supplements/freetype-fthash-MIT.txt",
+      "bytes": 1255,
+      "sha256": "62700acf8f3bc2d761b2fe3a5b390f700e665d65b89d361a640521c26aeeaad8",
+      "role": "prior_reviewed_supplement",
+      "lf_reference_sha256": "5285d96f6aa3188193d5fbefd8710ed6a46af185e0a43817c17acee5f4b1ab3d"
+    },
+    {
+      "path": "supplements/harfbuzz-COPYING.txt",
+      "bytes": 2013,
+      "sha256": "bd836c0ddca8ea0bab54a03cd32b6ff7256cbb3840fca2edc1249a4ed92c5b02",
+      "role": "prior_reviewed_supplement",
+      "lf_reference_sha256": "ba8f810f2455c2f08e2d56bb49b72f37fcf68f1f4fade38977cfd7372050ad64"
+    },
+    {
+      "path": "supplements/harfbuzz-ms-use-COPYING.txt",
+      "bytes": 1162,
+      "sha256": "9906940f61b1f0b533fa7d99baf55178b2808fbe113ea51dfbfad8572ccd5f2b",
+      "role": "prior_reviewed_supplement",
+      "lf_reference_sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+    },
+    {
+      "path": "supplements/openjpeg-LICENSE.txt",
+      "bytes": 2151,
+      "sha256": "1203c08d905d7ea23de2efc40fbfb147d593c327cf72f0d55c1e13081798d48d",
+      "role": "prior_reviewed_supplement",
+      "lf_reference_sha256": "a6af136f3e15038a666b61f376612a07d9a4e48cb7c01adbf3e33b3f14ab49b6"
+    },
+    {
+      "path": "supplements/openjpeg-dwt.c-header.txt",
+      "bytes": 2183,
+      "sha256": "151f0250dbc824d593e4986e808c10d106a6f1fbb00fcd4e44613c62be3a3b1e",
+      "role": "prior_reviewed_supplement",
+      "lf_reference_sha256": "c251cf39bf030146b6cc78a12f492a2b3d6272e1da9382535bd5aa8941143aa4"
+    },
+    {
+      "path": "supplements/openjpeg-t1.c-header.txt",
+      "bytes": 2162,
+      "sha256": "c7691110a68a941eb064dcba64c1411345c6461a2ba284abcc259419ffbbf1a9",
+      "role": "prior_reviewed_supplement",
+      "lf_reference_sha256": "aeda538d62ab8c138b7c4bdd3333224afa9f4eba41653ac3ed3f40664d9aba71"
+    },
+    {
+      "path": "supplements/openjpeg-ht_dec.c-header.txt",
+      "bytes": 1734,
+      "sha256": "94ffc34e0023373fe9051a31a4737ae15b15ccccff5e04ffdf36c38d9ce9a5a8",
+      "role": "prior_reviewed_supplement",
+      "lf_reference_sha256": "148fe28ad876cd8a8d526b85522b2b8cb87768eb6bdba1c45d46c0f5b149a7be"
+    },
+    {
+      "path": "supplements/openjpeg-additional-file-notices.txt",
+      "bytes": 10434,
+      "sha256": "ba7a249f582e6950617d954c42b68697338a6ce0c66b72c5fd3927d70b0e407a",
+      "role": "prior_reviewed_supplement",
+      "lf_reference_sha256": "d4a587d834032b6c1a0e017ac6def40e33bb9018e961e6d1b88905e2f0b1f035"
+    },
+    {
+      "path": "licenses/README.ijg",
+      "bytes": 13059,
+      "sha256": "db16a04128171879c60708d171b88d97345a2dd20f9bfc173680a4497c73f704",
+      "role": "relative_link_alias",
+      "alias_of": "licenses/libjpeg_turbo.ijg"
+    },
+    {
+      "path": "supplements/llvm-libcxx-LICENSE.TXT",
+      "bytes": 16703,
+      "sha256": "539dd7aed86e8a4f12cbdd0e6c50c189c7d74847e4fecc64ce2c6ee3a01da38b",
+      "role": "new_candidate_source_supplement"
+    },
+    {
+      "path": "supplements/llvm-compiler-rt-LICENSE.TXT",
+      "bytes": 16708,
+      "sha256": "1a8f1058753f1ba890de984e48f0242a3a5c29a6a8f2ed9fd813f36985387e8d",
+      "role": "new_candidate_source_supplement"
+    },
+    {
+      "path": "supplements/openjpeg-lut-generator-notices.txt",
+      "bytes": 4325,
+      "sha256": "76aab392ee6322278f89e24cbf0ed9483d8e679d2e543fef46f194d9e1398593",
+      "role": "new_candidate_source_supplement"
+    }
+  ]
+}

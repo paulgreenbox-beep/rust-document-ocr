@@ -32,8 +32,13 @@ It contains no software binary, license approval, or production runtime update.
   [PDFIUM_THIRD_PARTY_NOTICES_DRAFT.md](PDFIUM_THIRD_PARTY_NOTICES_DRAFT.md).
 - [x] Verify seven existing supplements and add further candidate OpenJPEG
   notices after reviewing 24 selected files and 27 local leading headers.
-- [ ] Resolve generated OpenJPEG LUT provenance/full-body attribution and
-  actual retained scope; assemble and approve the final physical packet.
+- [x] Verify both candidate OpenJPEG LUT files against the pinned upstream
+  and preserve complete leading notices of their generators.
+- [x] Assemble the [physical recipient notice packet](RECIPIENT_PACKET.md)
+  with credits, valid local links and a byte-level inventory. Include
+  candidate libc++ and compiler-rt terms without asserting historical use.
+- [ ] Resolve the actual historical generated OpenJPEG/data scope, retention
+  and completeness of the final package's applicable notices.
 - [ ] Obtain explicit release-owner/legal/compliance review of the entire
   proposed PDFium binary notice packet.
 
@@ -47,8 +52,8 @@ It contains no software binary, license approval, or production runtime update.
   [Microsoft redistribution guidance](https://learn.microsoft.com/en-us/cpp/windows/redistributing-visual-cpp-files)
   and the relevant Visual Studio edition's REDIST list.
 - [ ] Full Rust/native static dependency notice and retained-object review.
-- [ ] Clean Windows x64 VM smoke test of the *approved* ZIP with verified
-  EXE/inputs and baseline results, including native-text and raster OCR.
+- [ ] Clean Windows x64 test of the approved ZIP: **NOT RUN — DEFERRED BY OWNER**.
+  Windows Sandbox: **NOT RUN — DEFERRED BY OWNER**. Neither is a PASS or FAIL.
 
 Evidence and actual CI retry: [closure addendum](../../reports/PDFIUM_7881_LICENSE_CLOSURE_ADDENDUM.md).
 Concrete independent routes: [HEIF LGPL options](../compliance/HEIF_LGPL_RELEASE_OPTIONS.md)
@@ -59,7 +64,7 @@ Neither analysis implements a new build/deployment route or grants rights.
 
 Do not change `distribution_status` to `verified`; do not build/upload a
 public ZIP, create a GitHub Release, or report the license gate as PASS
-because the original notices and eight supplements exist. A SHA-256, signed attestation, stable
+because a physical notice tree now exists. A SHA-256, signed attestation, stable
 API, synthetic smoke test or absence of an old source checkout is not
 itself proof of all license obligations.
 
