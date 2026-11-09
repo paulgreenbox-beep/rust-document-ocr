@@ -2,6 +2,10 @@
 
 **DRAFT. NOT A DISTRIBUTABLE PACKAGE OR LICENSE APPROVAL.**
 
+For the actual [recipient NOTICE and all physical license texts](recipient/NOTICE.md),
+use the [recipient packet](RECIPIENT_PACKET.md). This page records earlier
+source review and is not a substitute for the packet.
+
 The existing producer archive has 16 original notices: root `LICENSE`
 and `licenses/{abseil,agg23,fast_float,freetype,icu,lcms,libjpeg_turbo.ijg,
 libjpeg_turbo.md,libopenjpeg,libpng,libtiff,llvm-libc,pdfium,simdutf,zlib}`
@@ -55,10 +59,9 @@ distribution, **not** proof that the entire notice packet is complete.
 
 ## Future distribution integration (not done)
 
-Review owner should retain each original notice byte-for-byte under
-`licenses/pdfium/`, then add approved supplements under
-`licenses/pdfium/supplements/` and an explicit navigation/credit page
-`licenses/PDFIUM_THIRD_PARTY_NOTICES.md`. The documentation here is NOT
-wired into the Windows ZIP packager and does not change the local runtime.
+After approval, retain the [recipient tree](recipient/NOTICE.md) with its
+relative layout under `licenses/pdfium/`, including the explicit navigation
+and credits in `licenses/pdfium/NOTICE.md`. This documentation is NOT wired
+into the Windows ZIP packager and does not change the local runtime.
 Do not copy or publish a public ZIP until [RELEASE_GATE.md](RELEASE_GATE.md)
 is resolved and the release owner has signed off.

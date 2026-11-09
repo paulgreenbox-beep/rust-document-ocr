@@ -1,0 +1,11 @@
+*.txt text eol=lf
+*.json text eol=lf
+*.html -text
+NOTICE.md text eol=lf
+notices/native-jpeg/LICENSE.md text eol=lf
+notices/native-jpeg/README.ijg text eol=lf
+# Preserve verbatim formatting in the pinned source texts.
+notices/rust-1.97.1-COPYRIGHT-library.html whitespace=-blank-at-eol
+notices/libarchive-3.8.7-file-notices.txt whitespace=-blank-at-eol
+notices/openjpeg-2.5.4-file-notices.txt whitespace=-blank-at-eol
+notices/xmlJSON-rs-LICENSE-MIT.txt whitespace=-blank-at-eof

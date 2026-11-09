@@ -2,6 +2,10 @@
 
 **Decision: PDFIUM LICENSE CLOSURE — INCOMPLETE. Redistribution is NOT approved.**
 
+Start with the [recipient NOTICE and actual license texts](recipient/NOTICE.md)
+and [current packet review](RECIPIENT_PACKET.md). The previous review draft
+remains the provenance index, not the recipient entry point.
+
 This is a documentation-only, low-disk review of the exact PDFium binary used by
 the Windows portable release candidate in [PR #2](https://github.com/paulgreenbox-beep/rust-document-ocr/pull/2).
 It does **not** contain a DLL, .tgz, PDB, traineddata, PDF or runnable bundle.
@@ -43,13 +47,14 @@ checkout receipt.
 
 **Initial candidate omissions now supplemented:** HarfBuzz main/ms-use terms,
 FreeType `fthash`, and additional OpenJPEG file-specific holders. The original
-seven supplements were verified unchanged; one additional bounded OpenJPEG
-notice collection was added. Full historical scope, generated-data provenance,
-and runtime/license mapping for libc++, Clang builtins and Microsoft CRT
-remain unresolved. The original 16 PDFium/archive notices were
-reviewed; they remain preserved in the local candidate, not duplicated or
-removed in this repository. The new text supplements are conservative review
-material, **not** proof of the old DLL's exact retained-object graph.
+seven supplements and one further OpenJPEG collection remain unchanged.
+The recipient tree now carries the original 16 notices byte-for-byte, all
+eight reviewed supplements, three candidate-source supplements, and the
+producer's IJG text under the relative name required by its license page.
+See the [28-file SHA-256 inventory](RECIPIENT_FILES.json). The added texts
+cover the candidate OpenJPEG LUT generators, libc++ and compiler-rt. Actual
+historical generated-data, font and runtime/CRT retention remains unresolved;
+the candidate supplements are **not** proof of the DLL's link graph.
 
 ## Review artifacts
 

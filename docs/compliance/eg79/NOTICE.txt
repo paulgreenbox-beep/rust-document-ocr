@@ -1,0 +1,29 @@
+EG79 — attribution and modification notice
+===========================================
+
+Modified model file: tessdata/eng_technical_eg79_v1.traineddata
+Model identifier: eng_technical_eg79_v1
+Size: 15,400,601 bytes
+SHA-256: 7ceee3f56f290c3b90c1670d8e0c7dd86e344759ff03915407c53369f1c8437c
+
+This file is a locally modified derivative of the Tesseract OCR project's
+tessdata_best English LSTM model (eng.traineddata), not an unmodified official
+Tesseract language model. The retained model record identifies fine-tuning
+with Tesseract 5.5.2, selection of the resulting checkpoint and export under
+the distinct technical-cell model name above (recorded 2026-09-16).
+
+Upstream attribution: Tesseract OCR project, tesseract-ocr/tessdata_best.
+Identified equivalent upstream base: eng.traineddata at commit
+e2aad9b983032bb1beff9133104a67cdbb87ca4d, Git blob
+176dc3220de7db34d3b3aecbfa42043a6038348b.
+Base SHA-256: 8280aed0782fe27257a68ea10fe7ef324ca0f8d85bd2fd145d1c2b560bcb66ba
+Source: https://github.com/tesseract-ocr/tessdata_best/blob/e2aad9b983032bb1beff9133104a67cdbb87ca4d/eng.traineddata
+
+The upstream base is provided under the Apache License, Version 2.0.
+The unmodified upstream license text is supplied alongside this notice in
+LICENSE.tessdata_best.txt. The standard tessdata_fast eng/rus language files
+are separate components and are not the EG79 training base.
+
+This notice identifies origin and modifications. It does not certify rights
+in the local weights or training inputs, change the upstream license, or imply
+endorsement by the upstream project. No training material is included here.

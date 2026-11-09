@@ -6,6 +6,8 @@ The project license is stated in LICENSE as MIT, with the copyright line exactly
 
 The Rust registry dependency inventory, including exact locked versions and license expressions, is in docs/CRATE_LICENSES.md. This release is source-only. No PDFium, Tesseract, Leptonica, HEIF/DjVu native runtime binaries, SDK DLLs, model checkpoints, traineddata, or developer-tool packages are redistributed here.
 
+For the separate, non-distributed Windows pure-HEIC candidate, see the [licensing closure packet](docs/compliance/WINDOWS_RELEASE_LICENSING_CLOSURE.md), its proposed recipient notices, and [unsigned publisher decisions](OWNER_RELEASE_DECISIONS.md). These are artifact-specific addenda, not approval to ship a portable build.
+
 ## Optional native OCR and document runtimes
 
 The values marked validated below are external runtime compatibility requirements recorded in local runtime documentation. They are not claims that a corresponding binary is packaged, nor do they identify an exact redistributable binary build.

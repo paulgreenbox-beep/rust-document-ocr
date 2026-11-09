@@ -136,7 +136,7 @@
       "archive_path": "licenses/libjpeg_turbo.ijg",
       "bytes": 13059,
       "sha256": "db16a04128171879c60708d171b88d97345a2dd20f9bfc173680a4497c73f704",
-      "source_url": "https://chromium.googlesource.com/chromium/deps/libjpeg_turbo/+/640f254ad0fa03f6b1f29f89b7dd9366f2f6e533/LICENSE.md",
+      "source_url": "https://chromium.googlesource.com/chromium/deps/libjpeg_turbo/+/640f254ad0fa03f6b1f29f89b7dd9366f2f6e533/README.ijg",
       "source_scope": "Candidate/DEPS or producer text; see collector transformation, not executed checkout proof",
       "distribution_status": "PRESERVE_UNCHANGED; completeness not inferred"
     },

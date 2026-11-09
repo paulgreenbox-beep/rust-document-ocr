@@ -2,6 +2,10 @@
 
 **DRAFT — NOT APPROVED FOR REDISTRIBUTION.** Review date: 2026-10-30.
 
+This review index predates the [assembled recipient texts and NOTICE](recipient/NOTICE.md).
+See the [current packet review](RECIPIENT_PACKET.md) for the newer source
+and byte checks, fixed recipient links, and remaining release decisions.
+
 This is the binary-specific **design and review index** for the existing
 Windows AMD64 PDFium 151.0.7881.0 / API 7881 DLL, not an approved distribution
 packet. It contains no binary and is not connected to the ZIP packager.
@@ -78,7 +82,7 @@ The original builder MIT is package-level, not an MIT-only license for the DLL.
 | `licenses/freetype.txt` | [pinned source](https://pdfium.googlesource.com/pdfium/+/91b9d569b34be4f38eed7b3c49b227356c3aadad/third_party/freetype/FTL.TXT) | `f4b133e25df1f86ad3ffea453aa0e613f0474f34778dbbb3e437e7b2724937d8` |
 | `licenses/icu.txt` | [pinned source](https://chromium.googlesource.com/chromium/deps/icu/+/3859e64eed5d34544b27fbcab0ac1685ce83df3c/LICENSE) | `93679f4389d53b6835d89843f251844fb9bc455b35bab036d3c8e7abe497a47a` |
 | `licenses/lcms.txt` | [pinned source](https://pdfium.googlesource.com/pdfium/+/91b9d569b34be4f38eed7b3c49b227356c3aadad/third_party/lcms/include/lcms2.h) | `7312b68c5b25e9bf2b828706fb4e29588f22705112f411fd42e1f7d84c3d139a` |
-| `licenses/libjpeg_turbo.ijg` | [pinned source](https://chromium.googlesource.com/chromium/deps/libjpeg_turbo/+/640f254ad0fa03f6b1f29f89b7dd9366f2f6e533/LICENSE.md) | `db16a04128171879c60708d171b88d97345a2dd20f9bfc173680a4497c73f704` |
+| `licenses/libjpeg_turbo.ijg` | [pinned source README.ijg](https://chromium.googlesource.com/chromium/deps/libjpeg_turbo/+/640f254ad0fa03f6b1f29f89b7dd9366f2f6e533/README.ijg) | `db16a04128171879c60708d171b88d97345a2dd20f9bfc173680a4497c73f704` |
 | `licenses/libjpeg_turbo.md` | [pinned source](https://chromium.googlesource.com/chromium/deps/libjpeg_turbo/+/640f254ad0fa03f6b1f29f89b7dd9366f2f6e533/LICENSE.md) | `be2b2b5ab168bce87bc3e31f2a5c5adba4b7f6e9e51d618e958d1d46972ebd95` |
 | `licenses/libopenjpeg.txt` | [pinned source](https://pdfium.googlesource.com/pdfium/+/91b9d569b34be4f38eed7b3c49b227356c3aadad/third_party/libopenjpeg/openjpeg.c) | `c5ab0890a737c2dfa7ba675036554f6d17741d98629b0c2a145354d00617e6b2` |
 | `licenses/libpng.txt` | [pinned source](https://chromium.googlesource.com/chromium/src/third_party/libpng/+/8a5b4ace0c2a8a47d73037610b98096f55f3d18f/LICENSE) | `452390433ba0f88aa3e2b122c647741b72a0c117cd6ed7a329b49785aecb5511` |
