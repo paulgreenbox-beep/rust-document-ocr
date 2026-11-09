@@ -58,3 +58,7 @@ Microsoft terms. The publisher must supply the actual agreement/channel,
 affirmative clause, eligibility, scope and acceptance of release conditions.
 This evidence is limited to the three app-local files; it does not establish
 the composition or rights of any static Microsoft/LLVM runtime code.
+
+For the no-cost Community route, the system-installed CRT alternative and
+new exact-EXE import/link-map findings, see the
+[MSVC free-release decision](MSVC_FREE_RELEASE_DECISION.md).
