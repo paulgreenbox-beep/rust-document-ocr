@@ -12,6 +12,12 @@ pub mod pdfium_source;
 #[cfg(feature = "raster-input")]
 pub mod raster_source;
 pub mod tesseract_engine;
+#[cfg(feature = "editable-word")]
+pub(crate) mod word_pdf_graphics;
+#[cfg(feature = "editable-word")]
+pub(crate) mod word_raster;
+#[cfg(feature = "editable-word")]
+pub use word_raster::{export_input_word, export_pdf_word};
 #[cfg(feature = "raster-input")]
 pub mod tiff_source;
 

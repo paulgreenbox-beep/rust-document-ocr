@@ -38,6 +38,7 @@ and Rust library; it does not provide an HTTP service or hosted API.
 - Process selected PDF regions and use the optional EG79 technical-cell model
   for bounded specialized rechecks—not as a universal stamp or page-language model.
 - Export JSON, DOCX and XLSX; keep title blocks separate from ordinary data tables.
+- Experimental, opt-in [editable Word export](docs/EDITABLE_WORD_EXPORT.md) adds native Word tables and bounded source graphics without changing the existing outputs.
 - Read PDF, raster images, multipage TIFF and DjVu; HEIC uses the explicitly
   selected backend, with the pure Rust replacement still experimental.
 
