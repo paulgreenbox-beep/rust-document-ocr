@@ -62,6 +62,25 @@ struct Cli {
     /// is created only when processing starts and is never written to stderr.
     #[arg(long)]
     progress_jsonl: Option<std::path::PathBuf>,
+    /// Also write an editable Word export and its limitation report.
+    #[cfg(feature = "editable-word")]
+    #[arg(long)]
+    editable_word: bool,
+    /// Include a whole-page source image as a reference after the editable content (single raster inputs only).
+    #[cfg(feature = "editable-word")]
+    #[arg(long, requires = "editable_word")]
+    word_scan_reference: bool,
+    /// Also convert to binary Word 97–2003 using this trusted absolute LibreOffice executable path.
+    #[cfg(feature = "editable-word")]
+    #[arg(long, requires = "editable_word")]
+    word_doc_converter: Option<std::path::PathBuf>,
+}
+
+#[cfg(all(feature = "native-common", feature = "editable-word"))]
+struct WordCli {
+    enabled: bool,
+    scan_reference: bool,
+    converter: Option<PathBuf>,
 }
 
 #[cfg_attr(
@@ -78,6 +97,12 @@ struct Cli {
 fn main() -> ExitCode {
     let cli = Cli::parse();
     let progress_jsonl = cli.progress_jsonl.clone();
+    #[cfg(all(feature = "native-common", feature = "editable-word"))]
+    let word = WordCli {
+        enabled: cli.editable_word,
+        scan_reference: cli.word_scan_reference,
+        converter: cli.word_doc_converter,
+    };
     let config = Config {
         input: cli.input,
         output_dir: cli.output_dir,
@@ -129,7 +154,12 @@ fn main() -> ExitCode {
 
     #[cfg(feature = "native-common")]
     {
-        return run_native_main(&config, progress_jsonl.as_deref());
+        return run_native_main(
+            &config,
+            progress_jsonl.as_deref(),
+            #[cfg(feature = "editable-word")]
+            &word,
+        );
     }
 
     // Preserved only as an uncompiled reference while the stable library API
@@ -226,7 +256,11 @@ fn main() -> ExitCode {
 }
 
 #[cfg(feature = "native-common")]
-fn run_native_main(config: &Config, progress_jsonl: Option<&Path>) -> ExitCode {
+fn run_native_main(
+    config: &Config,
+    progress_jsonl: Option<&Path>,
+    #[cfg(feature = "editable-word")] word: &WordCli,
+) -> ExitCode {
     use ocr_pipeline::{
         export_legacy_document_json, export_ocr_result_docx, export_ocr_result_json,
         export_ocr_result_xlsx, process_document_with_progress, OcrOptions, OcrProgressEvent,
@@ -336,6 +370,39 @@ fn run_native_main(config: &Config, progress_jsonl: Option<&Path>) -> ExitCode {
         let xlsx_path = txn.staging_path("result.xlsx");
         export_ocr_result_xlsx(&result, &xlsx_path, options.export_title_blocks)?;
         written.push("result.xlsx");
+
+        #[cfg(feature = "editable-word")]
+        if word.enabled {
+            let editable = txn.staging_path("result.editable.docx");
+            let report = ocr_pipeline::export_input_word(
+                &config.input,
+                &options,
+                &result,
+                &editable,
+                word.scan_reference,
+            )?;
+            written.push("result.editable.docx");
+            let mut doc_written = false;
+            if let Some(converter) = &word.converter {
+                ocr_pipeline::legacy_word::convert_docx_to_doc(
+                    converter,
+                    &editable,
+                    &txn.staging_path("result.editable.doc"),
+                )?;
+                doc_written = true;
+                written.push("result.editable.doc");
+            }
+            let file = File::create(txn.staging_path("result.word-report.json"))?;
+            serde_json::to_writer_pretty(
+                file,
+                &serde_json::json!({
+                    "schema_version": 1,
+                    "warnings": report.warnings,
+                    "binary_doc_written": doc_written,
+                }),
+            )?;
+            written.push("result.word-report.json");
+        }
         Ok(())
     })();
 

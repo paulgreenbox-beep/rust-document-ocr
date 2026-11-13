@@ -1406,6 +1406,7 @@ dependencies = [
 name = "ocr-pipeline"
 version = "0.1.0"
 dependencies = [
+ "cfb",
  "clap",
  "djvu-rs",
  "docx-rs",

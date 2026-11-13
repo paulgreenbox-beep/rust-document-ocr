@@ -79,6 +79,8 @@ jobs:
         run: cargo check --offline --locked --all-targets -j 1
       - name: Test public source suite
         run: cargo test --offline --locked -j 1 -- --test-threads=1
+      - name: Test opt-in Word export without native dependencies
+        run: cargo test --offline --locked --features editable-word --lib -j 1 -- --test-threads=1
       - name: Clippy
         run: cargo clippy --offline --locked --all-targets -j 1 -- -D warnings
 

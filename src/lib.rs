@@ -11,10 +11,14 @@ pub mod detector;
 pub mod dto;
 pub mod export_docx;
 pub mod export_json;
+#[cfg(feature = "editable-word")]
+pub mod export_word;
 pub mod export_xlsx;
 #[cfg(feature = "native-common")]
 pub mod input_format;
 pub mod language;
+#[cfg(feature = "editable-word")]
+pub mod legacy_word;
 pub mod ocr;
 pub mod orientation;
 pub mod page_analysis;
@@ -56,6 +60,8 @@ pub use export_docx::{export_docx, export_docx_with_options, DocxExportOptions};
 pub use export_json::export_json;
 pub use export_xlsx::{export_xlsx, export_xlsx_with_options, XlsxExportOptions};
 pub use language::LanguageRouting;
+#[cfg(all(feature = "editable-word", feature = "native-common"))]
+pub use native::{export_input_word, export_pdf_word};
 pub use ocr::{
     OcrEngine, OcrLanguageProfile, OcrRequest, OcrSegmentation, OcrTextResult, StubOcrEngine,
 };
