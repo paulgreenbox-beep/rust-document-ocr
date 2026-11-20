@@ -252,6 +252,18 @@ pub fn classify_table(matrix: &TableMatrix, page_size: Option<(u32, u32)>) -> Ta
     let mut column_roles = Vec::with_capacity(column_count);
     for (column, matches) in header_matches.iter().enumerate() {
         let data_values = column_values(matrix, column, &header_rows);
+        let short_count = data_values
+            .iter()
+            .filter(|value| bare_short_integer(value))
+            .count();
+        let ambiguous_integers = matches.is_empty()
+            && short_count > 0
+            && short_count * 4 >= data_values.len() * 3
+            && !data_values
+                .iter()
+                .any(|value| is_plain_number(value) && !bare_short_integer(value));
+        let quantity_context =
+            ambiguous_integers && adjacent_count_units(matrix, column, &header_rows, short_count);
         let mut best = RoleScore::unknown();
         for role in ALL_ROLES {
             let header = matches
@@ -259,8 +271,20 @@ pub fn classify_table(matrix: &TableMatrix, page_size: Option<(u32, u32)>) -> Ta
                 .filter(|candidate| candidate.role == *role)
                 .map(|candidate| candidate.score)
                 .fold(0.0_f32, f32::max);
-            let pattern = data_role_score(*role, &data_values);
-            let combined = if header > 0.0 {
+            let pattern = data_role_score(*role, &data_values, header >= 0.90);
+            let combined = if *role == ColumnRole::Quantity && ambiguous_integers {
+                // Two-digit values alone do not distinguish counts from cable
+                // cores, identifiers or other engineering measurements.
+                if quantity_context {
+                    0.83
+                } else {
+                    0.0
+                }
+            } else if ambiguous_integers && matches!(role, ColumnRole::Price | ColumnRole::Amount) {
+                // The broad money pattern also accepts a bare integer; it
+                // must not replace one unsubstantiated role with another.
+                0.0
+            } else if header > 0.0 {
                 (header * 0.78 + pattern * 0.22).min(1.0)
             } else {
                 (pattern * 0.82).min(1.0)
@@ -304,6 +328,15 @@ pub fn classify_table(matrix: &TableMatrix, page_size: Option<(u32, u32)>) -> Ta
                     column: Some(column),
                     score: confidence,
                 });
+                if role == ColumnRole::Quantity && quantity_context {
+                    evidence.push(ClassificationEvidence {
+                        kind: EvidenceKind::SemanticRule,
+                        rule: "quantity:aligned_count_unit".to_string(),
+                        row: None,
+                        column: Some(column),
+                        score: confidence,
+                    });
+                }
             }
         }
     }
@@ -430,7 +463,17 @@ fn best_header_role(text: &str) -> RoleScore {
     let mut best = RoleScore::unknown();
     for role in ALL_ROLES {
         for alias in role_aliases(*role) {
-            let score = alias_score(&normalized, alias);
+            let score = if *role == ColumnRole::Conductors {
+                // Do not interpret a fragment inside a name/designation as a
+                // cable-count heading (nor a data value as an explicit heading).
+                if normalized == *alias {
+                    1.0
+                } else {
+                    0.0
+                }
+            } else {
+                alias_score(&normalized, alias)
+            };
             if score > best.score {
                 best = RoleScore {
                     role: *role,
@@ -514,7 +557,17 @@ fn role_aliases(role: ColumnRole) -> &'static [&'static str] {
             "cable mark",
             "cable type",
         ],
-        ColumnRole::Conductors => &["число жил", "количество жил", "жил", "conductors", "cores"],
+        ColumnRole::Conductors => &[
+            "число жил",
+            "количество жил",
+            "жил",
+            "число жил кабеля",
+            "количество жил кабеля",
+            "conductors",
+            "cores",
+            "core count",
+            "number of cores",
+        ],
         ColumnRole::CrossSection => &[
             "сечение",
             "сечение жил",
@@ -629,7 +682,66 @@ fn column_values<'a>(
         .collect()
 }
 
-fn data_role_score(role: ColumnRole, values: &[&str]) -> f32 {
+fn bare_short_integer(value: &str) -> bool {
+    let value = value.trim();
+    (1..=2).contains(&value.len()) && value.bytes().all(|byte| byte.is_ascii_digit())
+}
+
+fn adjacent_count_units(
+    matrix: &TableMatrix,
+    column: usize,
+    header_rows: &[usize],
+    populated: usize,
+) -> bool {
+    // A distinct neighbouring column must contain real unit tokens on the
+    // same rows, not just on the same page. Mixed count/measure specs may
+    // combine pieces, sets and measured lengths in this column.
+    let neighbours = column
+        .checked_sub(1)
+        .into_iter()
+        .chain(std::iter::once(column + 1));
+    for neighbour in neighbours {
+        let mut aligned = 0;
+        let mut count_unit = false;
+        for (index, row) in matrix.rows.iter().enumerate() {
+            if header_rows.contains(&index)
+                || !row
+                    .get(column)
+                    .is_some_and(|cell| bare_short_integer(&cell.text))
+            {
+                continue;
+            }
+            let Some(unit) = row.get(neighbour).map(|cell| cell.text.as_str()) else {
+                continue;
+            };
+            let norm = normalize_ocr_header(unit);
+            let is_count = matches!(
+                norm.as_str(),
+                "шт" | "штука"
+                    | "штук"
+                    | "компл"
+                    | "комплект"
+                    | "pc"
+                    | "pcs"
+                    | "piece"
+                    | "pieces"
+                    | "set"
+                    | "sets"
+                    | "ea"
+            );
+            if is_count || unit_regex().is_match(&norm) {
+                count_unit |= is_count;
+                aligned += 1;
+            }
+        }
+        if count_unit && aligned >= 2 && aligned * 4 >= populated * 3 {
+            return true;
+        }
+    }
+    false
+}
+
+fn data_role_score(role: ColumnRole, values: &[&str], strong_header: bool) -> f32 {
     if values.is_empty() {
         return 0.0;
     }
@@ -667,7 +779,9 @@ fn data_role_score(role: ColumnRole, values: &[&str]) -> f32 {
             pattern_ratio(values, |value| cable_mark_regex().is_match(value)) * 0.96
         }
         ColumnRole::Conductors => {
-            pattern_ratio(values, |value| conductors_regex().is_match(value)) * 0.92
+            pattern_ratio(values, |value| {
+                conductors_regex().is_match(value) || (strong_header && bare_short_integer(value))
+            }) * 0.92
         }
         ColumnRole::CrossSection => {
             pattern_ratio(values, |value| cross_section_regex().is_match(value)) * 0.96
@@ -764,7 +878,7 @@ fn cable_mark_regex() -> &'static Regex {
 
 fn conductors_regex() -> &'static Regex {
     static VALUE: OnceLock<Regex> = OnceLock::new();
-    VALUE.get_or_init(|| Regex::new(r"(?iu)(?:^\d{1,2}$|\d{1,2}\s*(?:жил|cores?))").unwrap())
+    VALUE.get_or_init(|| Regex::new(r"(?iu)^\s*\d{1,2}\s*(?:жил[аы]?|cores?)\s*\.?\s*$").unwrap())
 }
 
 fn cross_section_regex() -> &'static Regex {
@@ -1069,6 +1183,57 @@ mod tests {
                 .any(|assignment| assignment.role == role),
             "missing role {role:?}: {:?}",
             classification.column_roles
+        );
+    }
+
+    #[test]
+    fn short_unlabelled_quantities_use_aligned_units_not_conductors() {
+        let data = matrix(&[
+            &["Item", "Unit", "?"],
+            &["Motor", "pcs", "3"],
+            &["Valve", "шт.", "8"],
+            &["Tubing", "м", "12"],
+        ]);
+        let result = classify_table(&data, None);
+        assert_eq!(result.column_roles[2].role, ColumnRole::Quantity);
+        assert!(result
+            .classification_evidence
+            .iter()
+            .any(|e| e.rule == "quantity:aligned_count_unit"));
+        assert_eq!(data.rows[3][2].text, "12");
+    }
+
+    #[test]
+    fn isolated_short_numbers_are_not_cable_or_quantity_evidence() {
+        let data = matrix(&[&["?"], &["12"], &["4"], &["12"]]);
+        let result = classify_table(&data, None);
+        assert_eq!(result.column_roles[0].role, ColumnRole::Unknown);
+        // A unit above/below the number is not evidence for its row.
+        let data = matrix(&[&["pcs", ""], &["", "12"], &["pcs", ""], &["", "12"]]);
+        let result = classify_table(&data, None);
+        assert_eq!(result.column_roles[1].role, ColumnRole::Unknown);
+    }
+
+    #[test]
+    fn explicit_core_headers_and_core_units_still_support_cable_counts() {
+        for header in ["Число жил", "Cores"] {
+            let data = matrix(&[&["Cable mark", header], &["ВВГнг-LS", "3"], &["КВВГ", "5"]]);
+            assert_eq!(
+                classify_table(&data, None).column_roles[1].role,
+                ColumnRole::Conductors
+            );
+        }
+        let labelled_values = matrix(&[&["2 жилы"], &["4 cores"]]);
+        assert_eq!(
+            classify_table(&labelled_values, None).column_roles[0].role,
+            ColumnRole::Conductors
+        );
+        assert!(!super::conductors_regex().is_match("14"));
+        assert!(!super::conductors_regex().is_match("24 cores cable reel"));
+        assert!(!super::conductors_regex().is_match("3×2.5"));
+        assert_ne!(
+            super::best_header_role("комплект одножильного кабеля").role,
+            ColumnRole::Conductors
         );
     }
 
