@@ -62,6 +62,9 @@ struct Cli {
     /// is created only when processing starts and is never written to stderr.
     #[arg(long)]
     progress_jsonl: Option<std::path::PathBuf>,
+    /// Write a separate report on overlapping tables that share source words.
+    #[arg(long)]
+    table_ownership_diagnostics: bool,
 }
 
 #[cfg_attr(
@@ -129,7 +132,11 @@ fn main() -> ExitCode {
 
     #[cfg(feature = "native")]
     {
-        return run_native_main(&config, progress_jsonl.as_deref());
+        return run_native_main(
+            &config,
+            progress_jsonl.as_deref(),
+            cli.table_ownership_diagnostics,
+        );
     }
 
     // Preserved only as an uncompiled reference while the stable library API
@@ -226,10 +233,15 @@ fn main() -> ExitCode {
 }
 
 #[cfg(feature = "native")]
-fn run_native_main(config: &Config, progress_jsonl: Option<&Path>) -> ExitCode {
+fn run_native_main(
+    config: &Config,
+    progress_jsonl: Option<&Path>,
+    table_ownership_diagnostics: bool,
+) -> ExitCode {
     use ocr_pipeline::{
         export_legacy_document_json, export_ocr_result_docx, export_ocr_result_json,
-        export_ocr_result_xlsx, process_document_with_progress, OcrOptions, OcrProgressEvent,
+        export_ocr_result_xlsx, process_document_with_progress,
+        process_document_with_table_ownership_diagnostics, OcrOptions, OcrProgressEvent,
         OcrProgressReporter, OcrProgressStage, TableMode,
     };
 
@@ -276,8 +288,15 @@ fn run_native_main(config: &Config, progress_jsonl: Option<&Path>) -> ExitCode {
         page_limit: config.page_limit,
         pdfium_dll_path: config.pdfium_dll_path.clone(),
     };
-    let result = match process_document_with_progress(&config.input, &options, progress) {
-        Ok(result) => result,
+    let processed = if table_ownership_diagnostics {
+        process_document_with_table_ownership_diagnostics(&config.input, &options, progress)
+            .map(|(result, report)| (result, Some(report)))
+    } else {
+        process_document_with_progress(&config.input, &options, progress)
+            .map(|result| (result, None))
+    };
+    let (result, ownership_report) = match processed {
+        Ok(processed) => processed,
         Err(error) => {
             if let Some(reporter) = progress {
                 reporter.report(&OcrProgressEvent::failure(None, 0, error.code()));
@@ -336,6 +355,7 @@ fn run_native_main(config: &Config, progress_jsonl: Option<&Path>) -> ExitCode {
         let xlsx_path = txn.staging_path("result.xlsx");
         export_ocr_result_xlsx(&result, &xlsx_path, options.export_title_blocks)?;
         written.push("result.xlsx");
+
         Ok(())
     })();
 
@@ -354,6 +374,15 @@ fn run_native_main(config: &Config, progress_jsonl: Option<&Path>) -> ExitCode {
         );
         eprintln!("Note: the staging directory was NOT published as the final output directory.");
         return ExitCode::from(2);
+    }
+    if let Some(report) = ownership_report {
+        let name = "table-ownership-diagnostics.json";
+        match write_table_ownership_report(&txn.staging_path(name), &report) {
+            Ok(()) => written.push(name),
+            Err(error) => {
+                eprintln!("OCR warning [table_ownership_report_write_failed]: {error}");
+            }
+        }
     }
     if let Err(error) = txn.commit() {
         if let Some(reporter) = progress {
@@ -384,6 +413,25 @@ fn run_native_main(config: &Config, progress_jsonl: Option<&Path>) -> ExitCode {
         ));
     }
     ExitCode::SUCCESS
+}
+
+#[cfg(feature = "native")]
+fn write_table_ownership_report(
+    path: &Path,
+    report: &ocr_pipeline::ownership_diagnostics::TableOwnershipReport,
+) -> std::io::Result<()> {
+    let temporary = path.with_extension("json.tmp");
+    let mut file = OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&temporary)?;
+    let written = serde_json::to_writer_pretty(&mut file, report).map_err(std::io::Error::other);
+    drop(file);
+    let published = written.and_then(|()| std::fs::rename(&temporary, path));
+    if published.is_err() {
+        let _ = std::fs::remove_file(temporary);
+    }
+    published
 }
 
 #[cfg(any(feature = "native", test))]

@@ -124,6 +124,15 @@ impl TableGrid {
     /// Intersection area wins; a word-centre fallback handles tiny or
     /// anti-aliased OCR boxes that only touch a cell edge.
     pub fn assign_words(&mut self, words: &[Word]) -> TableAssignmentMetrics {
+        self.assign_words_with_ids(words, None)
+    }
+
+    /// Optionally record each accepted word's index in the shared page stream.
+    pub(crate) fn assign_words_with_ids(
+        &mut self,
+        words: &[Word],
+        mut assigned_ids: Option<&mut Vec<usize>>,
+    ) -> TableAssignmentMetrics {
         for cell in &mut self.cells {
             cell.text.clear();
             cell.confidence = 0.0;
@@ -143,7 +152,7 @@ impl TableGrid {
             detector_confidence: self.confidence,
         };
 
-        for word in words {
+        for (word_id, word) in words.iter().enumerate() {
             if !boxes_overlap(&word.bbox, &self.bbox) {
                 continue;
             }
@@ -171,6 +180,9 @@ impl TableGrid {
 
             if let Some(index) = cell_index {
                 assigned[index].push(word);
+                if let Some(assigned_ids) = assigned_ids.as_mut() {
+                    assigned_ids.push(word_id);
+                }
                 metrics.words_assigned += 1;
             } else {
                 metrics.words_unassigned += 1;
@@ -1384,6 +1396,60 @@ mod tests {
                 .any(|grid| grid.rows() == 2 && grid.columns() == 3),
             "2x3 ruled grid should be reconstructed"
         );
+    }
+
+    #[test]
+    fn captures_source_ids_only_for_words_assigned_to_cells() {
+        use crate::ownership_diagnostics::{diagnose_page, TableOwnershipEvidence};
+
+        let make_grid = |bbox: BoundingBox| TableGrid {
+            bbox: bbox.clone(),
+            horizontal_lines: Vec::new(),
+            vertical_lines: Vec::new(),
+            intersections: Vec::new(),
+            cells: vec![TableCell {
+                bbox: Some(bbox),
+                row_span: 2,
+                ..TableCell::default()
+            }],
+            confidence: 1.0,
+        };
+        let words = [
+            Word::new("12", BoundingBox::new(1.0, 1.0, 3.0, 3.0), 0.9),
+            Word::new("12", BoundingBox::new(12.0, 1.0, 14.0, 3.0), 0.9),
+            Word::new("shared", BoundingBox::new(6.0, 1.0, 8.0, 3.0), 0.9),
+        ];
+        let mut left = make_grid(BoundingBox::new(0.0, 0.0, 10.0, 10.0));
+        let mut right = make_grid(BoundingBox::new(5.0, 0.0, 15.0, 10.0));
+        let mut left_ids = Vec::new();
+        let mut right_ids = Vec::new();
+
+        left.assign_words_with_ids(&words, Some(&mut left_ids));
+        right.assign_words_with_ids(&words, Some(&mut right_ids));
+        assert_eq!(left_ids, [0, 2]);
+        assert_eq!(right_ids, [1, 2]);
+        assert_eq!(left.cells[0].row_span, 2);
+
+        let report = diagnose_page(
+            1,
+            &[
+                TableOwnershipEvidence {
+                    table_id: 0,
+                    table_type: TableType::DataTable,
+                    bbox: Some(left.bbox),
+                    word_ids: Some(left_ids),
+                },
+                TableOwnershipEvidence {
+                    table_id: 1,
+                    table_type: TableType::DataTable,
+                    bbox: Some(right.bbox),
+                    word_ids: Some(right_ids),
+                },
+            ],
+        );
+        assert_eq!(report.conflict_pairs, 1);
+        assert_eq!(report.unique_conflicting_words, 1);
+        assert_eq!(report.additional_memberships, 1);
     }
 
     #[test]

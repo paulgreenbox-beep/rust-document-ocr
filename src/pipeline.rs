@@ -23,7 +23,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::borderless_table::detect_borderless_tables;
 use crate::detector::{detect_table, DetectionResult};
-use crate::dto::{BoundingBox, DocumentResult, PageKind, PageResult, TableMatrix, TableType};
+use crate::dto::{
+    BoundingBox, DocumentResult, PageKind, PageResult, TableDetectorType, TableMatrix, TableType,
+};
 use crate::language::{effective_languages, select_language_profile, LanguageRouting};
 use crate::ocr::LanguageRoutedOcrEngine;
 use crate::ocr::{OcrEngine, OcrLanguageProfile, OcrRequest};
@@ -31,6 +33,7 @@ use crate::orientation::{
     choose_orientation, orientation_thumbnail, rotate_gray_image, OrientationEvidence,
     ORIENTATION_ANGLES,
 };
+use crate::ownership_diagnostics::{diagnose_page, PageTableOwnership, TableOwnershipEvidence};
 use crate::page_analysis::{
     analyze_native_text_for_languages, NativeTextLayer, NativeTextLayout, NativeTextQuality,
     PageOrientation, PageProcessingInfo, PageStageTimings, PageWordAssignmentMetrics,
@@ -140,6 +143,7 @@ pub struct Pipeline<'a, S: PageSource, O: OcrEngine> {
     cell_ocr_dpi: u32,
     enable_cell_ocr_fallback: bool,
     progress: Option<&'a dyn OcrProgressReporter>,
+    table_ownership: Option<&'a mut Vec<PageTableOwnership>>,
 }
 
 impl<'a, S, O> Pipeline<'a, S, O>
@@ -160,6 +164,7 @@ where
             cell_ocr_dpi: DEFAULT_CELL_OCR_DPI,
             enable_cell_ocr_fallback: true,
             progress: None,
+            table_ownership: None,
         }
     }
 
@@ -205,6 +210,15 @@ where
         self
     }
 
+    #[cfg(feature = "native")]
+    pub(crate) fn with_table_ownership(
+        mut self,
+        report: Option<&'a mut Vec<PageTableOwnership>>,
+    ) -> Self {
+        self.table_ownership = report;
+        self
+    }
+
     /// Execute the pipeline against every page reported by the source.
     pub fn run(self) -> Result<DocumentResult, Box<dyn std::error::Error>> {
         Ok(self.run_with_warnings()?.document)
@@ -224,6 +238,7 @@ where
             cell_ocr_dpi,
             enable_cell_ocr_fallback,
             progress,
+            mut table_ownership,
         } = self;
 
         let total = source.total_pages()?;
@@ -233,6 +248,7 @@ where
             table_mode,
             languages,
             enable_cell_ocr_fallback,
+            observe_table_ownership: table_ownership.is_some(),
         };
         let mut pages = Vec::with_capacity(effective as usize);
         let mut warnings = Vec::new();
@@ -254,6 +270,9 @@ where
             let processed = finish_prepared_page(prepared, ocr, &config)
                 .map_err(|message| -> Box<dyn std::error::Error> { message.into() })?;
             report_page_progress(progress, &processed.processing, effective);
+            if let (Some(report), Some(page)) = (&mut table_ownership, processed.table_ownership) {
+                report.push(page);
+            }
             pages.push(processed.page);
             page_processing.push(processed.processing);
             warnings.extend(processed.warnings);
@@ -305,6 +324,7 @@ where
             cell_ocr_dpi,
             enable_cell_ocr_fallback,
             progress,
+            mut table_ownership,
         } = self;
 
         let total = source.total_pages()?;
@@ -323,6 +343,7 @@ where
             table_mode,
             languages,
             enable_cell_ocr_fallback,
+            observe_table_ownership: table_ownership.is_some(),
         };
 
         let processed = thread::scope(|scope| {
@@ -466,6 +487,11 @@ where
         let mut warnings = Vec::new();
         let mut page_processing = Vec::with_capacity(processed.len());
         for processed_page in processed {
+            if let (Some(report), Some(page)) =
+                (&mut table_ownership, processed_page.table_ownership)
+            {
+                report.push(page);
+            }
             pages.push(processed_page.page);
             page_processing.push(processed_page.processing);
             warnings.extend(processed_page.warnings);
@@ -486,6 +512,7 @@ struct WorkerConfig {
     table_mode: TableMode,
     languages: String,
     enable_cell_ocr_fallback: bool,
+    observe_table_ownership: bool,
 }
 
 struct PreparedPage {
@@ -527,6 +554,7 @@ struct ProcessedPage {
     page: PageResult,
     processing: PageProcessingInfo,
     warnings: Vec<PipelineWarning>,
+    table_ownership: Option<PageTableOwnership>,
 }
 
 struct WorkerResult {
@@ -774,12 +802,21 @@ fn finish_prepared_page<O: OcrEngine>(
         .work
         .take()
         .ok_or_else(|| format!("page {} has no prepared work", prepared.page_number))?;
+    let mut table_evidence = config.observe_table_ownership.then(Vec::new);
     let mut processed = match work {
         PreparedWork::NativeText {
             layer,
             orientation,
             grid_render,
-        } => finish_prepared_native_page(prepared, layer, orientation, grid_render, ocr, config),
+        } => finish_prepared_native_page(
+            prepared,
+            layer,
+            orientation,
+            grid_render,
+            ocr,
+            config,
+            table_evidence.as_mut(),
+        ),
         PreparedWork::Ocr {
             image,
             dpi,
@@ -795,6 +832,7 @@ fn finish_prepared_page<O: OcrEngine>(
             native_orientation,
             ocr,
             config,
+            table_evidence.as_mut(),
         ),
     }?;
     processed.processing.quality = Some(assess_page_quality(
@@ -805,7 +843,38 @@ fn finish_prepared_page<O: OcrEngine>(
         processed.processing.native_text_quality.as_ref(),
         processed.processing.native_text_layout.as_ref(),
     ));
+    if let Some(mut tables) = table_evidence {
+        // The current borderless route discards source IDs. Its geometry
+        // can rule out pairs, but an overlapping pair remains unobservable.
+        for (table_id, table) in processed.page.tables.iter().enumerate() {
+            if table.detector_type == TableDetectorType::Borderless {
+                tables.push(TableOwnershipEvidence {
+                    table_id,
+                    table_type: table.table_type.clone(),
+                    bbox: table.bbox.clone(),
+                    word_ids: None,
+                });
+            }
+        }
+        processed.table_ownership = Some(diagnose_page(processed.page_number, &tables));
+    }
     Ok(processed)
+}
+
+fn record_grid_ownership(
+    evidence: &mut Option<&mut Vec<TableOwnershipEvidence>>,
+    table_id: usize,
+    matrix: &TableMatrix,
+    word_ids: Option<Vec<usize>>,
+) {
+    if let Some(tables) = evidence.as_mut() {
+        tables.push(TableOwnershipEvidence {
+            table_id,
+            table_type: matrix.table_type.clone(),
+            bbox: matrix.bbox.clone(),
+            word_ids,
+        });
+    }
 }
 
 fn finish_prepared_native_page<O: OcrEngine>(
@@ -815,6 +884,7 @@ fn finish_prepared_native_page<O: OcrEngine>(
     grid_render: Option<PreparedGridRender>,
     ocr: &O,
     config: &WorkerConfig,
+    mut table_evidence: Option<&mut Vec<TableOwnershipEvidence>>,
 ) -> Result<ProcessedPage, String> {
     let page_number = prepared.page_number;
     let Some(PreparedGridRender {
@@ -842,6 +912,7 @@ fn finish_prepared_native_page<O: OcrEngine>(
                 timings: prepared.timings,
             },
             warnings: prepared.warnings,
+            table_ownership: None,
         });
     };
 
@@ -888,6 +959,7 @@ fn finish_prepared_native_page<O: OcrEngine>(
                     timings: prepared.timings,
                 },
                 warnings: prepared.warnings,
+                table_ownership: None,
             });
         }
         prepared.timings.total_ms = elapsed_ms(prepared.page_started);
@@ -908,6 +980,7 @@ fn finish_prepared_native_page<O: OcrEngine>(
                 timings: prepared.timings,
             },
             warnings: prepared.warnings,
+            table_ownership: None,
         });
     }
 
@@ -916,7 +989,8 @@ fn finish_prepared_native_page<O: OcrEngine>(
     let mut fallback_confidences = Vec::new();
     for (grid_index, mut grid) in grid_candidates.into_iter().enumerate() {
         let stage_started = Instant::now();
-        let mut metrics = grid.assign_words(&native_words);
+        let mut word_ids = table_evidence.is_some().then(Vec::new);
+        let mut metrics = grid.assign_words_with_ids(&native_words, word_ids.as_mut());
         prepared.timings.assignment_ms += elapsed_ms(stage_started);
         if config.enable_cell_ocr_fallback {
             let fallback =
@@ -955,12 +1029,10 @@ fn finish_prepared_native_page<O: OcrEngine>(
                 .count() as u32;
         }
         let stage_started = Instant::now();
-        matrices.push(grid.to_matrix_with_type(classify_grid(
-            &grid,
-            &metrics,
-            page_width,
-            page_height,
-        )));
+        let matrix =
+            grid.to_matrix_with_type(classify_grid(&grid, &metrics, page_width, page_height));
+        record_grid_ownership(&mut table_evidence, grid_index, &matrix, word_ids);
+        matrices.push(matrix);
         prepared.timings.assignment_ms += elapsed_ms(stage_started);
     }
 
@@ -982,6 +1054,7 @@ fn finish_prepared_native_page<O: OcrEngine>(
             timings: prepared.timings,
         },
         warnings: prepared.warnings,
+        table_ownership: None,
     })
 }
 
@@ -998,6 +1071,7 @@ fn finish_prepared_ocr_page<O: OcrEngine>(
     native_orientation: Option<PageOrientation>,
     ocr: &O,
     config: &WorkerConfig,
+    mut table_evidence: Option<&mut Vec<TableOwnershipEvidence>>,
 ) -> Result<ProcessedPage, String> {
     let page_number = prepared.page_number;
     // A near-usable native layer is deliberately retained for arbitration,
@@ -1116,7 +1190,8 @@ fn finish_prepared_ocr_page<O: OcrEngine>(
         let stage_started = Instant::now();
         let mut matrices = Vec::with_capacity(grid_candidates.len());
         for (grid_index, mut grid) in grid_candidates.into_iter().enumerate() {
-            let mut metrics = grid.assign_words(&words);
+            let mut word_ids = table_evidence.is_some().then(Vec::new);
+            let mut metrics = grid.assign_words_with_ids(&words, word_ids.as_mut());
             if config.enable_cell_ocr_fallback {
                 let fallback = fill_empty_grid_cells_with_ocr_diagnostics(
                     &mut grid,
@@ -1141,12 +1216,10 @@ fn finish_prepared_ocr_page<O: OcrEngine>(
                     .filter(|cell| cell.text.trim().is_empty())
                     .count() as u32;
             }
-            matrices.push(grid.to_matrix_with_type(classify_grid(
-                &grid,
-                &metrics,
-                page_width,
-                page_height,
-            )));
+            let matrix =
+                grid.to_matrix_with_type(classify_grid(&grid, &metrics, page_width, page_height));
+            record_grid_ownership(&mut table_evidence, grid_index, &matrix, word_ids);
+            matrices.push(matrix);
         }
         prepared.timings.assignment_ms += elapsed_ms(stage_started);
         let confidence = text.confidence.or(word_confidence);
@@ -1325,6 +1398,7 @@ fn finish_prepared_ocr_page<O: OcrEngine>(
             timings: prepared.timings,
         },
         warnings: prepared.warnings,
+        table_ownership: None,
     })
 }
 
@@ -4203,6 +4277,7 @@ mod tests {
             table_mode: TableMode::Grid,
             languages: "rus+eng".into(),
             enable_cell_ocr_fallback: true,
+            observe_table_ownership: false,
         };
         if native {
             super::finish_prepared_native_page(
@@ -4222,6 +4297,7 @@ mod tests {
                 }),
                 engine,
                 &config,
+                None,
             )
         } else {
             super::finish_prepared_ocr_page(
@@ -4233,6 +4309,7 @@ mod tests {
                 Some(Default::default()),
                 engine,
                 &config,
+                None,
             )
         }
     }

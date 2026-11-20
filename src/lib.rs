@@ -17,6 +17,7 @@ pub mod input_format;
 pub mod language;
 pub mod ocr;
 pub mod orientation;
+pub mod ownership_diagnostics;
 pub mod page_analysis;
 pub mod page_source;
 pub mod pipeline;
@@ -43,9 +44,10 @@ pub use native::tiff_source::TiffPageSource;
 pub use api::{
     export_legacy_document_json, export_ocr_result_docx, export_ocr_result_json,
     export_ocr_result_xlsx, process_document, process_document_with_progress,
-    ClassificationEvidence, ColumnRole, ColumnRoleAssignment, DetectedGrid, DocumentModel,
-    EvidenceKind, GridKind, OcrDiagnostic, OcrError, OcrOptions, OcrResult, OcrWarning, PageTables,
-    SemanticTableType, OCR_RESULT_SCHEMA_VERSION,
+    process_document_with_table_ownership_diagnostics, ClassificationEvidence, ColumnRole,
+    ColumnRoleAssignment, DetectedGrid, DocumentModel, EvidenceKind, GridKind, OcrDiagnostic,
+    OcrError, OcrOptions, OcrResult, OcrWarning, PageTables, SemanticTableType,
+    OCR_RESULT_SCHEMA_VERSION,
 };
 pub use config::Config;
 pub use dto::{
