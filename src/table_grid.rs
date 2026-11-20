@@ -816,10 +816,21 @@ fn collect_candidate_cells(
         // A page can contain multiple tables with near-aligned columns. Use
         // only vertical axes that actually cover this y-band, otherwise a
         // line from a later table can incorrectly block an upper-table cell.
+        // Allow a rule segment to sit away from the canonical x position,
+        // but require its ends to reach both row borders within junction tolerance.
         let active_x_positions: Vec<f64> = x_positions
             .iter()
             .copied()
-            .filter(|&x| has_vertical_boundary(vertical, x, y0, y1, tolerance))
+            .filter(|&x| {
+                has_vertical_boundary(
+                    vertical,
+                    x,
+                    y0,
+                    y1,
+                    tolerance,
+                    f64::from(config.intersection_tolerance),
+                )
+            })
             .collect();
         for x_pair in active_x_positions.windows(2) {
             let (x0, x1) = (x_pair[0], x_pair[1]);
@@ -1051,11 +1062,18 @@ fn has_horizontal_boundary(lines: &[GridLine], y: f64, x0: f64, x1: f64, toleran
     })
 }
 
-fn has_vertical_boundary(lines: &[GridLine], x: f64, y0: f64, y1: f64, tolerance: f64) -> bool {
+fn has_vertical_boundary(
+    lines: &[GridLine],
+    x: f64,
+    y0: f64,
+    y1: f64,
+    axis_tolerance: f64,
+    endpoint_tolerance: f64,
+) -> bool {
     lines.iter().any(|line| {
-        (line.position - x).abs() <= tolerance
-            && line.start <= y0 + tolerance
-            && line.end >= y1 - tolerance
+        (line.position - x).abs() <= axis_tolerance
+            && line.start <= y0 + endpoint_tolerance
+            && line.end >= y1 - endpoint_tolerance
     })
 }
 
@@ -1335,6 +1353,49 @@ mod tests {
             }
         }
         image
+    }
+
+    fn partial_divider_fixture(gap: u32) -> GrayImage {
+        let mut page = GrayImage::from_pixel(800, 1000, Luma([255]));
+        let rows = [100, 290, 480, 670, 890];
+        for y in rows {
+            for x in 80..=720 {
+                page.put_pixel(x, y, Luma([0]));
+            }
+        }
+        for x in [80, 240, 600, 720] {
+            for y in 100..=890 {
+                page.put_pixel(x, y, Luma([0]));
+            }
+        }
+        for interval in rows[2..].windows(2) {
+            for y in (interval[0] + gap)..=(interval[1] - gap) {
+                page.put_pixel(575, y, Luma([0]));
+            }
+        }
+        page
+    }
+
+    #[test]
+    fn vertical_fragment_with_open_ends_does_not_split_table() {
+        let detection = detect_table_grids(&partial_divider_fixture(7));
+        assert_eq!(detection.grids.len(), 1);
+        let grid = &detection.grids[0];
+        assert_eq!((grid.rows(), grid.columns(), grid.cells.len()), (4, 3, 12));
+        assert_eq!(grid.bbox, BoundingBox::new(80.0, 100.0, 720.0, 890.0));
+    }
+
+    #[test]
+    fn nearly_joined_vertical_divider_keeps_real_narrow_column() {
+        let detection = detect_table_grids(&partial_divider_fixture(2));
+        assert_eq!(detection.grids.len(), 1);
+        let grid = &detection.grids[0];
+        assert_eq!((grid.rows(), grid.columns(), grid.cells.len()), (4, 4, 14));
+        assert!(grid.cells.iter().any(|cell| {
+            cell.bbox
+                .as_ref()
+                .is_some_and(|bbox| bbox.x0 == 575.0 && bbox.x1 == 600.0)
+        }));
     }
 
     #[test]
