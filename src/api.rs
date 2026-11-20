@@ -15,6 +15,9 @@ use crate::dto::{
 use crate::export_docx::{export_docx_with_options, DocxExportOptions};
 use crate::export_xlsx::{export_xlsx_with_options, XlsxExportOptions};
 #[cfg(feature = "native")]
+use crate::ownership_diagnostics::PageTableOwnership;
+use crate::ownership_diagnostics::TableOwnershipReport;
+#[cfg(feature = "native")]
 use crate::page_source::PageSource;
 #[cfg(feature = "native")]
 use crate::pipeline::{Pipeline, PipelineOutcome, PipelineWarning};
@@ -716,6 +719,43 @@ pub fn process_document_with_progress(
     options: &OcrOptions,
     progress: Option<&dyn OcrProgressReporter>,
 ) -> Result<OcrResult, OcrError> {
+    process_document_internal(input, options, progress, None)
+}
+
+/// Processes a document and returns a separate, versioned ownership report.
+#[cfg(feature = "native")]
+pub fn process_document_with_table_ownership_diagnostics(
+    input: &Path,
+    options: &OcrOptions,
+    progress: Option<&dyn OcrProgressReporter>,
+) -> Result<(OcrResult, TableOwnershipReport), OcrError> {
+    let mut pages = Vec::new();
+    let result = process_document_internal(input, options, progress, Some(&mut pages))?;
+    Ok((
+        result,
+        TableOwnershipReport {
+            schema_version: 1,
+            pages,
+        },
+    ))
+}
+
+#[cfg(not(feature = "native"))]
+pub fn process_document_with_table_ownership_diagnostics(
+    _input: &Path,
+    _options: &OcrOptions,
+    _progress: Option<&dyn crate::progress::OcrProgressReporter>,
+) -> Result<(OcrResult, TableOwnershipReport), OcrError> {
+    Err(OcrError::NativeFeatureRequired)
+}
+
+#[cfg(feature = "native")]
+fn process_document_internal(
+    input: &Path,
+    options: &OcrOptions,
+    progress: Option<&dyn OcrProgressReporter>,
+    table_ownership: Option<&mut Vec<PageTableOwnership>>,
+) -> Result<OcrResult, OcrError> {
     validate_options(input, options)?;
     let languages = options
         .effective_languages()
@@ -767,6 +807,7 @@ pub fn process_document_with_progress(
         .with_cell_ocr_dpi(ocr_dpi)
         .with_cell_ocr_fallback(options.enable_cell_ocr_fallback)
         .with_progress(progress)
+        .with_table_ownership(table_ownership)
         .run_with_warnings_parallel(options.max_page_workers);
     let outcome = match outcome {
         Ok(outcome) => outcome,
